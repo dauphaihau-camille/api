@@ -1,0 +1,13 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "nest-template-api-host"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["host.docker.internal:3000"]
+
+  - job_name: "nest-template-api-container"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["api:3000"]
