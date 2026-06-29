@@ -12,9 +12,10 @@ export class AuditService {
   ) {}
 
   async record(input: AuditRecordInput): Promise<AuditLogEntity> {
+    const entityManager = this.entityManager.fork();
     const requestContext = this.requestContextService.get();
 
-    const auditLog = this.entityManager.create(AuditLogEntity, {
+    const auditLog = entityManager.create(AuditLogEntity, {
       action: input.action,
       resourceType: input.resourceType,
       resourceId: input.resourceId,
@@ -28,7 +29,7 @@ export class AuditService {
       userAgent: requestContext.userAgent,
     });
 
-    await this.entityManager.persistAndFlush(auditLog);
+    await entityManager.persistAndFlush(auditLog);
 
     return auditLog;
   }

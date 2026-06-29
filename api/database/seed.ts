@@ -10,6 +10,8 @@ import { RoleEntity } from '../src/modules/domains/auth/infra/persistence/entiti
 import { RolePermissionEntity } from '../src/modules/domains/auth/infra/persistence/entities/role-permission.entity';
 import { UserRoleEntity } from '../src/modules/domains/auth/infra/persistence/entities/user-role.entity';
 import { UserSessionEntity } from '../src/modules/domains/auth/infra/persistence/entities/user-session.entity';
+import { WorkspaceEntity } from '../src/modules/domains/workspace/infra/persistence/entities/workspace.entity';
+import { WorkspaceMemberEntity } from '../src/modules/domains/workspace/infra/persistence/entities/workspace-member.entity';
 import { seedAuth } from './seeds/auth.seed';
 
 function formatDuration(ms: number): string {
@@ -46,6 +48,8 @@ async function main() {
       PermissionEntity,
       UserRoleEntity,
       RolePermissionEntity,
+      WorkspaceEntity,
+      WorkspaceMemberEntity,
     ],
   });
 

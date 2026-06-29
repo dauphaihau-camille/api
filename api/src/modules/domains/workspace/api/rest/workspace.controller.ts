@@ -1,6 +1,16 @@
-import { Controller, Get, Header, Param, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiCookieAuth,
+  ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -10,6 +20,8 @@ import type { AuthenticatedUser } from '../../../auth/app/auth.types';
 import { JwtAuthGuard } from '../../../auth/api/guard/jwt-auth.guard';
 import { PermissionsGuard } from '../../../auth/api/guard/permissions.guard';
 import { WorkspaceService } from '../../app/workspace.service';
+import { CreateWorkspaceDto } from './dto/create-workspace.dto';
+import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { WorkspaceResponseDto } from './dto/workspace-response.dto';
 
 @Controller()
@@ -28,12 +40,33 @@ export class WorkspaceController {
     type: WorkspaceResponseDto,
     isArray: true,
   })
-  listMyWorkspaces(
+  async listMyWorkspaces(
     @CurrentUser() currentUser: AuthenticatedUser,
-  ): WorkspaceResponseDto[] {
+  ): Promise<WorkspaceResponseDto[]> {
     return this.workspaceService
       .listForUser(currentUser)
-      .map(WorkspaceResponseDto.fromWorkspace);
+      .then((workspaces) => workspaces.map(WorkspaceResponseDto.fromWorkspace));
+  }
+
+  @Post('workspaces')
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    summary: 'Create workspace',
+  })
+  @ApiCreatedResponse({
+    type: WorkspaceResponseDto,
+  })
+  createWorkspace(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Body() body: CreateWorkspaceDto,
+  ): Promise<WorkspaceResponseDto> {
+    return this.workspaceService
+      .createForUser(currentUser, {
+        name: body.name,
+        slug: body.slug,
+        description: body.description,
+      })
+      .then(WorkspaceResponseDto.fromWorkspace);
   }
 
   @Get('workspaces/:workspaceId')
@@ -47,9 +80,32 @@ export class WorkspaceController {
   getWorkspace(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() currentUser: AuthenticatedUser,
-  ): WorkspaceResponseDto {
-    return WorkspaceResponseDto.fromWorkspace(
-      this.workspaceService.getForUser(workspaceId, currentUser),
-    );
+  ): Promise<WorkspaceResponseDto> {
+    return this.workspaceService
+      .getForUser(workspaceId, currentUser)
+      .then(WorkspaceResponseDto.fromWorkspace);
+  }
+
+  @Patch('workspaces/:workspaceId')
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    summary: 'Update workspace',
+  })
+  @ApiOkResponse({
+    type: WorkspaceResponseDto,
+  })
+  updateWorkspace(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Body() body: UpdateWorkspaceDto,
+  ): Promise<WorkspaceResponseDto> {
+    return this.workspaceService
+      .updateForUser(workspaceId, currentUser, {
+        version: body.version,
+        name: body.name,
+        slug: body.slug,
+        description: body.description,
+      })
+      .then(WorkspaceResponseDto.fromWorkspace);
   }
 }

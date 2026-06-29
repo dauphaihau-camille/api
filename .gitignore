@@ -36,4 +36,4 @@ yarn-error.log*
 packages/mcp/
 
 # Temporary e2e migration snapshots
-packages/template/database/migrations/.snapshot-auth_e2e_*.json
+api/database/migrations/.snapshot-auth_e2e_*.json
