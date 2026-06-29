@@ -1,0 +1,298 @@
+import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  HttpCode,
+  Req,
+  Res,
+  Post,
+  Query,
+  UseInterceptors,
+  UseFilters,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiCookieAuth,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
+import type { Request, Response } from 'express';
+import { Throttle } from '@nestjs/throttler';
+import { Idempotent } from '../../../../../common/decorators/idempotent.decorator';
+import { resolveOrThrow } from '../../../../../common/application/result';
+import { parseDurationToMilliseconds } from '../../../../../libs/duration';
+import type {
+  AuthenticatedUser,
+} from '../../app/auth.types';
+import { GetCurrentUserUseCase } from '../../app/use-cases/get-current-user.use-case';
+import { LoginUseCase } from '../../app/use-cases/login.use-case';
+import { LogoutUseCase } from '../../app/use-cases/logout.use-case';
+import { RequestPasswordResetUseCase } from '../../app/use-cases/request-password-reset.use-case';
+import { RefreshSessionUseCase } from '../../app/use-cases/refresh-session.use-case';
+import { ResetPasswordUseCase } from '../../app/use-cases/reset-password.use-case';
+import { RegisterUseCase } from '../../app/use-cases/register.use-case';
+import { VerifyResetPasswordTokenUseCase } from '../../app/use-cases/verify-reset-password-token.use-case';
+import { CurrentUser } from '../../../../../common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../guard/jwt-auth.guard';
+import { PermissionsGuard } from '../guard/permissions.guard';
+import { mapAuthAppErrorToHttpException } from './auth-error-mapper';
+import { AuthCookieService } from './auth-cookie.utils';
+import { AuthHttpExceptionFilter } from './auth-http-exception.filter';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { AuthResponseDto, UserProfileResponseDto } from './dto/auth-response.dto';
+import { LoginDto } from './dto/login.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { RegisterDto } from './dto/register.dto';
+import { TokenQueryDto } from './dto/token-query.dto';
+import { VerifyTokenDto } from './dto/verify-token.dto';
+import { IdempotencyKeyInterceptor } from '../../../../../common/interceptors/idempotency-key.interceptor';
+
+const authRouteRateLimits = {
+  register: {
+    limit: 3,
+    ttl: parseDurationToMilliseconds('10m', 600_000),
+    blockDuration: parseDurationToMilliseconds('30m', 1_800_000),
+  },
+  login: {
+    limit: 5,
+    ttl: parseDurationToMilliseconds('1m', 60_000),
+    blockDuration: parseDurationToMilliseconds('5m', 300_000),
+  },
+  refresh: {
+    limit: 10,
+    ttl: parseDurationToMilliseconds('1m', 60_000),
+    blockDuration: parseDurationToMilliseconds('5m', 300_000),
+  },
+  passwordReset: {
+    limit: 5,
+    ttl: parseDurationToMilliseconds('10m', 600_000),
+    blockDuration: parseDurationToMilliseconds('15m', 900_000),
+  },
+} as const;
+
+@Controller('auth')
+@UseFilters(AuthHttpExceptionFilter)
+@ApiTags('Auth')
+export class AuthController {
+  constructor(
+    private readonly registerUseCase: RegisterUseCase,
+    private readonly loginUseCase: LoginUseCase,
+    private readonly refreshSessionUseCase: RefreshSessionUseCase,
+    private readonly logoutUseCase: LogoutUseCase,
+    private readonly getCurrentUserUseCase: GetCurrentUserUseCase,
+    private readonly requestPasswordResetUseCase: RequestPasswordResetUseCase,
+    private readonly verifyResetPasswordTokenUseCase: VerifyResetPasswordTokenUseCase,
+    private readonly resetPasswordUseCase: ResetPasswordUseCase,
+    private readonly authCookieService: AuthCookieService,
+  ) {}
+
+  @Post('register')
+  @Throttle({
+    default: authRouteRateLimits.register,
+  })
+  @Header('Cache-Control', 'no-store')
+  @UseInterceptors(IdempotencyKeyInterceptor)
+  @Idempotent({
+    scope: 'auth:register',
+  })
+  @ApiOperation({
+    summary: 'Register',
+  })
+  @ApiCreatedResponse({
+    type: AuthResponseDto,
+  })
+  async register(
+    @Body() body: RegisterDto,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<AuthResponseDto> {
+    const authResponse = resolveOrThrow(
+      await this.registerUseCase.execute({
+        email: body.email,
+        password: body.password,
+        displayName: body.display_name,
+      }),
+      mapAuthAppErrorToHttpException,
+    );
+
+    this.authCookieService.setAuthCookies(response, authResponse);
+
+    return AuthResponseDto.fromAuthResponse(authResponse);
+  }
+
+  @Post('login')
+  @Throttle({
+    default: authRouteRateLimits.login,
+  })
+  @Header('Cache-Control', 'no-store')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Login',
+  })
+  @ApiOkResponse({
+    type: AuthResponseDto,
+  })
+  async login(
+    @Body() body: LoginDto,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<AuthResponseDto> {
+    const authResponse = resolveOrThrow(
+      await this.loginUseCase.execute(body),
+      mapAuthAppErrorToHttpException,
+    );
+
+    this.authCookieService.setAuthCookies(response, authResponse);
+
+    return AuthResponseDto.fromAuthResponse(authResponse);
+  }
+
+  @Post('refresh')
+  @Throttle({
+    default: authRouteRateLimits.refresh,
+  })
+  @Header('Cache-Control', 'no-store')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Refresh session',
+  })
+  @ApiOkResponse({
+    type: AuthResponseDto,
+  })
+  async refresh(
+    @Req() request: Request,
+    @Body() body: RefreshTokenDto,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<AuthResponseDto> {
+    const authResponse = resolveOrThrow(
+      await this.refreshSessionUseCase.execute(
+        body.refresh_token || this.authCookieService.extractRefreshToken(request),
+      ),
+      mapAuthAppErrorToHttpException,
+    );
+
+    this.authCookieService.setAuthCookies(response, authResponse);
+
+    return AuthResponseDto.fromAuthResponse(authResponse);
+  }
+
+  @Post('forgot-password')
+  @Throttle({
+    default: authRouteRateLimits.passwordReset,
+  })
+  @Header('Cache-Control', 'no-store')
+  @HttpCode(204)
+  @ApiOperation({
+    summary: 'Forgot password',
+  })
+  @ApiNoContentResponse({
+    description: 'Password reset request accepted.',
+  })
+  async forgotPassword(@Body() body: ForgotPasswordDto): Promise<void> {
+    await this.requestPasswordResetUseCase.execute(body.email);
+  }
+
+  @Get('verify-token')
+  @Header('Cache-Control', 'no-store')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Verify token',
+  })
+  @ApiQuery({
+    name: 'token',
+    required: true,
+    type: String,
+  })
+  @ApiQuery({
+    name: 'type',
+    required: true,
+    enum: ['reset_password'],
+  })
+  @ApiOkResponse({
+    description: 'Token is valid.',
+  })
+  async verifyToken(@Query() query: VerifyTokenDto): Promise<void> {
+    resolveOrThrow(
+      await this.verifyResetPasswordTokenUseCase.execute(query.token),
+      mapAuthAppErrorToHttpException,
+    );
+  }
+
+  @Post('reset-password')
+  @Throttle({
+    default: authRouteRateLimits.passwordReset,
+  })
+  @Header('Cache-Control', 'no-store')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Reset password',
+  })
+  @ApiQuery({
+    name: 'token',
+    required: true,
+    type: String,
+  })
+  @ApiOkResponse({
+    type: AuthResponseDto,
+  })
+  async resetPassword(
+    @Query() query: TokenQueryDto,
+    @Body() body: ResetPasswordDto,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<AuthResponseDto> {
+    const authResponse = resolveOrThrow(
+      await this.resetPasswordUseCase.execute({
+        token: query.token,
+        password: body.password,
+      }),
+      mapAuthAppErrorToHttpException,
+    );
+
+    this.authCookieService.setAuthCookies(response, authResponse);
+
+    return AuthResponseDto.fromAuthResponse(authResponse);
+  }
+
+  @Post('logout')
+  @Header('Cache-Control', 'no-store')
+  @HttpCode(204)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiCookieAuth('access_token')
+  @ApiOperation({
+    summary: 'Logout',
+  })
+  @ApiNoContentResponse({
+    description: 'Logged out successfully.',
+  })
+  async logout(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<void> {
+    await this.logoutUseCase.execute(currentUser);
+    this.authCookieService.clearAuthCookies(response);
+  }
+
+  @Get('me')
+  @Header('Cache-Control', 'no-store')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiCookieAuth('access_token')
+  @ApiOperation({
+    summary: 'Current user',
+  })
+  @ApiOkResponse({
+    type: UserProfileResponseDto,
+  })
+  async me(
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ): Promise<UserProfileResponseDto> {
+    const userProfile = await this.getCurrentUserUseCase.execute(currentUser);
+
+    return UserProfileResponseDto.fromUserProfile(
+      userProfile,
+    );
+  }
+}
