@@ -1,0 +1,2 @@
+email	display_name	password	role_key	email_verified
+local-admin@example.com	Local Admin	password123	admin	true

@@ -1,0 +1,9 @@
+role_key	permission_key
+admin	auth.me.read
+admin	auth.session.manage
+admin	users.read
+admin	users.manage
+admin	roles.read
+admin	roles.manage
+member	auth.me.read
+member	auth.session.manage

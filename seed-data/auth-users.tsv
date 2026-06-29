@@ -1,0 +1,3 @@
+email	display_name	password	role_key	email_verified
+admin@example.com	System Admin	password123	admin	true
+member@example.com	Default Member	password123	member	true
