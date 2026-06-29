@@ -1,0 +1,39 @@
+# OS
+.DS_Store
+
+# Node / TypeScript
+node_modules/
+dist/
+coverage/
+build/
+**/node_modules/
+**/dist/
+**/coverage/
+**/build/
+*.tsbuildinfo
+package-lock.json
+
+# Environment files
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editors
+.idea/
+.vscode/
+
+# Temporary ignore
+packages/mcp/
+
+# Temporary e2e migration snapshots
+packages/template/database/migrations/.snapshot-auth_e2e_*.json
