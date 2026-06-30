@@ -18,6 +18,7 @@ import {
   WorkspaceRepository,
   WorkspaceVersionConflictError,
 } from './workspace.repository';
+import { WorkspaceProvisioningService } from './workspace-provisioning.service';
 import type {
   CreateWorkspaceInput,
   UpdateWorkspaceInput,
@@ -26,7 +27,10 @@ import type {
 
 @Injectable()
 export class WorkspaceService {
-  constructor(private readonly workspaceRepository: WorkspaceRepository) {}
+  constructor(
+    private readonly workspaceRepository: WorkspaceRepository,
+    private readonly workspaceProvisioningService: WorkspaceProvisioningService,
+  ) {}
 
   listForUser(currentUser: AuthenticatedUser): Promise<WorkspaceSummary[]> {
     return this.workspaceRepository.findAllForUser(currentUser.userId);
@@ -50,14 +54,11 @@ export class WorkspaceService {
     }
 
     const slug = await this.resolveCreateSlug(normalizedName, input.slug);
-    const access = await this.workspaceRepository.createWorkspace({
-      ownerUserId: currentUser.userId,
+    return this.workspaceProvisioningService.createWorkspaceWithDefaults(currentUser, {
       name: normalizedName,
       slug,
       description: this.normalizeDescription(input.description),
     });
-
-    return access.workspace;
   }
 
   async updateForUser(
