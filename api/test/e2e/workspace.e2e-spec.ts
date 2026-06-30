@@ -261,6 +261,183 @@ describe('Workspace and membership flow (e2e)', () => {
     });
   });
 
+  it('creates and edits teamspaces and documents through the API', async () => {
+    const owner = await registerUser('documents-owner');
+
+    const createWorkspaceResponse = await request(app.getHttpServer())
+      .post('/v1/workspaces')
+      .set('Cookie', owner.cookie)
+      .send({
+        name: 'Camille Docs',
+        slug: 'camille-docs',
+      })
+      .expect(201);
+    const workspace = createWorkspaceResponse.body as {
+      id: string;
+      slug: string;
+    };
+
+    const createTeamspaceResponse = await request(app.getHttpServer())
+      .post(`/v1/workspaces/${workspace.slug}/teamspaces`)
+      .set('Cookie', owner.cookie)
+      .send({
+        name: 'Product',
+        description: 'Shared product docs',
+      })
+      .expect(201);
+    const teamspace = createTeamspaceResponse.body as {
+      id: string;
+      version: number;
+      name: string;
+    };
+
+    expect(teamspace).toMatchObject({
+      name: 'Product',
+    });
+
+    const updateTeamspaceResponse = await request(app.getHttpServer())
+      .patch(`/v1/teamspaces/${teamspace.id}`)
+      .set('Cookie', owner.cookie)
+      .send({
+        version: teamspace.version,
+        description: 'Shared planning and product docs',
+      })
+      .expect(200);
+
+    expect(updateTeamspaceResponse.body).toMatchObject({
+      id: teamspace.id,
+      description: 'Shared planning and product docs',
+    });
+
+    const createPrivateDocumentResponse = await request(app.getHttpServer())
+      .post('/v1/documents')
+      .set('Cookie', owner.cookie)
+      .send({
+        workspace_id: workspace.slug,
+        title: 'Roadmap',
+        content_format: 'blocknote_v1',
+        content: [{ type: 'paragraph', content: [] }],
+      })
+      .expect(201);
+    const privateDocument = createPrivateDocumentResponse.body as {
+      id: string;
+      version: number;
+      title: string;
+    };
+
+    expect(privateDocument).toMatchObject({
+      title: 'Roadmap',
+    });
+
+    const createTeamspaceDocumentResponse = await request(app.getHttpServer())
+      .post('/v1/documents')
+      .set('Cookie', owner.cookie)
+      .send({
+        workspace_id: workspace.slug,
+        teamspace_id: teamspace.id,
+        title: 'Shared spec',
+        content_format: 'blocknote_v1',
+        content: [{ type: 'paragraph', content: [] }],
+      })
+      .expect(201);
+    const sharedDocument = createTeamspaceDocumentResponse.body as {
+      id: string;
+      version: number;
+      title: string;
+      teamspace_id?: string;
+    };
+
+    expect(sharedDocument).toMatchObject({
+      title: 'Shared spec',
+      teamspace_id: teamspace.id,
+    });
+
+    const treeResponse = await request(app.getHttpServer())
+      .get(`/v1/workspaces/${workspace.slug}/documents/tree`)
+      .set('Cookie', owner.cookie)
+      .expect(200);
+
+    expect(treeResponse.body).toMatchObject({
+      private_documents: [
+        expect.objectContaining({
+          id: privateDocument.id,
+          title: 'Roadmap',
+        }),
+      ],
+      teamspaces: [
+        expect.objectContaining({
+          id: teamspace.id,
+          documents: [
+            expect.objectContaining({
+              id: sharedDocument.id,
+              title: 'Shared spec',
+            }),
+          ],
+        }),
+      ],
+    });
+
+    const updateDocumentResponse = await request(app.getHttpServer())
+      .patch(`/v1/documents/${privateDocument.id}`)
+      .set('Cookie', owner.cookie)
+      .send({
+        version: privateDocument.version,
+        title: 'Updated roadmap',
+        content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Ready' }] }],
+      })
+      .expect(200);
+
+    expect(updateDocumentResponse.body).toMatchObject({
+      id: privateDocument.id,
+      title: 'Updated roadmap',
+    });
+
+    const moveDocumentResponse = await request(app.getHttpServer())
+      .post(`/v1/documents/${privateDocument.id}/move`)
+      .set('Cookie', owner.cookie)
+      .send({
+        version: updateDocumentResponse.body.version,
+        teamspace_id: teamspace.id,
+      })
+      .expect(200);
+
+    expect(moveDocumentResponse.body).toMatchObject({
+      id: privateDocument.id,
+      teamspace_id: teamspace.id,
+    });
+
+    const archiveDocumentResponse = await request(app.getHttpServer())
+      .post(`/v1/documents/${sharedDocument.id}/archive`)
+      .set('Cookie', owner.cookie)
+      .send({
+        version: sharedDocument.version,
+      })
+      .expect(200);
+
+    expect(archiveDocumentResponse.body.archived_at).toEqual(expect.any(String));
+
+    const restoreDocumentResponse = await request(app.getHttpServer())
+      .post(`/v1/documents/${sharedDocument.id}/restore`)
+      .set('Cookie', owner.cookie)
+      .send({
+        version: archiveDocumentResponse.body.version,
+      })
+      .expect(200);
+
+    expect(restoreDocumentResponse.body.archived_at).toBeUndefined();
+
+    const detailResponse = await request(app.getHttpServer())
+      .get(`/v1/documents/${privateDocument.id}`)
+      .set('Cookie', owner.cookie)
+      .expect(200);
+
+    expect(detailResponse.body).toMatchObject({
+      id: privateDocument.id,
+      title: 'Updated roadmap',
+      teamspace_id: teamspace.id,
+    });
+  });
+
   async function registerUser(
     label: string,
     email = `${label}-${Date.now()}@example.com`,
