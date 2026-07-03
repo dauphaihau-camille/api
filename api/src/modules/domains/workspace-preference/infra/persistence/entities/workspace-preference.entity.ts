@@ -1,4 +1,6 @@
-import { Entity, ManyToOne, Property, Unique } from '@mikro-orm/core';
+import {
+  Entity, ManyToOne, Property, Unique, 
+} from '@mikro-orm/core';
 import { CurrentUserEntity } from '~/modules/domains/auth/infra/persistence/entities/current-user.entity';
 import { WorkspaceEntity } from '~/modules/domains/workspace/infra/persistence/entities/workspace.entity';
 import { AbstractWorkspaceEntity } from '~/modules/domains/workspace/infra/persistence/entities/abstract-workspace.entity';

@@ -1,9 +1,9 @@
+import type { WorkspaceRole } from '../../domain/enums/workspace-role.enum';
 import type {
   WorkspaceAccess,
   WorkspaceMemberSummary,
   WorkspaceSummary,
-} from './workspace.types';
-import type { WorkspaceRole } from '../domain/enums/workspace-role.enum';
+} from '../contracts/workspace.contract';
 
 export type WorkspaceUserRecord = {
   id: string;

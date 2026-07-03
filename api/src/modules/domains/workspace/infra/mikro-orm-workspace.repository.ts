@@ -8,12 +8,12 @@ import {
   WorkspaceRepository,
   WorkspaceVersionConflictError,
   type WorkspaceUserRecord,
-} from '../app/workspace.repository';
+} from '../app/ports/workspace.repository';
 import type {
   WorkspaceAccess,
   WorkspaceMemberSummary,
   WorkspaceSummary,
-} from '../app/workspace.types';
+} from '../app/contracts/workspace.contract';
 import { WorkspaceRole } from '../domain/enums/workspace-role.enum';
 import { WorkspaceEntity } from './persistence/entities/workspace.entity';
 import { WorkspaceMemberEntity } from './persistence/entities/workspace-member.entity';
@@ -96,7 +96,7 @@ export class MikroOrmWorkspaceRepository implements WorkspaceRepository {
       joinedAt: new Date(),
     });
 
-    await entityManager.persistAndFlush([workspace, membership]);
+    await entityManager.persist([workspace, membership]).flush();
 
     return {
       workspace: this.toWorkspaceSummary(workspace, membership.role),
@@ -139,7 +139,7 @@ export class MikroOrmWorkspaceRepository implements WorkspaceRepository {
         workspace.description = input.description;
       }
 
-      await entityManager.persistAndFlush(workspace);
+      await entityManager.persist(workspace).flush();
 
       return this.toWorkspaceSummary(workspace, WorkspaceRole.MEMBER);
     }
@@ -219,7 +219,7 @@ export class MikroOrmWorkspaceRepository implements WorkspaceRepository {
       joinedAt: new Date(),
     });
 
-    await entityManager.persistAndFlush(membership);
+    await entityManager.persist(membership).flush();
     await entityManager.populate(membership, ['user']);
 
     return this.toMemberSummary(membership);
@@ -252,7 +252,7 @@ export class MikroOrmWorkspaceRepository implements WorkspaceRepository {
       }
 
       membership.role = input.role;
-      await entityManager.persistAndFlush(membership);
+      await entityManager.persist(membership).flush();
 
       return this.toMemberSummary(membership);
     }
@@ -286,7 +286,7 @@ export class MikroOrmWorkspaceRepository implements WorkspaceRepository {
     }
 
     const summary = this.toMemberSummary(membership);
-    await entityManager.removeAndFlush(membership);
+    await entityManager.remove(membership).flush();
 
     return summary;
   }

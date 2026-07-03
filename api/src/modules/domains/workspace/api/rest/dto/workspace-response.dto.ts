@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import type { WorkspaceSummary } from '../../../app/workspace.types';
+import type { WorkspaceSummary } from '../../../app/contracts/workspace.contract';
 import { WorkspaceRole } from '../../../domain/enums/workspace-role.enum';
 
 export class WorkspaceResponseDto {

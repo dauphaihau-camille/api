@@ -11,7 +11,7 @@ import { AuditService } from '~/modules/shared/audit/audit.service';
 import {
   assertWorkspaceEditor,
 } from '../../workspace/app/workspace-permissions';
-import { WorkspaceRepository } from '../../workspace/app/workspace.repository';
+import { WorkspaceRepository } from '../../workspace/app/ports/workspace.repository';
 import type {
   CreateTeamspaceInput,
   TeamspaceSummary,
@@ -63,7 +63,7 @@ export class TeamspaceService {
       description: this.normalizeDescription(input.description),
     });
 
-    await entityManager.persistAndFlush(teamspace);
+    await entityManager.persist(teamspace).flush();
 
     await this.auditService.record({
       action: 'teamspace.created',
@@ -120,7 +120,7 @@ export class TeamspaceService {
       teamspace.description = this.normalizeDescription(input.description);
     }
 
-    await entityManager.persistAndFlush(teamspace);
+    await entityManager.persist(teamspace).flush();
 
     await this.auditService.record({
       action: 'teamspace.updated',

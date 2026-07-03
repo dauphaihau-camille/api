@@ -1,6 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, IsObject, IsString, ValidateNested } from 'class-validator';
+import {
+  IsArray, IsObject, IsString, ValidateNested, 
+} from 'class-validator';
 
 class WorkspaceNavigationPreferenceDto {
   @ApiProperty({

@@ -19,7 +19,10 @@ import { CurrentUser } from '../../../../../common/decorators/current-user.decor
 import type { AuthenticatedUser } from '../../../auth/app/auth.types';
 import { JwtAuthGuard } from '../../../auth/api/guard/jwt-auth.guard';
 import { PermissionsGuard } from '../../../auth/api/guard/permissions.guard';
-import { WorkspaceService } from '../../app/workspace.service';
+import { CreateWorkspaceUseCase } from '../../app/use-cases/create-workspace.use-case';
+import { GetWorkspaceUseCase } from '../../app/use-cases/get-workspace.use-case';
+import { ListUserWorkspacesUseCase } from '../../app/use-cases/list-user-workspaces.use-case';
+import { UpdateWorkspaceUseCase } from '../../app/use-cases/update-workspace.use-case';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { WorkspaceResponseDto } from './dto/workspace-response.dto';
@@ -29,7 +32,12 @@ import { WorkspaceResponseDto } from './dto/workspace-response.dto';
 @ApiCookieAuth('access_token')
 @ApiTags('Workspace')
 export class WorkspaceController {
-  constructor(private readonly workspaceService: WorkspaceService) {}
+  constructor(
+    private readonly listUserWorkspacesUseCase: ListUserWorkspacesUseCase,
+    private readonly createWorkspaceUseCase: CreateWorkspaceUseCase,
+    private readonly getWorkspaceUseCase: GetWorkspaceUseCase,
+    private readonly updateWorkspaceUseCase: UpdateWorkspaceUseCase,
+  ) {}
 
   @Get('me/workspaces')
   @Header('Cache-Control', 'no-store')
@@ -43,8 +51,8 @@ export class WorkspaceController {
   async listMyWorkspaces(
     @CurrentUser() currentUser: AuthenticatedUser,
   ): Promise<WorkspaceResponseDto[]> {
-    return this.workspaceService
-      .listForUser(currentUser)
+    return this.listUserWorkspacesUseCase
+      .execute(currentUser)
       .then((workspaces) => workspaces.map(WorkspaceResponseDto.fromWorkspace));
   }
 
@@ -60,8 +68,8 @@ export class WorkspaceController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() body: CreateWorkspaceDto,
   ): Promise<WorkspaceResponseDto> {
-    return this.workspaceService
-      .createForUser(currentUser, {
+    return this.createWorkspaceUseCase
+      .execute(currentUser, {
         name: body.name,
         slug: body.slug,
         description: body.description,
@@ -81,8 +89,8 @@ export class WorkspaceController {
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() currentUser: AuthenticatedUser,
   ): Promise<WorkspaceResponseDto> {
-    return this.workspaceService
-      .getForUser(workspaceId, currentUser)
+    return this.getWorkspaceUseCase
+      .execute(workspaceId, currentUser)
       .then(WorkspaceResponseDto.fromWorkspace);
   }
 
@@ -99,8 +107,8 @@ export class WorkspaceController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() body: UpdateWorkspaceDto,
   ): Promise<WorkspaceResponseDto> {
-    return this.workspaceService
-      .updateForUser(workspaceId, currentUser, {
+    return this.updateWorkspaceUseCase
+      .execute(workspaceId, currentUser, {
         version: body.version,
         name: body.name,
         slug: body.slug,

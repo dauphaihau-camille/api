@@ -5,15 +5,15 @@ import { CurrentUserEntity } from '~/modules/domains/auth/infra/persistence/enti
 import {
   DEFAULT_CONTENT_FORMAT,
   SORT_STEP,
-} from '~/modules/domains/document/app/document-defaults';
-import { extractDocumentSearchText } from '~/modules/domains/document/app/document-search-text';
+} from '~/modules/domains/document/app/constants/document.constants';
+import { extractDocumentSearchText } from '~/modules/domains/document/app/utils/document-search-text.util';
 import { DocumentEntity } from '~/modules/domains/document/infra/persistence/entities/document.entity';
 import { TeamspaceEntity } from '~/modules/domains/teamspace/infra/persistence/entities/teamspace.entity';
 import { AuditService } from '~/modules/shared/audit/audit.service';
-import { WorkspaceRole } from '../domain/enums/workspace-role.enum';
-import { WorkspaceMemberEntity } from '../infra/persistence/entities/workspace-member.entity';
-import { WorkspaceEntity } from '../infra/persistence/entities/workspace.entity';
-import type { WorkspaceSummary } from './workspace.types';
+import { WorkspaceRole } from '../../domain/enums/workspace-role.enum';
+import { WorkspaceMemberEntity } from '../../infra/persistence/entities/workspace-member.entity';
+import { WorkspaceEntity } from '../../infra/persistence/entities/workspace.entity';
+import type { WorkspaceSummary } from '../contracts/workspace.contract';
 
 const DEFAULT_TEAMSPACE_NAME = 'General';
 const DEFAULT_TEAMSPACE_DESCRIPTION = 'Shared team docs and collaboration space.';
@@ -49,25 +49,25 @@ export class WorkspaceProvisioningService {
   ): Promise<WorkspaceSummary> {
     const { workspace, teamspace, documents } = await this.entityManager.transactional(async (entityManager) => {
       const owner = await entityManager.findOneOrFail(CurrentUserEntity, { id: currentUser.userId });
-      const workspace = entityManager.create(WorkspaceEntity, {
+      const createdWorkspace = entityManager.create(WorkspaceEntity, {
         name: input.name,
         slug: input.slug,
         description: input.description,
       });
       const membership = entityManager.create(WorkspaceMemberEntity, {
-        workspace,
+        workspace: createdWorkspace,
         user: owner,
         role: WorkspaceRole.OWNER,
         joinedAt: new Date(),
       });
       const teamspace = entityManager.create(TeamspaceEntity, {
-        workspace,
+        workspace: createdWorkspace,
         name: DEFAULT_TEAMSPACE_NAME,
         description: DEFAULT_TEAMSPACE_DESCRIPTION,
       });
       const documents = DEFAULT_WORKSPACE_DOCUMENTS.map((item, index) =>
         entityManager.create(DocumentEntity, {
-          workspace,
+          workspace: createdWorkspace,
           teamspace,
           title: item.title,
           contentFormat: DEFAULT_CONTENT_FORMAT,
@@ -79,9 +79,9 @@ export class WorkspaceProvisioningService {
         }),
       );
 
-      await entityManager.persistAndFlush([workspace, membership, teamspace, ...documents]);
+      await entityManager.persist([createdWorkspace, membership, teamspace, ...documents]).flush();
 
-      return { workspace, teamspace, documents };
+      return { workspace: createdWorkspace, teamspace, documents };
     });
 
     await this.auditService.record({

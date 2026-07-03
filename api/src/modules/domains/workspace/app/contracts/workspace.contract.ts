@@ -1,4 +1,4 @@
-import type { WorkspaceRole } from '../domain/enums/workspace-role.enum';
+import type { WorkspaceRole } from '../../domain/enums/workspace-role.enum';
 
 export interface WorkspaceSummary {
   id: string;
@@ -25,27 +25,4 @@ export interface WorkspaceMemberSummary {
 export interface WorkspaceAccess {
   workspace: WorkspaceSummary;
   membership: WorkspaceMemberSummary;
-}
-
-export interface CreateWorkspaceInput {
-  name: string;
-  slug?: string;
-  description?: string;
-}
-
-export interface UpdateWorkspaceInput {
-  version: number;
-  name?: string;
-  slug?: string;
-  description?: string;
-}
-
-export interface AddWorkspaceMemberInput {
-  email: string;
-  role: WorkspaceRole;
-}
-
-export interface UpdateWorkspaceMemberInput {
-  version: number;
-  role: WorkspaceRole;
 }

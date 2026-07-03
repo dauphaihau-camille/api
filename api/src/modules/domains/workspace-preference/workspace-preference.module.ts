@@ -4,7 +4,10 @@ import { CurrentUserEntity } from '../auth/infra/persistence/entities/current-us
 import { WorkspaceEntity } from '../workspace/infra/persistence/entities/workspace.entity';
 import { WorkspaceModule } from '../workspace/workspace.module';
 import { WorkspacePreferenceController } from './api/rest/workspace-preference.controller';
-import { WorkspacePreferenceService } from './app/workspace-preference.service';
+import { WorkspacePreferenceRepository } from './app/ports/workspace-preference.repository';
+import { GetWorkspacePreferenceUseCase } from './app/use-cases/get-workspace-preference.use-case';
+import { UpdateWorkspacePreferenceUseCase } from './app/use-cases/update-workspace-preference.use-case';
+import { MikroOrmWorkspacePreferenceRepository } from './infra/mikro-orm-workspace-preference.repository';
 import { WorkspacePreferenceEntity } from './infra/persistence/entities/workspace-preference.entity';
 
 @Module({
@@ -17,7 +20,13 @@ import { WorkspacePreferenceEntity } from './infra/persistence/entities/workspac
     ]),
   ],
   controllers: [WorkspacePreferenceController],
-  providers: [WorkspacePreferenceService],
-  exports: [WorkspacePreferenceService],
+  providers: [
+    {
+      provide: WorkspacePreferenceRepository,
+      useClass: MikroOrmWorkspacePreferenceRepository,
+    },
+    GetWorkspacePreferenceUseCase,
+    UpdateWorkspacePreferenceUseCase,
+  ],
 })
 export class WorkspacePreferenceModule {}
