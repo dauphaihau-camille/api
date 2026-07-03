@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import type { DocumentSummary } from '../../../app/document.types';
+import type { DocumentSummary } from '../../../app/contracts/document.contract';
 
 export class DocumentResponseDto {
   @ApiProperty()

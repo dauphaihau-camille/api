@@ -4,7 +4,7 @@ import type {
   DocumentNavigationPage,
   TeamspaceDocumentNavigationGroup,
   WorkspaceDocumentNavigation,
-} from '../../../app/document.types';
+} from '../../../app/contracts/document.contract';
 
 export class DocumentNavigationNodeResponseDto {
   @ApiProperty()

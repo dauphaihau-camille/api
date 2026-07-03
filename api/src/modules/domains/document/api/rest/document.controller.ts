@@ -22,7 +22,20 @@ import { CurrentUser } from '~/common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '~/modules/domains/auth/app/auth.types';
 import { JwtAuthGuard } from '~/modules/domains/auth/api/guard/jwt-auth.guard';
 import { PermissionsGuard } from '~/modules/domains/auth/api/guard/permissions.guard';
-import { DocumentService } from '../../app/document.service';
+import { ArchiveDocumentUseCase } from '../../app/use-cases/archive-document.use-case';
+import { CreateDocumentUseCase } from '../../app/use-cases/create-document.use-case';
+import { DuplicateDocumentUseCase } from '../../app/use-cases/duplicate-document.use-case';
+import { GetDefaultWorkspaceDocumentUseCase } from '../../app/use-cases/get-default-workspace-document.use-case';
+import { GetDocumentUseCase } from '../../app/use-cases/get-document.use-case';
+import { ListDocumentChildrenUseCase } from '../../app/use-cases/list-document-children.use-case';
+import { ListWorkspaceDocumentsUseCase } from '../../app/use-cases/list-workspace-documents.use-case';
+import { MoveDocumentUseCase } from '../../app/use-cases/move-document.use-case';
+import { RestoreDocumentUseCase } from '../../app/use-cases/restore-document.use-case';
+import { UpdateDocumentUseCase } from '../../app/use-cases/update-document.use-case';
+import {
+  isDocumentAppError,
+  mapDocumentAppErrorToHttpException,
+} from './document-http-error-mapper';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { ListWorkspaceDocumentsQueryDto } from './dto/list-workspace-documents-query.dto';
 import { DocumentResponseDto } from './dto/document-response.dto';
@@ -41,7 +54,18 @@ import { WorkspaceDefaultDocumentResponseDto } from './dto/workspace-default-doc
 @ApiCookieAuth('access_token')
 @ApiTags('Document')
 export class DocumentController {
-  constructor(private readonly documentService: DocumentService) {}
+  constructor(
+    private readonly listWorkspaceDocumentsUseCase: ListWorkspaceDocumentsUseCase,
+    private readonly getDefaultWorkspaceDocumentUseCase: GetDefaultWorkspaceDocumentUseCase,
+    private readonly getDocumentUseCase: GetDocumentUseCase,
+    private readonly listDocumentChildrenUseCase: ListDocumentChildrenUseCase,
+    private readonly createDocumentUseCase: CreateDocumentUseCase,
+    private readonly duplicateDocumentUseCase: DuplicateDocumentUseCase,
+    private readonly updateDocumentUseCase: UpdateDocumentUseCase,
+    private readonly archiveDocumentUseCase: ArchiveDocumentUseCase,
+    private readonly restoreDocumentUseCase: RestoreDocumentUseCase,
+    private readonly moveDocumentUseCase: MoveDocumentUseCase,
+  ) {}
 
   @Get('workspaces/:workspaceId/documents/default')
   @Header('Cache-Control', 'no-store')
@@ -61,9 +85,10 @@ export class DocumentController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Query('recent_document_id') recentDocumentId?: string,
   ): Promise<WorkspaceDefaultDocumentResponseDto> {
-    return this.documentService
-      .getDefaultDocumentForWorkspace(workspaceId, currentUser, recentDocumentId)
-      .then(WorkspaceDefaultDocumentResponseDto.fromDefaultDocument);
+    return this.getDefaultWorkspaceDocumentUseCase
+      .execute(workspaceId, currentUser, recentDocumentId)
+      .then(WorkspaceDefaultDocumentResponseDto.fromDefaultDocument)
+      .catch(this.rethrowDocumentAppError);
   }
 
   @Get('workspaces/:workspaceId/documents')
@@ -100,12 +125,12 @@ export class DocumentController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Query() query: ListWorkspaceDocumentsQueryDto,
   ): Promise<WorkspaceDocumentNavigationResponseDto | DocumentNavigationPageResponseDto> {
-    const response = await this.documentService.listForWorkspace(workspaceId, currentUser, {
+    const response = await this.listWorkspaceDocumentsUseCase.execute(workspaceId, currentUser, {
       query: query.q,
       parentDocumentId: query.parent_document_id,
       limit: query.limit,
       cursor: query.cursor,
-    });
+    }).catch(this.rethrowDocumentAppError);
 
     if (query.parent_document_id) {
       return DocumentNavigationPageResponseDto.fromPage(response as never);
@@ -126,8 +151,8 @@ export class DocumentController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() body: CreateDocumentDto,
   ): Promise<DocumentResponseDto> {
-    return this.documentService
-      .createForUser(currentUser, {
+    return this.createDocumentUseCase
+      .execute(currentUser, {
         workspaceId: body.workspace_id,
         teamspaceId: body.teamspace_id,
         parentDocumentId: body.parent_document_id,
@@ -135,7 +160,8 @@ export class DocumentController {
         contentFormat: body.content_format,
         content: body.content,
       })
-      .then(DocumentResponseDto.fromSummary);
+      .then(DocumentResponseDto.fromSummary)
+      .catch(this.rethrowDocumentAppError);
   }
 
   @Post('documents/:documentId/duplicate')
@@ -150,9 +176,10 @@ export class DocumentController {
     @Param('documentId') documentId: string,
     @CurrentUser() currentUser: AuthenticatedUser,
   ): Promise<DocumentResponseDto> {
-    return this.documentService
-      .duplicateForUser(documentId, currentUser)
-      .then(DocumentResponseDto.fromSummary);
+    return this.duplicateDocumentUseCase
+      .execute(documentId, currentUser)
+      .then(DocumentResponseDto.fromSummary)
+      .catch(this.rethrowDocumentAppError);
   }
 
   @Get('documents/:documentId')
@@ -167,9 +194,10 @@ export class DocumentController {
     @Param('documentId') documentId: string,
     @CurrentUser() currentUser: AuthenticatedUser,
   ): Promise<DocumentResponseDto> {
-    return this.documentService
-      .getForUser(documentId, currentUser)
-      .then(DocumentResponseDto.fromSummary);
+    return this.getDocumentUseCase
+      .execute(documentId, currentUser)
+      .then(DocumentResponseDto.fromSummary)
+      .catch(this.rethrowDocumentAppError);
   }
 
   @Get('documents/:documentId/children')
@@ -185,9 +213,10 @@ export class DocumentController {
     @Param('documentId') documentId: string,
     @CurrentUser() currentUser: AuthenticatedUser,
   ): Promise<DocumentTreeChildResponseDto[]> {
-    return this.documentService
-      .listChildrenForUser(documentId, currentUser)
-      .then((documents) => documents.map(DocumentTreeChildResponseDto.fromNode));
+    return this.listDocumentChildrenUseCase
+      .execute(documentId, currentUser)
+      .then((documents) => documents.map(DocumentTreeChildResponseDto.fromNode))
+      .catch(this.rethrowDocumentAppError);
   }
 
   @Patch('documents/:documentId')
@@ -203,14 +232,15 @@ export class DocumentController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() body: UpdateDocumentDto,
   ): Promise<DocumentResponseDto> {
-    return this.documentService
-      .updateForUser(documentId, currentUser, {
+    return this.updateDocumentUseCase
+      .execute(documentId, currentUser, {
         version: body.version,
         title: body.title,
         contentFormat: body.content_format,
         content: body.content,
       })
-      .then(DocumentResponseDto.fromSummary);
+      .then(DocumentResponseDto.fromSummary)
+      .catch(this.rethrowDocumentAppError);
   }
 
   @Post('documents/:documentId/archive')
@@ -227,9 +257,10 @@ export class DocumentController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() body: DocumentVersionDto,
   ): Promise<DocumentResponseDto> {
-    return this.documentService
-      .archiveForUser(documentId, body.version, currentUser)
-      .then(DocumentResponseDto.fromSummary);
+    return this.archiveDocumentUseCase
+      .execute(documentId, body.version, currentUser)
+      .then(DocumentResponseDto.fromSummary)
+      .catch(this.rethrowDocumentAppError);
   }
 
   @Post('documents/:documentId/restore')
@@ -246,9 +277,10 @@ export class DocumentController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() body: DocumentVersionDto,
   ): Promise<DocumentResponseDto> {
-    return this.documentService
-      .restoreForUser(documentId, body.version, currentUser)
-      .then(DocumentResponseDto.fromSummary);
+    return this.restoreDocumentUseCase
+      .execute(documentId, body.version, currentUser)
+      .then(DocumentResponseDto.fromSummary)
+      .catch(this.rethrowDocumentAppError);
   }
 
   @Post('documents/:documentId/move')
@@ -265,13 +297,22 @@ export class DocumentController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() body: MoveDocumentDto,
   ): Promise<DocumentResponseDto> {
-    return this.documentService
-      .moveForUser(documentId, currentUser, {
+    return this.moveDocumentUseCase
+      .execute(documentId, currentUser, {
         version: body.version,
         parentDocumentId: body.parent_document_id,
         teamspaceId: body.teamspace_id,
         index: body.index,
       })
-      .then(DocumentResponseDto.fromSummary);
+      .then(DocumentResponseDto.fromSummary)
+      .catch(this.rethrowDocumentAppError);
+  }
+
+  private rethrowDocumentAppError(error: unknown): never {
+    if (isDocumentAppError(error)) {
+      throw mapDocumentAppErrorToHttpException(error);
+    }
+
+    throw error;
   }
 }

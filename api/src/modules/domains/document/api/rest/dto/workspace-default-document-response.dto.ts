@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import type { WorkspaceDefaultDocument } from '../../../app/document.types';
+import type { WorkspaceDefaultDocument } from '../../../app/contracts/document.contract';
 
 export class WorkspaceDefaultDocumentResponseDto {
   @ApiPropertyOptional()

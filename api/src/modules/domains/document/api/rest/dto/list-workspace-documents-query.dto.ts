@@ -9,7 +9,7 @@ import {
 import {
   DOCUMENT_LIST_DEFAULT_LIMIT,
   DOCUMENT_LIST_MAX_LIMIT,
-} from '../../../app/document.types';
+} from '../../../app/constants/document.constants';
 
 export class ListWorkspaceDocumentsQueryDto {
   @ApiPropertyOptional()

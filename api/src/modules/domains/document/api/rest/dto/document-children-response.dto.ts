@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import type { DocumentTreeChild } from '../../../app/document.types';
+import type { DocumentTreeChild } from '../../../app/contracts/document.contract';
 
 export class DocumentTreeChildResponseDto {
   @ApiProperty()
