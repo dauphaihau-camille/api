@@ -6,7 +6,12 @@ import { WorkspaceEntity } from '../workspace/infra/persistence/entities/workspa
 import { AuditModule } from '../../shared/audit/audit.module';
 import { WorkspaceModule } from '../workspace/workspace.module';
 import { FavoriteController } from './api/rest/favorite.controller';
-import { FavoriteService } from './app/favorite.service';
+import { AddDocumentFavoriteUseCase } from './app/use-cases/add-document-favorite.use-case';
+import { GetFavoriteStatusUseCase } from './app/use-cases/get-favorite-status.use-case';
+import { ListWorkspaceFavoritesUseCase } from './app/use-cases/list-workspace-favorites.use-case';
+import { RemoveDocumentFavoriteUseCase } from './app/use-cases/remove-document-favorite.use-case';
+import { FavoriteRepository } from './app/ports/favorite.repository';
+import { MikroOrmFavoriteRepository } from './infra/mikro-orm-favorite.repository';
 import { DocumentFavoriteEntity } from './infra/persistence/entities/document-favorite.entity';
 
 @Module({
@@ -21,7 +26,16 @@ import { DocumentFavoriteEntity } from './infra/persistence/entities/document-fa
     ]),
   ],
   controllers: [FavoriteController],
-  providers: [FavoriteService],
-  exports: [FavoriteService],
+  providers: [
+    ListWorkspaceFavoritesUseCase,
+    GetFavoriteStatusUseCase,
+    AddDocumentFavoriteUseCase,
+    RemoveDocumentFavoriteUseCase,
+    {
+      provide: FavoriteRepository,
+      useClass: MikroOrmFavoriteRepository,
+    },
+  ],
+  exports: [FavoriteRepository],
 })
 export class FavoriteModule {}

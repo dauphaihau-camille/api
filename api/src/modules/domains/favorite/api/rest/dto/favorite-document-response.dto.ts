@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import type { FavoriteDocumentSummary } from '../../../app/favorite.types';
+import type { FavoriteDocumentSummary } from '../../../app/contracts/favorite.contract';
 
 export class FavoriteDocumentResponseDto {
   @ApiProperty()

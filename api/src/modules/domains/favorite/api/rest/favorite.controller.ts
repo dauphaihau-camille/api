@@ -18,7 +18,10 @@ import { CurrentUser } from '~/common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '~/modules/domains/auth/app/auth.types';
 import { JwtAuthGuard } from '~/modules/domains/auth/api/guard/jwt-auth.guard';
 import { PermissionsGuard } from '~/modules/domains/auth/api/guard/permissions.guard';
-import { FavoriteService } from '../../app/favorite.service';
+import { AddDocumentFavoriteUseCase } from '../../app/use-cases/add-document-favorite.use-case';
+import { GetFavoriteStatusUseCase } from '../../app/use-cases/get-favorite-status.use-case';
+import { ListWorkspaceFavoritesUseCase } from '../../app/use-cases/list-workspace-favorites.use-case';
+import { RemoveDocumentFavoriteUseCase } from '../../app/use-cases/remove-document-favorite.use-case';
 import { FavoriteDocumentResponseDto } from './dto/favorite-document-response.dto';
 import { FavoriteStatusResponseDto } from './dto/favorite-status-response.dto';
 import {
@@ -31,7 +34,12 @@ import {
 @ApiCookieAuth('access_token')
 @ApiTags('Favorite')
 export class FavoriteController {
-  constructor(private readonly favoriteService: FavoriteService) {}
+  constructor(
+    private readonly listWorkspaceFavoritesUseCase: ListWorkspaceFavoritesUseCase,
+    private readonly getFavoriteStatusUseCase: GetFavoriteStatusUseCase,
+    private readonly addDocumentFavoriteUseCase: AddDocumentFavoriteUseCase,
+    private readonly removeDocumentFavoriteUseCase: RemoveDocumentFavoriteUseCase,
+  ) {}
 
   @Get('workspaces/:workspaceId/favorites')
   @Header('Cache-Control', 'no-store')
@@ -47,8 +55,8 @@ export class FavoriteController {
     @CurrentUser() currentUser: AuthenticatedUser,
   ): Promise<FavoriteDocumentResponseDto[]> {
     try {
-      return await this.favoriteService
-        .listForWorkspace(workspaceId, currentUser)
+      return await this.listWorkspaceFavoritesUseCase
+        .execute(workspaceId, currentUser)
         .then((favorites) => favorites.map(FavoriteDocumentResponseDto.fromSummary));
     }
     catch (error) {
@@ -73,8 +81,8 @@ export class FavoriteController {
     @CurrentUser() currentUser: AuthenticatedUser,
   ): Promise<FavoriteStatusResponseDto> {
     try {
-      return await this.favoriteService
-        .getStatusForDocument(documentId, currentUser)
+      return await this.getFavoriteStatusUseCase
+        .execute(documentId, currentUser)
         .then(FavoriteStatusResponseDto.fromSummary);
     }
     catch (error) {
@@ -99,8 +107,8 @@ export class FavoriteController {
     @CurrentUser() currentUser: AuthenticatedUser,
   ): Promise<FavoriteStatusResponseDto> {
     try {
-      return await this.favoriteService
-        .addForDocument(documentId, currentUser)
+      return await this.addDocumentFavoriteUseCase
+        .execute(documentId, currentUser)
         .then(FavoriteStatusResponseDto.fromSummary);
     }
     catch (error) {
@@ -126,8 +134,8 @@ export class FavoriteController {
     @CurrentUser() currentUser: AuthenticatedUser,
   ): Promise<FavoriteStatusResponseDto> {
     try {
-      return await this.favoriteService
-        .removeForDocument(documentId, currentUser)
+      return await this.removeDocumentFavoriteUseCase
+        .execute(documentId, currentUser)
         .then(FavoriteStatusResponseDto.fromSummary);
     }
     catch (error) {
