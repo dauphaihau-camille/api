@@ -5,6 +5,7 @@ export const DOCUMENT_LIST_MAX_LIMIT = 100;
 
 export interface DocumentSummary {
   id: string;
+  publicId: string;
   version: number;
   workspaceId: string;
   teamspaceId?: string;
@@ -20,20 +21,24 @@ export interface DocumentSummary {
 
 export interface DocumentTreeChild {
   id: string;
+  publicId: string;
   title: string;
   teamspaceId?: string;
   parentDocumentId?: string;
   sortKey: number;
   hasChildren: boolean;
+  hasContent: boolean;
 }
 
 export interface DocumentNavigationNode {
   id: string;
+  publicId: string;
   title: string;
   teamspaceId?: string;
   parentDocumentId?: string;
   sortKey: number;
   hasChildren: boolean;
+  hasContent: boolean;
 }
 
 export interface DocumentNavigationPage {

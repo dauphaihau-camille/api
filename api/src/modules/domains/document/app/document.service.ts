@@ -1,5 +1,6 @@
 import { type FilterQuery, LockMode, OptimisticLockError } from '@mikro-orm/core';
 import { EntityManager } from '@mikro-orm/postgresql';
+import { randomUUID } from 'node:crypto';
 import {
   BadRequestException,
   ConflictException,
@@ -13,12 +14,15 @@ import { AuditService } from '~/modules/shared/audit/audit.service';
 import { assertWorkspaceEditor } from '../../workspace/app/workspace-permissions';
 import { WorkspaceRepository } from '../../workspace/app/workspace.repository';
 import { DocumentEntity } from '../infra/persistence/entities/document.entity';
+import { DocumentSubdocReferenceEntity } from '../infra/persistence/entities/document-subdoc-reference.entity';
+import { DocumentVisitEntity } from '../infra/persistence/entities/document-visit.entity';
 import {
   DEFAULT_CONTENT_FORMAT,
   DEFAULT_DOCUMENT_CONTENT,
   DEFAULT_DOCUMENT_TITLE,
   SORT_STEP,
 } from './document-defaults';
+import { extractDocumentSearchText } from './document-search-text';
 import type {
   CreateDocumentInput,
   DocumentSummary,
@@ -30,6 +34,8 @@ import type {
   UpdateDocumentInput,
   WorkspaceDocumentNavigation,
 } from './document.types';
+
+const SUBDOC_BLOCK_TYPE = 'subpage';
 
 @Injectable()
 export class DocumentService {
@@ -118,6 +124,23 @@ export class DocumentService {
       }
     }
 
+    const recentVisit = await entityManager.findOne(DocumentVisitEntity, {
+      workspace: workspace.id,
+      user: currentUser.userId,
+      document: {
+        archivedAt: null,
+      },
+    }, {
+      populate: ['document'],
+      orderBy: {
+        lastVisitedAt: 'desc',
+      },
+    });
+
+    if (recentVisit?.document) {
+      return { documentId: recentVisit.document.id };
+    }
+
     const firstPrivateRoot = await entityManager.findOne(DocumentEntity, {
       workspace: workspace.id,
       teamspace: null,
@@ -167,9 +190,11 @@ export class DocumentService {
     documentId: string,
     currentUser: AuthenticatedUser,
   ): Promise<DocumentSummary> {
-    const document = await this.findDocumentOrThrow(documentId);
+    const entityManager = this.entityManager.fork();
+    const document = await this.findDocumentOrThrow(documentId, entityManager);
 
     await this.resolveWorkspaceForUser(document.workspace.id, currentUser);
+    await this.recordVisit(document, currentUser.userId, entityManager);
 
     return this.toSummary(document);
   }
@@ -209,11 +234,13 @@ export class DocumentService {
 
     return children.map((child) => ({
       id: child.id,
+      publicId: child.publicId,
       title: child.title,
       teamspaceId: child.teamspace?.id,
       parentDocumentId: child.parentDocument?.id,
       sortKey: child.sortKey,
       hasChildren: hasChildrenByDocumentId.get(child.id) ?? false,
+      hasContent: this.hasMeaningfulContent(child.contentJson),
     }));
   }
 
@@ -240,18 +267,6 @@ export class DocumentService {
       throw new BadRequestException('Parent document does not belong to the selected workspace.');
     }
 
-    const firstSibling = await entityManager.findOne(DocumentEntity, {
-      workspace: workspace.id,
-      parentDocument: parentDocument?.id ?? null,
-      teamspace: teamspace?.id ?? null,
-      archivedAt: null,
-    }, {
-      orderBy: {
-        sortKey: 'asc',
-        createdAt: 'asc',
-      },
-    });
-
     const document = entityManager.create(DocumentEntity, {
       workspace: workspace.id,
       teamspace: teamspace?.id,
@@ -259,12 +274,19 @@ export class DocumentService {
       title: this.normalizeTitle(input.title),
       contentFormat: input.contentFormat ?? DEFAULT_CONTENT_FORMAT,
       contentJson: this.normalizeContent(input.content),
-      sortKey: (firstSibling?.sortKey ?? SORT_STEP) - SORT_STEP,
+      searchText: extractDocumentSearchText(this.normalizeContent(input.content)),
+      sortKey: await this.resolveSortKeyForCreate(
+        workspace.id,
+        parentDocument?.id,
+        teamspace?.id,
+        entityManager,
+      ),
       createdBy: user,
       updatedBy: user,
     });
 
     await entityManager.persistAndFlush(document);
+    await this.syncSubdocReferencesForDoc(document, entityManager);
 
     await this.auditService.record({
       action: 'document.created',
@@ -278,6 +300,117 @@ export class DocumentService {
     });
 
     return this.toSummary(document);
+  }
+
+  async duplicateForUser(
+    documentId: string,
+    currentUser: AuthenticatedUser,
+  ): Promise<DocumentSummary> {
+    const entityManager = this.entityManager.fork();
+    const sourceDocument = await this.findDocumentOrThrow(documentId, entityManager);
+    const workspace = await this.resolveWorkspaceForUser(sourceDocument.workspace.id, currentUser);
+    assertWorkspaceEditor(workspace.currentUserRole);
+
+    if (sourceDocument.archivedAt) {
+      throw new BadRequestException('Archived document cannot be duplicated.');
+    }
+
+    const {
+      duplicatedRootDocument,
+      duplicatedDocuments,
+      originalDocumentByDuplicateId,
+    } = await this.entityManager.transactional(async (transactionalEntityManager) => {
+      const actor = await transactionalEntityManager.findOneOrFail(CurrentUserEntity, {
+        id: currentUser.userId,
+      });
+      const sourceSubtree = await this.findActiveSubtreeDocuments(
+        sourceDocument.id,
+        sourceDocument.workspace.id,
+        transactionalEntityManager,
+      );
+      const sourceRootDocument = sourceSubtree[0]!;
+      const duplicatedDocumentByOriginalId = new Map<string, DocumentEntity>();
+      const duplicatedDocumentEntities: DocumentEntity[] = [];
+
+      for (const originalDocument of sourceSubtree) {
+        const duplicatedParentDocument = originalDocument.id === sourceDocument.id
+          ? sourceRootDocument.parentDocument
+          : duplicatedDocumentByOriginalId.get(originalDocument.parentDocument?.id ?? '');
+
+        const duplicatedDocument = transactionalEntityManager.create(DocumentEntity, {
+          workspace: originalDocument.workspace,
+          teamspace: originalDocument.teamspace,
+          parentDocument: duplicatedParentDocument,
+          title: this.buildDuplicateTitle(originalDocument.title),
+          contentFormat: originalDocument.contentFormat,
+          contentJson: originalDocument.contentJson,
+          searchText: originalDocument.searchText,
+          sortKey: originalDocument.id === sourceDocument.id
+            ? await this.resolveSortKeyForCreate(
+              sourceRootDocument.workspace.id,
+              sourceRootDocument.parentDocument?.id,
+              sourceRootDocument.teamspace?.id,
+              transactionalEntityManager,
+            )
+            : originalDocument.sortKey,
+          createdBy: actor,
+          updatedBy: actor,
+        });
+
+        duplicatedDocumentByOriginalId.set(originalDocument.id, duplicatedDocument);
+        duplicatedDocumentEntities.push(duplicatedDocument);
+      }
+
+      for (const originalDocument of sourceSubtree) {
+        const duplicatedDocument = duplicatedDocumentByOriginalId.get(originalDocument.id)!;
+        duplicatedDocument.contentJson = this.replaceSubdocReferencesInContent(
+          originalDocument.contentJson,
+          duplicatedDocumentByOriginalId,
+        );
+        duplicatedDocument.contentJson = this.appendMissingChildSubdocBlocks(
+          duplicatedDocument.contentJson,
+          duplicatedDocument,
+          duplicatedDocumentEntities,
+        );
+        duplicatedDocument.searchText = extractDocumentSearchText(duplicatedDocument.contentJson);
+        duplicatedDocument.updatedBy = actor;
+      }
+
+      await transactionalEntityManager.persistAndFlush(duplicatedDocumentEntities);
+
+      for (const duplicatedDocument of duplicatedDocumentEntities) {
+        await this.syncSubdocReferencesForDoc(duplicatedDocument, transactionalEntityManager);
+      }
+
+      await transactionalEntityManager.flush();
+
+      return {
+        duplicatedRootDocument: duplicatedDocumentByOriginalId.get(sourceDocument.id)!,
+        duplicatedDocuments: duplicatedDocumentEntities,
+        originalDocumentByDuplicateId: new Map(
+          sourceSubtree.map((originalDocument) => [
+            duplicatedDocumentByOriginalId.get(originalDocument.id)!.id,
+            originalDocument,
+          ]),
+        ),
+      };
+    });
+
+    await Promise.all(duplicatedDocuments.map((duplicatedDocument) =>
+      this.auditService.record({
+        action: 'document.created',
+        resourceType: 'document',
+        resourceId: duplicatedDocument.id,
+        metadata: {
+          workspaceId: duplicatedDocument.workspace.id,
+          teamspaceId: duplicatedDocument.teamspace?.id,
+          parentDocumentId: duplicatedDocument.parentDocument?.id,
+          duplicatedFromDocumentId: originalDocumentByDuplicateId.get(duplicatedDocument.id)?.id,
+        },
+      }),
+    ));
+
+    return this.toSummary(duplicatedRootDocument);
   }
 
   async updateForUser(
@@ -311,9 +444,18 @@ export class DocumentService {
 
     if (input.content !== undefined) {
       document.contentJson = this.normalizeContent(input.content);
+      document.searchText = extractDocumentSearchText(document.contentJson);
     }
 
     document.updatedBy = await entityManager.findOneOrFail(CurrentUserEntity, { id: currentUser.userId });
+
+    if (input.content !== undefined) {
+      await this.syncSubdocReferencesForDoc(document, entityManager);
+    }
+
+    if (input.title !== undefined) {
+      await this.syncReferencedSubdocTitles(document, entityManager);
+    }
 
     await entityManager.persistAndFlush(document);
 
@@ -359,7 +501,7 @@ export class DocumentService {
       item.updatedBy = actor;
     }
 
-    await entityManager.persistAndFlush([document, ...descendants]);
+    await entityManager.persist([document, ...descendants]).flush();
 
     await this.auditService.record({
       action: 'document.archived',
@@ -402,7 +544,7 @@ export class DocumentService {
       item.updatedBy = actor;
     }
 
-    await entityManager.persistAndFlush([document, ...descendants]);
+    await entityManager.persist([document, ...descendants]).flush();
 
     await this.auditService.record({
       action: 'document.restored',
@@ -468,7 +610,7 @@ export class DocumentService {
     );
     document.updatedBy = await entityManager.findOneOrFail(CurrentUserEntity, { id: currentUser.userId });
 
-    await entityManager.persistAndFlush(document);
+    await entityManager.persist(document).flush();
 
     await this.auditService.record({
       action: 'document.moved',
@@ -506,6 +648,27 @@ export class DocumentService {
     }
 
     return teamspace;
+  }
+
+  private async resolveSortKeyForCreate(
+    workspaceId: string,
+    parentDocumentId: string | undefined,
+    teamspaceId: string | undefined,
+    entityManager: EntityManager,
+  ): Promise<number> {
+    const firstSibling = await entityManager.findOne(DocumentEntity, {
+      workspace: workspaceId,
+      parentDocument: parentDocumentId ?? null,
+      teamspace: teamspaceId ?? null,
+      archivedAt: null,
+    }, {
+      orderBy: {
+        sortKey: 'asc',
+        createdAt: 'asc',
+      },
+    });
+
+    return (firstSibling?.sortKey ?? SORT_STEP) - SORT_STEP;
   }
 
   private async resolveSortKeyForMove(
@@ -554,15 +717,20 @@ export class DocumentService {
   }
 
   private async findDocumentOrThrow(
-    documentId: string,
+    documentIdentifier: string,
     entityManager = this.entityManager.fork(),
   ): Promise<DocumentEntity> {
-    const document = await entityManager.findOne(DocumentEntity, { id: documentId }, {
+    const document = await entityManager.findOne(DocumentEntity, {
+      $or: [
+        { id: documentIdentifier },
+        { publicId: documentIdentifier },
+      ],
+    }, {
       populate: ['workspace', 'teamspace', 'parentDocument', 'createdBy', 'updatedBy'],
     });
 
     if (!document) {
-      throw new NotFoundException(`Document ${documentId} was not found.`);
+      throw new NotFoundException(`Document ${documentIdentifier} was not found.`);
     }
 
     return document;
@@ -573,25 +741,74 @@ export class DocumentService {
     workspaceId: string,
     entityManager: EntityManager,
   ): Promise<DocumentEntity[]> {
-    const documents = await entityManager.find(DocumentEntity, {
-      workspace: workspaceId,
-    }, {
-      populate: ['parentDocument', 'workspace', 'teamspace', 'createdBy', 'updatedBy'],
-    });
     const descendants: DocumentEntity[] = [];
-    const queue = [documentId];
+    let parentDocumentIds = [documentId];
 
-    while (queue.length > 0) {
-      const currentId = queue.shift()!;
-      const children = documents.filter((document) => document.parentDocument?.id === currentId);
+    while (parentDocumentIds.length > 0) {
+      const children = await entityManager.find(DocumentEntity, {
+        workspace: workspaceId,
+        parentDocument: { $in: parentDocumentIds },
+      }, {
+        populate: ['parentDocument', 'workspace', 'teamspace', 'createdBy', 'updatedBy'],
+        orderBy: {
+          sortKey: 'asc',
+          createdAt: 'asc',
+        },
+      });
 
-      for (const child of children) {
-        descendants.push(child);
-        queue.push(child.id);
+      if (children.length === 0) {
+        break;
       }
+
+      descendants.push(...children);
+      parentDocumentIds = children.map((document) => document.id);
     }
 
     return descendants;
+  }
+
+  private async findActiveSubtreeDocuments(
+    documentId: string,
+    workspaceId: string,
+    entityManager: EntityManager,
+  ): Promise<DocumentEntity[]> {
+    const rootDocument = await entityManager.findOne(DocumentEntity, {
+      id: documentId,
+      workspace: workspaceId,
+      archivedAt: null,
+    }, {
+      populate: ['parentDocument', 'workspace', 'teamspace', 'createdBy', 'updatedBy'],
+    });
+
+    if (!rootDocument) {
+      throw new NotFoundException(`Document ${documentId} was not found.`);
+    }
+
+    const subtree = [rootDocument];
+    let parentDocumentIds = [rootDocument.id];
+
+    while (parentDocumentIds.length > 0) {
+      const children = await entityManager.find(DocumentEntity, {
+        workspace: workspaceId,
+        archivedAt: null,
+        parentDocument: { $in: parentDocumentIds },
+      }, {
+        populate: ['parentDocument', 'workspace', 'teamspace', 'createdBy', 'updatedBy'],
+        orderBy: {
+          sortKey: 'asc',
+          createdAt: 'asc',
+        },
+      });
+
+      if (children.length === 0) {
+        break;
+      }
+
+      subtree.push(...children);
+      parentDocumentIds = children.map((document) => document.id);
+    }
+
+    return subtree;
   }
 
   private async isDescendantOf(
@@ -674,11 +891,13 @@ export class DocumentService {
 
     return documents.map((document) => ({
       id: document.id,
+      publicId: document.publicId,
       title: document.title,
       teamspaceId: document.teamspace?.id,
       parentDocumentId: document.parentDocument?.id,
       sortKey: document.sortKey,
       hasChildren: hasChildrenByDocumentId.get(document.id) ?? false,
+      hasContent: this.hasMeaningfulContent(document.contentJson),
     }));
   }
 
@@ -713,6 +932,7 @@ export class DocumentService {
   private toSummary(document: DocumentEntity): DocumentSummary {
     return {
       id: document.id,
+      publicId: document.publicId,
       version: document.version,
       workspaceId: document.workspace.id,
       teamspaceId: document.teamspace?.id,
@@ -739,6 +959,381 @@ export class DocumentService {
     }
 
     return value;
+  }
+
+  private async syncSubdocReferencesForDoc(
+    document: DocumentEntity,
+    entityManager: EntityManager,
+  ): Promise<void> {
+    const nextTargetDocumentIds = this.extractSubdocTargetDocumentIds(document.contentJson);
+    const existingReferences = await entityManager.find(DocumentSubdocReferenceEntity, {
+      sourceDocument: document.id,
+    }, {
+      populate: ['workspace', 'sourceDocument', 'targetDocument'],
+    });
+    const existingTargetDocumentIds = new Set(
+      existingReferences.map((reference) => reference.targetDocument.id),
+    );
+
+    for (const reference of existingReferences) {
+      if (nextTargetDocumentIds.has(reference.targetDocument.id)) {
+        continue;
+      }
+
+      entityManager.remove(reference);
+    }
+
+    const newReferences: DocumentSubdocReferenceEntity[] = [];
+
+    for (const targetDocumentId of nextTargetDocumentIds) {
+      if (existingTargetDocumentIds.has(targetDocumentId)) {
+        continue;
+      }
+
+      newReferences.push(entityManager.create(DocumentSubdocReferenceEntity, {
+        workspace: document.workspace.id,
+        sourceDocument: document.id,
+        targetDocument: targetDocumentId,
+      }));
+    }
+
+    if (newReferences.length > 0) {
+      entityManager.persist(newReferences);
+    }
+  }
+
+  private async syncReferencedSubdocTitles(
+    document: DocumentEntity,
+    entityManager: EntityManager,
+  ): Promise<void> {
+    const references = await entityManager.find(DocumentSubdocReferenceEntity, {
+      targetDocument: document.id,
+    }, {
+      populate: ['sourceDocument', 'sourceDocument.workspace', 'sourceDocument.teamspace', 'sourceDocument.parentDocument', 'sourceDocument.createdBy', 'sourceDocument.updatedBy'],
+    });
+
+    if (references.length === 0) {
+      const referencingDocuments = await entityManager.find(DocumentEntity, {
+        workspace: document.workspace.id,
+        archivedAt: null,
+        id: { $ne: document.id },
+      }, {
+        populate: ['workspace', 'teamspace', 'parentDocument', 'createdBy', 'updatedBy'],
+      });
+
+      for (const sourceDocument of referencingDocuments) {
+        const { changed, content } = this.replaceSubdocTitleInContent(
+          sourceDocument.contentJson,
+          document.id,
+          document.title,
+        );
+
+        if (!changed) {
+          continue;
+        }
+
+        sourceDocument.contentJson = content;
+        sourceDocument.searchText = extractDocumentSearchText(content);
+        sourceDocument.updatedBy = document.updatedBy;
+        await this.syncSubdocReferencesForDoc(sourceDocument, entityManager);
+      }
+
+      return;
+    }
+
+    for (const reference of references) {
+      const sourceDocument = reference.sourceDocument;
+      const { changed, content } = this.replaceSubdocTitleInContent(
+        sourceDocument.contentJson,
+        document.id,
+        document.title,
+      );
+
+      if (!changed) {
+        continue;
+      }
+
+      sourceDocument.contentJson = content;
+      sourceDocument.searchText = extractDocumentSearchText(content);
+      sourceDocument.updatedBy = document.updatedBy;
+    }
+  }
+
+  private extractSubdocTargetDocumentIds(content: unknown[]): Set<string> {
+    const targetDocumentIds = new Set<string>();
+
+    const visitBlock = (value: unknown): void => {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return;
+      }
+
+      const block = value as {
+        type?: unknown;
+        props?: unknown;
+        children?: unknown;
+      };
+
+      if (
+        block.type === SUBDOC_BLOCK_TYPE
+        && block.props
+        && typeof block.props === 'object'
+        && !Array.isArray(block.props)
+      ) {
+        const documentId = (block.props as { documentId?: unknown }).documentId;
+
+        if (typeof documentId === 'string' && documentId.length > 0) {
+          targetDocumentIds.add(documentId);
+        }
+      }
+
+      if (Array.isArray(block.children) && block.children.length > 0) {
+        block.children.forEach(visitBlock);
+      }
+    };
+
+    content.forEach(visitBlock);
+
+    return targetDocumentIds;
+  }
+
+  private replaceSubdocTitleInContent(
+    content: unknown[],
+    documentId: string,
+    title: string,
+  ): { changed: boolean; content: unknown[] } {
+    let changed = false;
+
+    const replaceInBlock = (value: unknown): unknown => {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return value;
+      }
+
+      const block = value as {
+        type?: unknown;
+        props?: unknown;
+        content?: unknown;
+        children?: unknown;
+      };
+
+      let nextBlock = block;
+
+      if (
+        block.type === SUBDOC_BLOCK_TYPE
+        && block.props
+        && typeof block.props === 'object'
+        && !Array.isArray(block.props)
+        && (block.props as { documentId?: unknown }).documentId === documentId
+        && (block.props as { title?: unknown }).title !== title
+      ) {
+        changed = true;
+        nextBlock = {
+          ...block,
+          props: {
+            ...(block.props as Record<string, unknown>),
+            title,
+          },
+        };
+      }
+
+      if (Array.isArray(nextBlock.children) && nextBlock.children.length > 0) {
+        const nextChildren = nextBlock.children.map(replaceInBlock);
+
+        if (nextChildren.some((child, index) => child !== nextBlock.children?.[index])) {
+          nextBlock = {
+            ...nextBlock,
+            children: nextChildren,
+          };
+        }
+      }
+
+      return nextBlock;
+    };
+
+    const nextContent = content.map(replaceInBlock);
+
+    return {
+      changed,
+      content: changed ? nextContent : content,
+    };
+  }
+
+  private replaceSubdocReferencesInContent(
+    content: unknown[],
+    duplicatedDocumentByOriginalId: Map<string, DocumentEntity>,
+  ): unknown[] {
+    let changed = false;
+
+    const replaceInBlock = (value: unknown): unknown => {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return value;
+      }
+
+      const block = value as {
+        type?: unknown;
+        props?: unknown;
+        children?: unknown;
+      };
+
+      let nextBlock = block;
+
+      if (
+        block.type === SUBDOC_BLOCK_TYPE
+        && block.props
+        && typeof block.props === 'object'
+        && !Array.isArray(block.props)
+      ) {
+        const props = block.props as {
+          documentId?: unknown;
+          publicId?: unknown;
+          title?: unknown;
+        };
+        const duplicatedDocument = typeof props.documentId === 'string'
+          ? duplicatedDocumentByOriginalId.get(props.documentId)
+          : undefined;
+
+        if (duplicatedDocument) {
+          changed = true;
+          nextBlock = {
+            ...block,
+            props: {
+              ...props,
+              documentId: duplicatedDocument.id,
+              publicId: duplicatedDocument.publicId,
+              title: duplicatedDocument.title,
+            },
+          };
+        }
+      }
+
+      if (Array.isArray(nextBlock.children) && nextBlock.children.length > 0) {
+        const nextChildren = nextBlock.children.map(replaceInBlock);
+
+        if (nextChildren.some((child, index) => child !== nextBlock.children?.[index])) {
+          nextBlock = {
+            ...nextBlock,
+            children: nextChildren,
+          };
+        }
+      }
+
+      return nextBlock;
+    };
+
+    const nextContent = content.map(replaceInBlock);
+
+    return changed ? nextContent : content;
+  }
+
+  private buildDuplicateTitle(title: string): string {
+    const match = title.match(/^(.*) \((\d+)\)$/);
+
+    if (!match) {
+      return `${title} (1)`;
+    }
+
+    return `${match[1]} (${Number(match[2]) + 1})`;
+  }
+
+  private appendMissingChildSubdocBlocks(
+    content: unknown[],
+    parentDocument: DocumentEntity,
+    duplicatedDocuments: DocumentEntity[],
+  ): unknown[] {
+    const referencedDocumentIds = this.extractSubdocTargetDocumentIds(content);
+    const directChildren = duplicatedDocuments.filter((document) => document.parentDocument?.id === parentDocument.id);
+    const missingChildren = directChildren.filter((child) => !referencedDocumentIds.has(child.id));
+
+    if (missingChildren.length === 0) {
+      return content;
+    }
+
+    const newBlocks = missingChildren.map((child) => ({
+      id: randomUUID(),
+      type: SUBDOC_BLOCK_TYPE,
+      props: {
+        documentId: child.id,
+        publicId: child.publicId,
+        workspaceId: child.workspace.id,
+        title: child.title,
+      },
+      children: [],
+    }));
+
+    return [...content, ...newBlocks];
+  }
+
+  private hasMeaningfulContent(content: unknown[]): boolean {
+    if (!Array.isArray(content) || content.length === 0) {
+      return false;
+    }
+
+    if (content.length > 1) {
+      return true;
+    }
+
+    const [firstBlock] = content;
+
+    if (!firstBlock || typeof firstBlock !== 'object' || Array.isArray(firstBlock)) {
+      return true;
+    }
+
+    const block = firstBlock as {
+      type?: unknown;
+      content?: unknown;
+      children?: unknown;
+      props?: unknown;
+    };
+
+    if (block.type !== 'paragraph') {
+      return true;
+    }
+
+    if (Array.isArray(block.content) && block.content.length > 0) {
+      return true;
+    }
+
+    if (Array.isArray(block.children) && block.children.length > 0) {
+      return true;
+    }
+
+    if (
+      block.props
+      && typeof block.props === 'object'
+      && !Array.isArray(block.props)
+      && Object.values(block.props).some((value) => value !== undefined && value !== null && value !== '')
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private async recordVisit(
+    document: DocumentEntity,
+    userId: string,
+    entityManager: EntityManager,
+  ): Promise<void> {
+    const [user, existingVisit] = await Promise.all([
+      entityManager.findOneOrFail(CurrentUserEntity, { id: userId }),
+      entityManager.findOne(DocumentVisitEntity, {
+        user: userId,
+        document: document.id,
+      }),
+    ]);
+
+    const visit = existingVisit ?? entityManager.create(DocumentVisitEntity, {
+      workspace: document.workspace,
+      document,
+      user,
+      lastVisitedAt: new Date(),
+    });
+
+    visit.workspace = document.workspace;
+    visit.document = document;
+    visit.user = user;
+    visit.lastVisitedAt = new Date();
+
+    await entityManager.persist(visit).flush();
   }
 
   private async resolveWorkspaceForUser(

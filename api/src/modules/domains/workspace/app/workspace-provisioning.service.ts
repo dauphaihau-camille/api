@@ -6,6 +6,7 @@ import {
   DEFAULT_CONTENT_FORMAT,
   SORT_STEP,
 } from '~/modules/domains/document/app/document-defaults';
+import { extractDocumentSearchText } from '~/modules/domains/document/app/document-search-text';
 import { DocumentEntity } from '~/modules/domains/document/infra/persistence/entities/document.entity';
 import { TeamspaceEntity } from '~/modules/domains/teamspace/infra/persistence/entities/teamspace.entity';
 import { AuditService } from '~/modules/shared/audit/audit.service';
@@ -71,6 +72,7 @@ export class WorkspaceProvisioningService {
           title: item.title,
           contentFormat: DEFAULT_CONTENT_FORMAT,
           contentJson: [...item.content],
+          searchText: extractDocumentSearchText([...item.content]),
           sortKey: index * SORT_STEP,
           createdBy: owner,
           updatedBy: owner,

@@ -138,6 +138,23 @@ export class DocumentController {
       .then(DocumentResponseDto.fromSummary);
   }
 
+  @Post('documents/:documentId/duplicate')
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    summary: 'Duplicate document subtree',
+  })
+  @ApiCreatedResponse({
+    type: DocumentResponseDto,
+  })
+  async duplicateDocument(
+    @Param('documentId') documentId: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ): Promise<DocumentResponseDto> {
+    return this.documentService
+      .duplicateForUser(documentId, currentUser)
+      .then(DocumentResponseDto.fromSummary);
+  }
+
   @Get('documents/:documentId')
   @Header('Cache-Control', 'no-store')
   @ApiOperation({

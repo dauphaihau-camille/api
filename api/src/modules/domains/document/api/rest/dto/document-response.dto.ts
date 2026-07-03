@@ -6,6 +6,9 @@ export class DocumentResponseDto {
   id!: string;
 
   @ApiProperty()
+  public_id!: string;
+
+  @ApiProperty()
   version!: number;
 
   @ApiProperty()
@@ -44,6 +47,7 @@ export class DocumentResponseDto {
   static fromSummary(document: DocumentSummary): DocumentResponseDto {
     return {
       id: document.id,
+      public_id: document.publicId,
       version: document.version,
       workspace_id: document.workspaceId,
       teamspace_id: document.teamspaceId,

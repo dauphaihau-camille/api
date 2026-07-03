@@ -8,6 +8,7 @@ import { WorkspaceEntity } from '../workspace/infra/persistence/entities/workspa
 import { DocumentController } from './api/rest/document.controller';
 import { DocumentService } from './app/document.service';
 import { DocumentEntity } from './infra/persistence/entities/document.entity';
+import { DocumentSubdocReferenceEntity } from './infra/persistence/entities/document-subdoc-reference.entity';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { DocumentEntity } from './infra/persistence/entities/document.entity';
       WorkspaceEntity,
       TeamspaceEntity,
       DocumentEntity,
+      DocumentSubdocReferenceEntity,
     ]),
   ],
   controllers: [DocumentController],
