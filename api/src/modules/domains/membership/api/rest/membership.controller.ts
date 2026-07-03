@@ -20,17 +20,29 @@ import { CurrentUser } from '~/common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '~/modules/domains/auth/app/auth.types';
 import { JwtAuthGuard } from '~/modules/domains/auth/api/guard/jwt-auth.guard';
 import { PermissionsGuard } from '~/modules/domains/auth/api/guard/permissions.guard';
-import { MembershipService } from '../../app/membership.service';
+import { AddWorkspaceMemberUseCase } from '../../app/use-cases/add-workspace-member.use-case';
+import { ListWorkspaceMembersUseCase } from '../../app/use-cases/list-workspace-members.use-case';
+import { RemoveWorkspaceMemberUseCase } from '../../app/use-cases/remove-workspace-member.use-case';
+import { UpdateWorkspaceMemberUseCase } from '../../app/use-cases/update-workspace-member.use-case';
 import { AddWorkspaceMemberDto } from './dto/add-workspace-member.dto';
 import { UpdateWorkspaceMemberDto } from './dto/update-workspace-member.dto';
 import { WorkspaceMemberResponseDto } from './dto/workspace-member-response.dto';
+import {
+  isMembershipAppError,
+  mapMembershipAppErrorToHttpException,
+} from './membership-http-error-mapper';
 
 @Controller()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @ApiCookieAuth('access_token')
 @ApiTags('Membership')
 export class MembershipController {
-  constructor(private readonly membershipService: MembershipService) {}
+  constructor(
+    private readonly listWorkspaceMembersUseCase: ListWorkspaceMembersUseCase,
+    private readonly addWorkspaceMemberUseCase: AddWorkspaceMemberUseCase,
+    private readonly updateWorkspaceMemberUseCase: UpdateWorkspaceMemberUseCase,
+    private readonly removeWorkspaceMemberUseCase: RemoveWorkspaceMemberUseCase,
+  ) {}
 
   @Get('workspaces/:workspaceId/members')
   @Header('Cache-Control', 'no-store')
@@ -45,9 +57,10 @@ export class MembershipController {
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() currentUser: AuthenticatedUser,
   ): Promise<WorkspaceMemberResponseDto[]> {
-    return this.membershipService
-      .listForWorkspace(workspaceId, currentUser)
-      .then((members) => members.map(WorkspaceMemberResponseDto.fromSummary));
+    return this.listWorkspaceMembersUseCase
+      .execute(workspaceId, currentUser)
+      .then((members) => members.map(WorkspaceMemberResponseDto.fromSummary))
+      .catch(this.rethrowMembershipAppError);
   }
 
   @Post('workspaces/:workspaceId/members')
@@ -63,12 +76,13 @@ export class MembershipController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() body: AddWorkspaceMemberDto,
   ): Promise<WorkspaceMemberResponseDto> {
-    return this.membershipService
-      .addToWorkspace(workspaceId, currentUser, {
+    return this.addWorkspaceMemberUseCase
+      .execute(workspaceId, currentUser, {
         email: body.email,
         role: body.role,
       })
-      .then(WorkspaceMemberResponseDto.fromSummary);
+      .then(WorkspaceMemberResponseDto.fromSummary)
+      .catch(this.rethrowMembershipAppError);
   }
 
   @Patch('workspaces/:workspaceId/members/:memberId')
@@ -85,12 +99,13 @@ export class MembershipController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() body: UpdateWorkspaceMemberDto,
   ): Promise<WorkspaceMemberResponseDto> {
-    return this.membershipService
-      .updateWorkspaceMember(workspaceId, memberId, currentUser, {
+    return this.updateWorkspaceMemberUseCase
+      .execute(workspaceId, memberId, currentUser, {
         version: body.version,
         role: body.role,
       })
-      .then(WorkspaceMemberResponseDto.fromSummary);
+      .then(WorkspaceMemberResponseDto.fromSummary)
+      .catch(this.rethrowMembershipAppError);
   }
 
   @Delete('workspaces/:workspaceId/members/:memberId')
@@ -106,8 +121,17 @@ export class MembershipController {
     @Param('memberId') memberId: string,
     @CurrentUser() currentUser: AuthenticatedUser,
   ): Promise<WorkspaceMemberResponseDto> {
-    return this.membershipService
-      .removeFromWorkspace(workspaceId, memberId, currentUser)
-      .then(WorkspaceMemberResponseDto.fromSummary);
+    return this.removeWorkspaceMemberUseCase
+      .execute(workspaceId, memberId, currentUser)
+      .then(WorkspaceMemberResponseDto.fromSummary)
+      .catch(this.rethrowMembershipAppError);
+  }
+
+  private rethrowMembershipAppError(error: unknown): never {
+    if (isMembershipAppError(error)) {
+      throw mapMembershipAppErrorToHttpException(error);
+    }
+
+    throw error;
   }
 }
