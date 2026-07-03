@@ -26,7 +26,7 @@ implements PasswordResetTokenRepository {
       expiresAt: input.expiresAt,
     });
 
-    await entityManager.persistAndFlush(token);
+    await entityManager.persist(token).flush();
 
     return this.toPasswordResetToken(token);
   }

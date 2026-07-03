@@ -84,7 +84,7 @@ export class MikroOrmAuthUserRepository implements AuthUserRepository {
 
     user.credential = credential;
 
-    await entityManager.persistAndFlush([user, credential]);
+    await entityManager.persist([user, credential]).flush();
 
     return this.toUserAccount(user);
   }
@@ -115,7 +115,7 @@ export class MikroOrmAuthUserRepository implements AuthUserRepository {
         user.status = input.status;
       }
 
-      await entityManager.persistAndFlush(user);
+      await entityManager.persist(user).flush();
 
       return this.toUserAccount(user);
     }
@@ -171,7 +171,7 @@ export class MikroOrmAuthUserRepository implements AuthUserRepository {
       assignedAt: new Date(),
     });
 
-    await entityManager.persistAndFlush(userRole);
+    await entityManager.persist(userRole).flush();
   }
 
   async ensureRole(roleDefinition: RoleDefinition): Promise<void> {
@@ -190,7 +190,7 @@ export class MikroOrmAuthUserRepository implements AuthUserRepository {
       name: roleDefinition.name,
       description: roleDefinition.description,
     });
-    await entityManager.persistAndFlush(role);
+    await entityManager.persist(role).flush();
   }
 
   private toUserAccount(user: CurrentUserEntity): UserAccount {

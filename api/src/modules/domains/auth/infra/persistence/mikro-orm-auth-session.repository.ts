@@ -37,7 +37,7 @@ export class MikroOrmAuthSessionRepository implements AuthSessionRepository {
       ipAddress: input.ipAddress,
     });
 
-    await entityManager.persistAndFlush(session);
+    await entityManager.persist(session).flush();
 
     return this.toUserSession(session);
   }

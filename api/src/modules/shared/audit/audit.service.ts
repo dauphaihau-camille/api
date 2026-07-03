@@ -29,7 +29,7 @@ export class AuditService {
       userAgent: requestContext.userAgent,
     });
 
-    await entityManager.persistAndFlush(auditLog);
+    await entityManager.persist(auditLog).flush();
 
     return auditLog;
   }
