@@ -9,6 +9,7 @@ import { DocumentController } from './api/rest/document.controller';
 import { DocumentService } from './app/document.service';
 import { DocumentEntity } from './infra/persistence/entities/document.entity';
 import { DocumentSubdocReferenceEntity } from './infra/persistence/entities/document-subdoc-reference.entity';
+import { DocumentVisitEntity } from './infra/persistence/entities/document-visit.entity';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { DocumentSubdocReferenceEntity } from './infra/persistence/entities/docu
       TeamspaceEntity,
       DocumentEntity,
       DocumentSubdocReferenceEntity,
+      DocumentVisitEntity,
     ]),
   ],
   controllers: [DocumentController],

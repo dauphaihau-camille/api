@@ -47,6 +47,48 @@ export class Migration20260630000100 extends Migration {
       'create index "document_favorites_document_id_index" on "document_favorites" ("document_id");',
     );
     this.addSql(
+      `create table "document_visits" (
+        "id" uuid not null,
+        "created_at" timestamptz not null,
+        "updated_at" timestamptz not null,
+        "workspace_id" uuid not null,
+        "document_id" uuid not null,
+        "user_id" uuid not null,
+        "last_visited_at" timestamptz not null,
+        constraint "document_visits_pkey" primary key ("id")
+      );`,
+    );
+    this.addSql(
+      `alter table "document_visits"
+        add constraint "document_visits_workspace_id_foreign"
+        foreign key ("workspace_id")
+        references "workspaces" ("id")
+        on update cascade
+        on delete cascade;`,
+    );
+    this.addSql(
+      `alter table "document_visits"
+        add constraint "document_visits_document_id_foreign"
+        foreign key ("document_id")
+        references "documents" ("id")
+        on update cascade
+        on delete cascade;`,
+    );
+    this.addSql(
+      `alter table "document_visits"
+        add constraint "document_visits_user_id_foreign"
+        foreign key ("user_id")
+        references "users" ("id")
+        on update cascade
+        on delete cascade;`,
+    );
+    this.addSql(
+      'create unique index "document_visits_user_id_document_id_unique" on "document_visits" ("user_id", "document_id");',
+    );
+    this.addSql(
+      'create index "document_visits_workspace_id_last_visited_at_index" on "document_visits" ("workspace_id", "last_visited_at");',
+    );
+    this.addSql(
       `create table "published_documents" (
         "id" uuid not null,
         "created_at" timestamptz not null,
@@ -91,6 +133,7 @@ export class Migration20260630000100 extends Migration {
 
   override async down(): Promise<void> {
     this.addSql('drop table if exists "published_documents" cascade;');
+    this.addSql('drop table if exists "document_visits" cascade;');
     this.addSql('drop table if exists "document_favorites" cascade;');
   }
 }
