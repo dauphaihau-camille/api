@@ -1,8 +1,6 @@
-import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { GraphQLModule } from '@nestjs/graphql';
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { LoggerModule } from 'nestjs-pino';
 import { buildPinoLoggerParams } from '../common/logging/pino-logger.config';
@@ -47,12 +45,6 @@ import { WsModule } from './shared/ws/ws.module';
     LoggerModule.forRoot(buildPinoLoggerParams('api')),
     RequestContextModule,
     EventEmitterModule.forRoot(),
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      driver: ApolloDriver,
-      autoSchemaFile: true,
-      path: '/graphql',
-      context: ({ req }) => ({ req }),
-    }),
     MikroOrmModule.forRoot({
       ...buildDatabaseConfig(process.env),
       autoLoadEntities: true,

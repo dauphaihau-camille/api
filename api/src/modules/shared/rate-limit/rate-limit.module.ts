@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import {
+  ThrottlerGuard,
   ThrottlerModule,
   type ThrottlerStorage,
 } from '@nestjs/throttler';
@@ -10,7 +11,6 @@ import {
 } from '../../../config/rate-limit.config';
 import { RateLimitInfraModule } from './rate-limit-infra.module';
 import { RATE_LIMIT_STORAGE } from './rate-limit.constants';
-import { GraphqlThrottlerGuard } from './graphql-throttler.guard';
 
 @Module({
   imports: [
@@ -37,7 +37,7 @@ import { GraphqlThrottlerGuard } from './graphql-throttler.guard';
   providers: [
     {
       provide: APP_GUARD,
-      useClass: GraphqlThrottlerGuard,
+      useClass: ThrottlerGuard,
     },
   ],
 })

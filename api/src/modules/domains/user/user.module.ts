@@ -19,7 +19,6 @@ import { CreateUserUseCase } from './app/use-cases/create-user.use-case';
 import { GetUserByIdUseCase } from './app/use-cases/get-user-by-id.use-case';
 import { ListUsersUseCase } from './app/use-cases/list-users.use-case';
 import { UpdateUserUseCase } from './app/use-cases/update-user.use-case';
-import { UserResolver } from './api/graphql/user.resolver';
 import { UserController } from './api/rest/user.controller';
 import { MikroOrmUserRepository } from './infra/mikro-orm-user.repository';
 
@@ -61,7 +60,6 @@ import { MikroOrmUserRepository } from './infra/mikro-orm-user.repository';
     GetUserByIdUseCase,
     ListUsersUseCase,
     UpdateUserUseCase,
-    UserResolver,
   ],
 })
 export class UserModule {}
