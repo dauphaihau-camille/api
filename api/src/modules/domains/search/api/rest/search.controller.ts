@@ -17,7 +17,7 @@ import { CurrentUser } from '~/common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '~/modules/domains/auth/app/auth.types';
 import { JwtAuthGuard } from '~/modules/domains/auth/api/guard/jwt-auth.guard';
 import { PermissionsGuard } from '~/modules/domains/auth/api/guard/permissions.guard';
-import { SearchService } from '../../app/search.service';
+import { SearchWorkspaceDocumentsUseCase } from '../../app/use-cases/search-workspace-documents.use-case';
 import { SearchDocumentResponseDto } from './dto/search-document-response.dto';
 import {
   isSearchAppError,
@@ -29,7 +29,7 @@ import {
 @ApiCookieAuth('access_token')
 @ApiTags('Search')
 export class SearchController {
-  constructor(private readonly searchService: SearchService) {}
+  constructor(private readonly searchWorkspaceDocumentsUseCase: SearchWorkspaceDocumentsUseCase) {}
 
   @Get('workspaces/:workspaceId/search/documents')
   @Header('Cache-Control', 'no-store')
@@ -57,8 +57,8 @@ export class SearchController {
     @Query('limit') limit?: number,
   ): Promise<SearchDocumentResponseDto[]> {
     try {
-      const documents = await this.searchService
-        .searchWorkspaceDocuments(workspaceId, currentUser, query, limit);
+      const documents = await this.searchWorkspaceDocumentsUseCase
+        .execute(workspaceId, currentUser, query, limit);
 
       return documents.map(SearchDocumentResponseDto.fromSummary);
     }

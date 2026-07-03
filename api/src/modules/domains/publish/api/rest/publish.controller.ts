@@ -18,7 +18,10 @@ import { CurrentUser } from '~/common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '~/modules/domains/auth/app/auth.types';
 import { JwtAuthGuard } from '~/modules/domains/auth/api/guard/jwt-auth.guard';
 import { PermissionsGuard } from '~/modules/domains/auth/api/guard/permissions.guard';
-import { PublishService } from '../../app/publish.service';
+import { GetPublicDocumentUseCase } from '../../app/use-cases/get-public-document.use-case';
+import { GetPublishStatusUseCase } from '../../app/use-cases/get-publish-status.use-case';
+import { PublishDocumentUseCase } from '../../app/use-cases/publish-document.use-case';
+import { UnpublishDocumentUseCase } from '../../app/use-cases/unpublish-document.use-case';
 import {
   PublicDocumentResponseDto,
   PublishedDocumentResponseDto,
@@ -31,7 +34,12 @@ import {
 @Controller()
 @ApiTags('Publish')
 export class PublishController {
-  constructor(private readonly publishService: PublishService) {}
+  constructor(
+    private readonly getPublicDocumentUseCase: GetPublicDocumentUseCase,
+    private readonly getPublishStatusUseCase: GetPublishStatusUseCase,
+    private readonly publishDocumentUseCase: PublishDocumentUseCase,
+    private readonly unpublishDocumentUseCase: UnpublishDocumentUseCase,
+  ) {}
 
   @Get('published/:publishedDocumentId')
   @Header('Cache-Control', 'no-store')
@@ -44,18 +52,10 @@ export class PublishController {
   async getPublicDocument(
     @Param('publishedDocumentId') publishedDocumentId: string,
   ): Promise<PublicDocumentResponseDto> {
-    try {
-      return await this.publishService
-        .getPublicDocument(publishedDocumentId)
-        .then(PublicDocumentResponseDto.fromSummary);
-    }
-    catch (error) {
-      if (isPublishAppError(error)) {
-        throw mapPublishAppErrorToHttpException(error);
-      }
-
-      throw error;
-    }
+    return this.getPublicDocumentUseCase
+      .execute(publishedDocumentId)
+      .then(PublicDocumentResponseDto.fromSummary)
+      .catch(this.rethrowPublishAppError);
   }
 
   @Get('documents/:documentId/publish')
@@ -72,18 +72,10 @@ export class PublishController {
     @Param('documentId') documentId: string,
     @CurrentUser() currentUser: AuthenticatedUser,
   ): Promise<PublishedDocumentResponseDto> {
-    try {
-      return await this.publishService
-        .getStatusForDocument(documentId, currentUser)
-        .then(PublishedDocumentResponseDto.fromSummary);
-    }
-    catch (error) {
-      if (isPublishAppError(error)) {
-        throw mapPublishAppErrorToHttpException(error);
-      }
-
-      throw error;
-    }
+    return this.getPublishStatusUseCase
+      .execute(documentId, currentUser)
+      .then(PublishedDocumentResponseDto.fromSummary)
+      .catch(this.rethrowPublishAppError);
   }
 
   @Post('documents/:documentId/publish')
@@ -100,18 +92,10 @@ export class PublishController {
     @Param('documentId') documentId: string,
     @CurrentUser() currentUser: AuthenticatedUser,
   ): Promise<PublishedDocumentResponseDto> {
-    try {
-      return await this.publishService
-        .publishDocument(documentId, currentUser)
-        .then(PublishedDocumentResponseDto.fromSummary);
-    }
-    catch (error) {
-      if (isPublishAppError(error)) {
-        throw mapPublishAppErrorToHttpException(error);
-      }
-
-      throw error;
-    }
+    return this.publishDocumentUseCase
+      .execute(documentId, currentUser)
+      .then(PublishedDocumentResponseDto.fromSummary)
+      .catch(this.rethrowPublishAppError);
   }
 
   @Delete('documents/:documentId/publish')
@@ -129,17 +113,17 @@ export class PublishController {
     @Param('documentId') documentId: string,
     @CurrentUser() currentUser: AuthenticatedUser,
   ): Promise<PublishedDocumentResponseDto> {
-    try {
-      return await this.publishService
-        .unpublishDocument(documentId, currentUser)
-        .then(PublishedDocumentResponseDto.fromSummary);
-    }
-    catch (error) {
-      if (isPublishAppError(error)) {
-        throw mapPublishAppErrorToHttpException(error);
-      }
+    return this.unpublishDocumentUseCase
+      .execute(documentId, currentUser)
+      .then(PublishedDocumentResponseDto.fromSummary)
+      .catch(this.rethrowPublishAppError);
+  }
 
-      throw error;
+  private rethrowPublishAppError(error: unknown): never {
+    if (isPublishAppError(error)) {
+      throw mapPublishAppErrorToHttpException(error);
     }
+
+    throw error;
   }
 }

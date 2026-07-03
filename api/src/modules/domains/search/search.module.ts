@@ -4,7 +4,9 @@ import { DocumentEntity } from '../document/infra/persistence/entities/document.
 import { DocumentVisitEntity } from '../document/infra/persistence/entities/document-visit.entity';
 import { WorkspaceModule } from '../workspace/workspace.module';
 import { SearchController } from './api/rest/search.controller';
-import { SearchService } from './app/search.service';
+import { SearchRepository } from './app/ports/search.repository';
+import { SearchWorkspaceDocumentsUseCase } from './app/use-cases/search-workspace-documents.use-case';
+import { MikroOrmSearchRepository } from './infra/mikro-orm-search.repository';
 
 @Module({
   imports: [
@@ -15,7 +17,13 @@ import { SearchService } from './app/search.service';
     ]),
   ],
   controllers: [SearchController],
-  providers: [SearchService],
-  exports: [SearchService],
+  providers: [
+    SearchWorkspaceDocumentsUseCase,
+    {
+      provide: SearchRepository,
+      useClass: MikroOrmSearchRepository,
+    },
+  ],
+  exports: [SearchRepository],
 })
 export class SearchModule {}
