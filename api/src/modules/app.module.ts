@@ -21,6 +21,7 @@ import { SearchModule } from './domains/search/search.module';
 import { TeamspaceModule } from './domains/teamspace/teamspace.module';
 import { UserModule } from './domains/user/user.module';
 import { WorkspaceModule } from './domains/workspace/workspace.module';
+import { WorkspacePreferenceModule } from './domains/workspace-preference/workspace-preference.module';
 import { AiModule } from './shared/ai/ai.module';
 import { AuditModule } from './shared/audit/audit.module';
 import { CacheModule } from './shared/cache/cache.module';
@@ -76,6 +77,7 @@ import { WsModule } from './shared/ws/ws.module';
     AuthModule,
     UserModule,
     WorkspaceModule,
+    WorkspacePreferenceModule,
     MembershipModule,
     TeamspaceModule,
     DocumentModule,
