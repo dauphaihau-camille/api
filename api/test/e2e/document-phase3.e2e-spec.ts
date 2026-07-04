@@ -50,7 +50,7 @@ describe('Document phase 3 flow (e2e)', () => {
     process.env.JWT_ACCESS_TTL = '15m';
     process.env.JWT_REFRESH_TTL = '7d';
     process.env.BCRYPT_SALT_ROUNDS = '4';
-    const { AppModule } = require('../../src/modules/app.module') as typeof import('../../src/modules/app.module');
+    const { AppModule } = await import('../../src/modules/app.module.js');
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -178,9 +178,12 @@ describe('Document phase 3 flow (e2e)', () => {
       is_favorite: true,
     });
 
+    const searchParams = new URLSearchParams();
+    searchParams.set('q', 'Weekly');
+
     const searchByTitleResponse = await request(app.getHttpServer())
       .get(`/v1/workspaces/${workspace.id}/search/documents`)
-      .query({ q: 'Weekly' })
+      .query(searchParams)
       .set('Cookie', owner.cookie)
       .expect(200);
 

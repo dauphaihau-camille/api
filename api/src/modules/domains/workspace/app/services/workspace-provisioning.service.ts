@@ -60,15 +60,15 @@ export class WorkspaceProvisioningService {
         role: WorkspaceRole.OWNER,
         joinedAt: new Date(),
       });
-      const teamspace = entityManager.create(TeamspaceEntity, {
+      const defaultTeamspace = entityManager.create(TeamspaceEntity, {
         workspace: createdWorkspace,
         name: DEFAULT_TEAMSPACE_NAME,
         description: DEFAULT_TEAMSPACE_DESCRIPTION,
       });
-      const documents = DEFAULT_WORKSPACE_DOCUMENTS.map((item, index) =>
+      const defaultDocuments = DEFAULT_WORKSPACE_DOCUMENTS.map((item, index) =>
         entityManager.create(DocumentEntity, {
           workspace: createdWorkspace,
-          teamspace,
+          teamspace: defaultTeamspace,
           title: item.title,
           contentFormat: DEFAULT_CONTENT_FORMAT,
           contentJson: [...item.content],
@@ -79,9 +79,9 @@ export class WorkspaceProvisioningService {
         }),
       );
 
-      await entityManager.persist([createdWorkspace, membership, teamspace, ...documents]).flush();
+      await entityManager.persist([createdWorkspace, membership, defaultTeamspace, ...defaultDocuments]).flush();
 
-      return { workspace: createdWorkspace, teamspace, documents };
+      return { workspace: createdWorkspace, teamspace: defaultTeamspace, documents: defaultDocuments };
     });
 
     await this.auditService.record({

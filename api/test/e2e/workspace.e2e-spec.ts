@@ -50,7 +50,7 @@ describe('Workspace and membership flow (e2e)', () => {
     process.env.JWT_ACCESS_TTL = '15m';
     process.env.JWT_REFRESH_TTL = '7d';
     process.env.BCRYPT_SALT_ROUNDS = '4';
-    const { AppModule } = require('../../src/modules/app.module') as typeof import('../../src/modules/app.module');
+    const { AppModule } = await import('../../src/modules/app.module.js');
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
