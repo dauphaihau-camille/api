@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/modules/domains/auth/app/auth.types';
 import { AuditService } from '~/modules/shared/audit/audit.service';
+import { findWorkspaceByIdentifier } from '../../workspace/app/utils/find-workspace-by-identifier.util';
 import {
   assertWorkspaceEditor,
 } from '../../workspace/app/workspace-permissions';
@@ -157,10 +158,7 @@ export class TeamspaceService {
     currentUser: AuthenticatedUser,
   ) {
     const workspaces = await this.workspaceRepository.findAllForUser(currentUser.userId);
-    const normalizedIdentifier = workspaceIdentifier.trim().toLowerCase();
-    const workspace = workspaces.find((item) =>
-      item.id === workspaceIdentifier || item.slug === normalizedIdentifier,
-    );
+    const workspace = findWorkspaceByIdentifier(workspaces, workspaceIdentifier);
 
     if (!workspace) {
       throw new NotFoundException(`Workspace ${workspaceIdentifier} was not found.`);

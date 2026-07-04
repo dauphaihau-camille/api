@@ -1,4 +1,5 @@
 import type { AuthenticatedUser } from '~/modules/domains/auth/app/auth.types';
+import { findWorkspaceByIdentifier } from '~/modules/domains/workspace/app/utils/find-workspace-by-identifier.util';
 import { MembershipWorkspaceNotFoundError } from '../errors/membership-app.error';
 import type { MembershipRepository } from '../ports/membership.repository';
 
@@ -8,10 +9,7 @@ export async function resolveWorkspaceForUser(
   currentUser: AuthenticatedUser,
 ) {
   const workspaces = await membershipRepository.findAllWorkspacesForUser(currentUser.userId);
-  const normalizedIdentifier = workspaceIdentifier.trim().toLowerCase();
-  const workspace = workspaces.find((item) =>
-    item.id === workspaceIdentifier || item.slug === normalizedIdentifier,
-  );
+  const workspace = findWorkspaceByIdentifier(workspaces, workspaceIdentifier);
 
   if (!workspace) {
     throw new MembershipWorkspaceNotFoundError(workspaceIdentifier);
