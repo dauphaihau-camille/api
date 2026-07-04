@@ -1,0 +1,107 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: camille-api-docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: label
+            values:
+              - com.docker.compose.project=camille
+    pipeline_stages:
+      - docker: {}
+      - static_labels:
+          service: camille-api
+          source: docker
+      - json:
+          expressions:
+            actorId: actorId
+            context: context
+            err_message: err.message
+            error_message: errorMessage
+            event: event
+            http_duration_ms: http.durationMs
+            http_method: http.method
+            http_path: http.path
+            http_route: http.route
+            http_status_code: http.statusCode
+            level: level
+            log_message: message
+            request_summary: requestSummary
+            requestId: requestId
+            runtime: runtime
+            service: service
+            spanId: spanId
+            traceId: traceId
+      - labels:
+          context:
+          event:
+          http_method:
+          http_route:
+          http_status_code:
+          level:
+          runtime:
+          service:
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        regex: '(api|worker)'
+        action: keep
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: runtime
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        replacement: '$1'
+        target_label: container
+      - replacement: camille-api
+        target_label: service
+
+  - job_name: camille-api-host
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          __path__: /var/log/camille-api/*.log
+          service: camille-api
+          source: host
+    pipeline_stages:
+      - static_labels:
+          service: camille-api
+          source: host
+      - json:
+          expressions:
+            actorId: actorId
+            context: context
+            err_message: err.message
+            error_message: errorMessage
+            event: event
+            http_duration_ms: http.durationMs
+            http_method: http.method
+            http_path: http.path
+            http_route: http.route
+            http_status_code: http.statusCode
+            level: level
+            log_message: message
+            request_summary: requestSummary
+            requestId: requestId
+            runtime: runtime
+            service: service
+            spanId: spanId
+            traceId: traceId
+      - labels:
+          context:
+          event:
+          http_method:
+          http_route:
+          http_status_code:
+          level:
+          runtime:
+          service:

@@ -34,7 +34,7 @@ export function buildPinoLoggerParams(runtime: Runtime): Params {
           hostname,
           pid,
           runtime,
-          service: 'arc-api',
+          service: 'camille-api',
         }),
         level: (label) => ({
           level: label,
