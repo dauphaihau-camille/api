@@ -1,5 +1,5 @@
-import { DocumentEntity } from '~/modules/domains/document/infra/persistence/entities/document.entity';
-import { DocumentFavoriteEntity } from '../../infra/persistence/entities/document-favorite.entity';
+import type { DocumentEntity } from '~/modules/domains/document/infra/persistence/entities/document.entity';
+import type { DocumentFavoriteEntity } from '../../infra/persistence/entities/document-favorite.entity';
 
 export abstract class FavoriteRepository {
   abstract findFavoritesForWorkspace(input: {

@@ -1,4 +1,6 @@
-import { Collection, Entity, ManyToOne, OneToMany, Property } from '@mikro-orm/core';
+import {
+  Collection, Entity, ManyToOne, OneToMany, Property, 
+} from '@mikro-orm/core';
 import { WorkspaceEntity } from '~/modules/domains/workspace/infra/persistence/entities/workspace.entity';
 import { AbstractWorkspaceEntity } from '~/modules/domains/workspace/infra/persistence/entities/abstract-workspace.entity';
 import { DocumentEntity } from '~/modules/domains/document/infra/persistence/entities/document.entity';

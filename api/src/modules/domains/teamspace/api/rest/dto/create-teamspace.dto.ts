@@ -1,5 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsOptional, IsString, MaxLength, MinLength, 
+} from 'class-validator';
 
 export class CreateTeamspaceDto {
   @ApiProperty({

@@ -73,8 +73,8 @@ export class MoveDocumentUseCase {
       throw new DocumentDescendantMoveError();
     }
 
-    const nextTeamspaceId = nextParent?.teamspace?.id
-      ?? (input.teamspaceId === undefined ? document.teamspace?.id : input.teamspaceId ?? undefined);
+    const nextTeamspaceId = nextParent?.teamspace?.id ??
+      (input.teamspaceId === undefined ? document.teamspace?.id : input.teamspaceId ?? undefined);
     const nextTeamspace = nextTeamspaceId
       ? await this.documentCommandRepository.findTeamspaceByIdInWorkspace(nextTeamspaceId, workspace.id) as DocumentEntity['teamspace'] | null
       : undefined;

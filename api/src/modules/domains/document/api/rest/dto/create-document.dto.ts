@@ -1,5 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsArray, IsOptional, IsString, MaxLength, 
+} from 'class-validator';
 
 export class CreateDocumentDto {
   @ApiProperty({

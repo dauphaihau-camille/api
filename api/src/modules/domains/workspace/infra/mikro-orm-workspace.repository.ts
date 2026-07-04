@@ -193,11 +193,11 @@ export class MikroOrmWorkspaceRepository implements WorkspaceRepository {
 
     return user
       ? {
-          id: user.id,
-          email: user.email,
-          displayName: user.displayName,
-          avatar: user.avatar,
-        }
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        avatar: user.avatar,
+      }
       : null;
   }
 

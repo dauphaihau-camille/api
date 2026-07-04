@@ -1,4 +1,4 @@
-import { DocumentFavoriteEntity } from '../../infra/persistence/entities/document-favorite.entity';
+import type { DocumentFavoriteEntity } from '../../infra/persistence/entities/document-favorite.entity';
 import type { FavoriteDocumentSummary } from '../contracts/favorite.contract';
 
 export function toFavoriteDocumentSummary(

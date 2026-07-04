@@ -1,4 +1,4 @@
-import { DocumentEntity } from '../../infra/persistence/entities/document.entity';
+import type { DocumentEntity } from '../../infra/persistence/entities/document.entity';
 import type { DocumentSummary } from '../contracts/document.contract';
 
 export function toDocumentSummary(document: DocumentEntity): DocumentSummary {
