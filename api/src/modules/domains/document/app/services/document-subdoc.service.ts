@@ -95,6 +95,65 @@ export class DocumentSubdocService {
     }
   }
 
+  async removeArchivedSubdocReferences(
+    targetDocuments: DocumentEntity[],
+    repository: DocumentSubdocReferenceRepository = this.documentSubdocReferenceRepository,
+  ): Promise<void> {
+    if (targetDocuments.length === 0) {
+      return;
+    }
+
+    const archivedDocumentIds = new Set(targetDocuments.map((document) => document.id));
+    const externalSourceDocumentsById = new Map<string, DocumentEntity>();
+
+    for (const targetDocument of targetDocuments) {
+      const references = await repository.findReferencesByTargetDocument(targetDocument.id);
+
+      if (references.length === 0) {
+        const referencingDocuments = await repository.findReferencingDocuments(
+          targetDocument.workspace.id,
+          targetDocument.id,
+        );
+
+        for (const sourceDocument of referencingDocuments) {
+          if (archivedDocumentIds.has(sourceDocument.id)) {
+            continue;
+          }
+
+          externalSourceDocumentsById.set(sourceDocument.id, sourceDocument);
+        }
+
+        continue;
+      }
+
+      for (const reference of references) {
+        const sourceDocument = reference.sourceDocument;
+
+        if (archivedDocumentIds.has(sourceDocument.id)) {
+          continue;
+        }
+
+        externalSourceDocumentsById.set(sourceDocument.id, sourceDocument);
+      }
+    }
+
+    for (const sourceDocument of externalSourceDocumentsById.values()) {
+      const { changed, content } = this.removeSubdocBlocksFromContent(
+        sourceDocument.contentJson,
+        archivedDocumentIds,
+      );
+
+      if (!changed) {
+        continue;
+      }
+
+      sourceDocument.contentJson = content;
+      sourceDocument.searchText = extractDocumentSearchText(content);
+      sourceDocument.updatedBy = targetDocuments[0]?.updatedBy ?? sourceDocument.updatedBy;
+      await this.syncSubdocReferencesForDoc(sourceDocument, repository);
+    }
+  }
+
   extractSubdocTargetDocumentIds(content: unknown[]): Set<string> {
     const targetDocumentIds = new Set<string>();
 
@@ -225,6 +284,71 @@ export class DocumentSubdocService {
     }));
 
     return [...content, ...newBlocks];
+  }
+
+  removeSubdocBlocksFromContent(
+    content: unknown[],
+    documentIds: Set<string>,
+  ): { changed: boolean; content: unknown[] } {
+    let changed = false;
+
+    const removeFromBlocks = (blocks: unknown[]): unknown[] => {
+      const nextBlocks: unknown[] = [];
+
+      for (const value of blocks) {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+          nextBlocks.push(value);
+          continue;
+        }
+
+        const block = value as {
+          type?: unknown;
+          props?: unknown;
+          children?: unknown;
+        };
+
+        if (
+          block.type === SUBDOC_BLOCK_TYPE
+          && block.props
+          && typeof block.props === 'object'
+          && !Array.isArray(block.props)
+        ) {
+          const documentId = (block.props as { documentId?: unknown }).documentId;
+
+          if (typeof documentId === 'string' && documentIds.has(documentId)) {
+            changed = true;
+            continue;
+          }
+        }
+
+        let nextBlock = block;
+
+        if (Array.isArray(block.children) && block.children.length > 0) {
+          const nextChildren = removeFromBlocks(block.children);
+
+          if (
+            nextChildren.length !== block.children.length
+            || nextChildren.some((child, index) => child !== block.children?.[index])
+          ) {
+            nextBlock = {
+              ...block,
+              children: nextChildren,
+            };
+          }
+        }
+
+        nextBlocks.push(nextBlock);
+      }
+
+      return nextBlocks;
+    };
+
+    const nextContent = removeFromBlocks(content);
+
+    return {
+      changed,
+      content: changed ? nextContent : content,
+    };
   }
 
   private replaceSubdocTitleInContent(

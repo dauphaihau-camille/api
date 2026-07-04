@@ -1,7 +1,7 @@
-import type { CurrentUserEntity } from "../../../auth/infra/persistence/entities/current-user.entity";
-import type { TeamspaceEntity } from "../../../teamspace/infra/persistence/entities/teamspace.entity";
-import type { DocumentSubdocReferenceRepository } from "./document-subdoc-reference.repository";
-import type { DocumentEntity } from "../../infra/persistence/entities/document.entity";
+import type { CurrentUserEntity } from '../../../auth/infra/persistence/entities/current-user.entity';
+import type { TeamspaceEntity } from '../../../teamspace/infra/persistence/entities/teamspace.entity';
+import type { DocumentSubdocReferenceRepository } from './document-subdoc-reference.repository';
+import type { DocumentEntity } from '../../infra/persistence/entities/document.entity';
 
 export type DocumentCommandTransaction = {
   commandRepository: DocumentCommandRepository;

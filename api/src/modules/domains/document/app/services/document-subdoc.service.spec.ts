@@ -91,4 +91,71 @@ describe('DocumentSubdocService', () => {
       children: [],
     });
   });
+
+  it('removes archived subdoc blocks from content', () => {
+    const content = [
+      {
+        id: 'block-1',
+        type: 'paragraph',
+        props: {},
+        children: [
+          {
+            text: 'Before',
+          },
+        ],
+      },
+      {
+        id: 'block-2',
+        type: 'subpage',
+        props: {
+          documentId: 'child-1',
+          publicId: 'public-child-1',
+          title: 'Child 1',
+        },
+        children: [],
+      },
+      {
+        id: 'block-3',
+        type: 'paragraph',
+        props: {},
+        children: [
+          {
+            id: 'nested-subpage',
+            type: 'subpage',
+            props: {
+              documentId: 'child-2',
+              publicId: 'public-child-2',
+              title: 'Child 2',
+            },
+            children: [],
+          },
+        ],
+      },
+    ];
+
+    const result = service.removeSubdocBlocksFromContent(
+      content,
+      new Set(['child-1', 'child-2']),
+    );
+
+    expect(result.changed).toBe(true);
+    expect(result.content).toEqual([
+      {
+        id: 'block-1',
+        type: 'paragraph',
+        props: {},
+        children: [
+          {
+            text: 'Before',
+          },
+        ],
+      },
+      {
+        id: 'block-3',
+        type: 'paragraph',
+        props: {},
+        children: [],
+      },
+    ]);
+  });
 });

@@ -1,15 +1,19 @@
 import { EntityManager } from '@mikro-orm/postgresql';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Scope } from '@nestjs/common';
 import { DocumentSubdocReferenceRepository } from '../app/ports/document-subdoc-reference.repository';
 import { DocumentEntity } from './persistence/entities/document.entity';
 import { DocumentSubdocReferenceEntity } from './persistence/entities/document-subdoc-reference.entity';
 
-@Injectable()
+@Injectable({ scope: Scope.REQUEST })
 export class MikroOrmDocumentSubdocReferenceRepository implements DocumentSubdocReferenceRepository {
-  constructor(private readonly entityManager: EntityManager) {}
+  private readonly scopedEntityManager: EntityManager;
+
+  constructor(private readonly entityManager: EntityManager) {
+    this.scopedEntityManager = entityManager.global ? entityManager.fork() : entityManager;
+  }
 
   async findReferencingDocuments(workspaceId: string, excludeDocumentId: string): Promise<DocumentEntity[]> {
-    return this.entityManager.fork().find(DocumentEntity, {
+    return this.scopedEntityManager.find(DocumentEntity, {
       workspace: workspaceId,
       archivedAt: null,
       id: { $ne: excludeDocumentId },
@@ -19,7 +23,7 @@ export class MikroOrmDocumentSubdocReferenceRepository implements DocumentSubdoc
   }
 
   async findReferencesBySourceDocument(sourceDocumentId: string): Promise<DocumentSubdocReferenceEntity[]> {
-    return this.entityManager.fork().find(DocumentSubdocReferenceEntity, {
+    return this.scopedEntityManager.find(DocumentSubdocReferenceEntity, {
       sourceDocument: sourceDocumentId,
     }, {
       populate: ['workspace', 'sourceDocument', 'targetDocument'],
@@ -27,7 +31,7 @@ export class MikroOrmDocumentSubdocReferenceRepository implements DocumentSubdoc
   }
 
   async findReferencesByTargetDocument(targetDocumentId: string): Promise<DocumentSubdocReferenceEntity[]> {
-    return this.entityManager.fork().find(DocumentSubdocReferenceEntity, {
+    return this.scopedEntityManager.find(DocumentSubdocReferenceEntity, {
       targetDocument: targetDocumentId,
     }, {
       populate: ['sourceDocument', 'sourceDocument.workspace', 'sourceDocument.teamspace', 'sourceDocument.parentDocument', 'sourceDocument.createdBy', 'sourceDocument.updatedBy'],
@@ -35,14 +39,14 @@ export class MikroOrmDocumentSubdocReferenceRepository implements DocumentSubdoc
   }
 
   createSubdocReference(payload: Record<string, unknown>): DocumentSubdocReferenceEntity {
-    return this.entityManager.create(DocumentSubdocReferenceEntity, payload as never);
+    return this.scopedEntityManager.create(DocumentSubdocReferenceEntity, payload as never);
   }
 
   removeSubdocReference(reference: DocumentSubdocReferenceEntity): void {
-    this.entityManager.remove(reference);
+    this.scopedEntityManager.remove(reference);
   }
 
   persistSubdocReferences(references: DocumentSubdocReferenceEntity[]): void {
-    this.entityManager.persist(references);
+    this.scopedEntityManager.persist(references);
   }
 }

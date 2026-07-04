@@ -12,6 +12,7 @@ import {
   DocumentVersionConflictError,
 } from '../errors/document-app.error';
 import { DocumentTreeService } from '../services/document-tree.service';
+import { DocumentSubdocService } from '../services/document-subdoc.service';
 import type { DocumentSummary } from '../contracts/document.contract';
 import { toDocumentSummary } from '../mappers/document-summary.mapper';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
@@ -23,6 +24,7 @@ export class ArchiveDocumentUseCase {
     private readonly workspaceRepository: WorkspaceRepository,
     private readonly documentCommandRepository: DocumentCommandRepository,
     private readonly documentTreeService: DocumentTreeService,
+    private readonly documentSubdocService: DocumentSubdocService,
   ) {}
 
   async execute(
@@ -30,46 +32,81 @@ export class ArchiveDocumentUseCase {
     version: number,
     currentUser: AuthenticatedUser,
   ): Promise<DocumentSummary> {
-    const document = await this.documentCommandRepository.findDocument(documentId);
-    if (!document) {
+    const existingDocument = await this.documentCommandRepository.findDocument(documentId);
+    if (!existingDocument) {
       throw new DocumentNotFoundError(documentId);
     }
-    const workspace = await resolveWorkspaceForUser(this.workspaceRepository, document.workspace.id, currentUser);
+    const workspace = await resolveWorkspaceForUser(
+      this.workspaceRepository,
+      existingDocument.workspace.id,
+      currentUser,
+    );
     if (!canEditWorkspace(workspace.currentUserRole)) {
       throw new DocumentPermissionDeniedError();
     }
 
     try {
-      await this.documentCommandRepository.lockDocumentVersion(document, version);
+      await this.documentCommandRepository.lockDocumentVersion(existingDocument, version);
     }
     catch (error) {
       if (error instanceof OptimisticLockError) {
         throw new DocumentVersionConflictError();
       }
-
       throw error;
     }
 
-    const descendants = await this.documentTreeService.findDescendants(document.id, document.workspace.id);
-    const archivedAt = new Date();
-    const actor = await this.documentCommandRepository.findCurrentUser(currentUser.userId) as CurrentUserEntity;
+    const descendantIds = (
+      await this.documentTreeService.findDescendants(existingDocument.id, existingDocument.workspace.id)
+    ).map((document) => document.id);
 
-    for (const item of [document, ...descendants]) {
-      item.archivedAt = archivedAt;
-      item.updatedBy = actor;
-    }
+    const archivedDocument = await this.documentCommandRepository.withTransaction(async ({
+      commandRepository,
+      subdocReferenceRepository,
+    }) => {
+      const document = await commandRepository.findDocument(documentId);
+      if (!document) {
+        throw new DocumentNotFoundError(documentId);
+      }
 
-    await this.documentCommandRepository.saveDocuments([document, ...descendants]);
+      await commandRepository.lockDocumentVersion(document, version);
+
+      const descendants = await Promise.all(
+        descendantIds.map(async (descendantId) => {
+          const descendant = await commandRepository.findDocument(descendantId);
+          if (!descendant) {
+            throw new DocumentNotFoundError(descendantId);
+          }
+
+          return descendant;
+        }),
+      );
+
+      const archivedAt = new Date();
+      const actor = await commandRepository.findCurrentUser(currentUser.userId) as CurrentUserEntity;
+
+      for (const item of [document, ...descendants]) {
+        item.archivedAt = archivedAt;
+        item.updatedBy = actor;
+      }
+
+      await this.documentSubdocService.removeArchivedSubdocReferences(
+        [document, ...descendants],
+        subdocReferenceRepository,
+      );
+      await commandRepository.saveDocuments([document, ...descendants]);
+
+      return document;
+    });
 
     await this.auditService.record({
       action: 'document.archived',
       resourceType: 'document',
-      resourceId: document.id,
+      resourceId: archivedDocument.id,
       metadata: {
         workspaceId: workspace.id,
       },
     });
 
-    return toDocumentSummary(document);
+    return toDocumentSummary(archivedDocument);
   }
 }
