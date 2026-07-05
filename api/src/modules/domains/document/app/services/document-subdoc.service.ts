@@ -286,6 +286,32 @@ export class DocumentSubdocService {
     return [...content, ...newBlocks];
   }
 
+  appendSubdocBlock(
+    content: unknown[],
+    childDocument: DocumentEntity,
+  ): unknown[] {
+    const referencedDocumentIds = this.extractSubdocTargetDocumentIds(content);
+
+    if (referencedDocumentIds.has(childDocument.id)) {
+      return content;
+    }
+
+    return [
+      ...content,
+      {
+        id: randomUUID(),
+        type: SUBDOC_BLOCK_TYPE,
+        props: {
+          documentId: childDocument.id,
+          publicId: childDocument.publicId,
+          workspaceId: childDocument.workspace.id,
+          title: childDocument.title,
+        },
+        children: [],
+      },
+    ];
+  }
+
   removeSubdocBlocksFromContent(
     content: unknown[],
     documentIds: Set<string>,

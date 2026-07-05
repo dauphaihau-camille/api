@@ -92,6 +92,45 @@ describe('DocumentSubdocService', () => {
     });
   });
 
+  it('appends a duplicated child subdoc block only once', () => {
+    const duplicatedDocument = {
+      id: 'child-2',
+      publicId: 'public-child-2',
+      title: 'Child 2',
+      workspace: { id: 'workspace-1' },
+    };
+    const content = [
+      {
+        id: 'block-1',
+        type: 'subpage',
+        props: {
+          documentId: 'child-1',
+          publicId: 'public-child-1',
+          title: 'Child 1',
+        },
+        children: [],
+      },
+    ];
+
+    const result = service.appendSubdocBlock(content, duplicatedDocument as never);
+
+    expect(result).toHaveLength(2);
+    expect(result[1]).toMatchObject({
+      type: 'subpage',
+      props: {
+        documentId: 'child-2',
+        publicId: 'public-child-2',
+        workspaceId: 'workspace-1',
+        title: 'Child 2',
+      },
+      children: [],
+    });
+
+    expect(
+      service.appendSubdocBlock(result, duplicatedDocument as never),
+    ).toBe(result);
+  });
+
   it('removes archived subdoc blocks from content', () => {
     const content = [
       {

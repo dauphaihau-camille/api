@@ -109,16 +109,37 @@ export class DuplicateDocumentUseCase {
         duplicatedDocument.updatedBy = actor;
       }
 
-      await commandRepository.saveDocuments(duplicatedDocumentEntities);
+      const duplicatedRootDocumentEntity = duplicatedDocumentByOriginalId.get(sourceDocument.id)!;
+      const parentDocument = sourceRootDocument.parentDocument?.id
+        ? await commandRepository.findDocument(sourceRootDocument.parentDocument.id)
+        : null;
+
+      if (parentDocument) {
+        parentDocument.contentJson = this.documentSubdocService.appendSubdocBlock(
+          parentDocument.contentJson,
+          duplicatedRootDocumentEntity,
+        );
+        parentDocument.searchText = extractDocumentSearchText(parentDocument.contentJson);
+        parentDocument.updatedBy = actor;
+      }
+
+      await commandRepository.saveDocuments(
+        parentDocument
+          ? [...duplicatedDocumentEntities, parentDocument]
+          : duplicatedDocumentEntities,
+      );
 
       for (const duplicatedDocument of duplicatedDocumentEntities) {
         await this.documentSubdocService.syncSubdocReferencesForDoc(duplicatedDocument, subdocReferenceRepository);
+      }
+      if (parentDocument) {
+        await this.documentSubdocService.syncSubdocReferencesForDoc(parentDocument, subdocReferenceRepository);
       }
 
       await commandRepository.flush();
 
       return {
-        duplicatedRootDocument: duplicatedDocumentByOriginalId.get(sourceDocument.id)!,
+        duplicatedRootDocument: duplicatedRootDocumentEntity,
         duplicatedDocuments: duplicatedDocumentEntities,
         originalDocumentByDuplicateId: new Map(
           sourceSubtree.map((originalDocument) => [
