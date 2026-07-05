@@ -867,7 +867,7 @@ async function seedDocumentVisits(
       length: Math.min(config.visitsPerUser, documents.length),
     }, (_, offset) => ({
       userId: user.id,
-      documentId: documents[(userIndex * 3 + offset) % documents.length]!.id,
+      documentId: documents[((userIndex * 3) + offset) % documents.length]!.id,
       lastVisitedAt: new Date(Date.UTC(2026, 0, 1, 0, (userIndex * 7) + offset)),
     })),
   );

@@ -21,3 +21,29 @@ Seed modes:
 
 - `pnpm run db:seed` applies migrations and seeds reference data only.
 - `pnpm run db:seed:demo` applies migrations and seeds reference data plus demo users.
+- `pnpm run db:seed:huge` applies migrations, seeds auth data, and generates large synthetic workspace, teamspace, document, membership, publish, favorite, visit, subdoc-reference, and workspace-preference data.
+- `pnpm run db:seed:realistic` applies migrations, seeds auth data, and generates a small set of scenario-based workspaces with realistic BlockNote content and subpage relationships.
+
+Large synthetic seed configuration:
+
+- `SEED_HUGE_USER_COUNT`
+- `SEED_HUGE_WORKSPACE_COUNT`
+- `SEED_HUGE_MEMBERS_PER_WORKSPACE`
+- `SEED_HUGE_TEAMSPACES_PER_WORKSPACE`
+- `SEED_HUGE_PRIVATE_ROOT_DOCUMENTS_PER_WORKSPACE`
+- `SEED_HUGE_TEAMSPACE_ROOT_DOCUMENTS_PER_TEAMSPACE`
+- `SEED_HUGE_CHILD_DOCUMENTS_PER_PARENT`
+- `SEED_HUGE_DOCUMENT_DEPTH`
+- `SEED_HUGE_FAVORITES_PER_USER`
+- `SEED_HUGE_VISITS_PER_USER`
+- `SEED_HUGE_PUBLISHED_DOCUMENTS_PER_WORKSPACE`
+- `SEED_HUGE_SUBDOC_REFERENCES_PER_WORKSPACE`
+- `SEED_HUGE_EXPANDED_DOCUMENTS_PER_PREFERENCE`
+- `SEED_HUGE_BATCH_SIZE`
+- `SEED_HUGE_DEFAULT_PASSWORD`
+
+Realistic scenario seed configuration:
+
+- `SEED_REALISTIC_WORKSPACE_REPLICAS`
+- `SEED_REALISTIC_EXTRA_MEMBERS_PER_WORKSPACE`
+- `SEED_REALISTIC_DEFAULT_PASSWORD`

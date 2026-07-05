@@ -393,6 +393,8 @@ pnpm run db:migration:up
 pnpm run db:migration:down
 pnpm run db:seed
 pnpm run db:seed:demo
+pnpm run db:seed:huge
+pnpm run db:seed:realistic
 ```
 
 Seed data lives in [seed-data](/Volumes/Local/dev/pj-personal/templates/api/nest-template/seed-data) and is TSV-backed.
@@ -408,6 +410,25 @@ Demo users created by `pnpm run db:seed:demo`:
 - `member@example.com` / `password123`
 
 Local-only demo users can be added with `seed-data/auth-users.local.tsv`. A starter schema is provided in `seed-data/auth-users.local.example.tsv`.
+
+Large synthetic data created by `pnpm run db:seed:huge`:
+
+- generated auth users plus the TSV demo users
+- workspaces, workspace members, and teamspaces
+- private and teamspace document trees
+- document favorites, visits, published documents, subdoc references
+- workspace sidebar preferences
+
+Tune the large seed size with `SEED_HUGE_*` environment variables documented in [seed-data/README.md](/Volumes/Local/dev/pj-personal/apps/camille/camille-v2/apps/api/seed-data/README.md).
+
+Scenario-based data created by `pnpm run db:seed:realistic`:
+
+- product-style workspaces with named collaborators
+- engineering, product, success, and delivery teamspaces
+- nested BlockNote documents with real `subpage` blocks
+- realistic favorites, visits, published docs, and sidebar preferences
+
+Tune that dataset with `SEED_REALISTIC_*` environment variables documented in [seed-data/README.md](/Volumes/Local/dev/pj-personal/apps/camille/camille-v2/apps/api/seed-data/README.md).
 
 Those defaults are starter data, not a claim that every project should keep the same policy model unchanged.
 

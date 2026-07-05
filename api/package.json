@@ -23,6 +23,8 @@
     "db:clear": "ts-node -r tsconfig-paths/register ./database/clear.ts",
     "db:seed": "ts-node -r tsconfig-paths/register ./database/seed-reference.ts",
     "db:seed:demo": "ts-node -r tsconfig-paths/register ./database/seed.ts",
+    "db:seed:huge": "ts-node -r tsconfig-paths/register ./database/seed-huge.ts",
+    "db:seed:realistic": "ts-node -r tsconfig-paths/register ./database/seed-realistic.ts",
     "format": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "typecheck": "tsc --noEmit",
     "check": "pnpm lint && pnpm typecheck && pnpm test",

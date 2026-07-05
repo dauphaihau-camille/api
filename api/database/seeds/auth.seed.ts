@@ -106,19 +106,21 @@ function parseBoolean(value: string, filePath: string, rowNumber: number): boole
   throw new Error(`Invalid boolean "${value}" in ${filePath} row ${rowNumber}`);
 }
 
-const roles: RoleSeed[] = readTsvRows<RoleCsvRow>(ROLES_TSV_PATH).map((row, index) => {
-  if (!row.key.trim()) throw new Error(`Missing key in ${ROLES_TSV_PATH} row ${index + 2}`);
-  if (!row.name.trim()) throw new Error(`Missing name in ${ROLES_TSV_PATH} row ${index + 2}`);
+function loadRoleSeeds(): RoleSeed[] {
+  return readTsvRows<RoleCsvRow>(ROLES_TSV_PATH).map((row, index) => {
+    if (!row.key.trim()) throw new Error(`Missing key in ${ROLES_TSV_PATH} row ${index + 2}`);
+    if (!row.name.trim()) throw new Error(`Missing name in ${ROLES_TSV_PATH} row ${index + 2}`);
 
-  return {
-    key: row.key.trim(),
-    name: row.name.trim(),
-    description: row.description.trim() || undefined,
-  };
-});
+    return {
+      key: row.key.trim(),
+      name: row.name.trim(),
+      description: row.description.trim() || undefined,
+    };
+  });
+}
 
-const permissions: PermissionSeed[] = readTsvRows<PermissionCsvRow>(PERMISSIONS_TSV_PATH).map(
-  (row, index) => {
+function loadPermissionSeeds(): PermissionSeed[] {
+  return readTsvRows<PermissionCsvRow>(PERMISSIONS_TSV_PATH).map((row, index) => {
     if (!row.key.trim()) {
       throw new Error(`Missing key in ${PERMISSIONS_TSV_PATH} row ${index + 2}`);
     }
@@ -131,11 +133,11 @@ const permissions: PermissionSeed[] = readTsvRows<PermissionCsvRow>(PERMISSIONS_
       name: row.name.trim(),
       description: row.description.trim() || undefined,
     };
-  },
-);
+  });
+}
 
-const rolePermissionSeeds: RolePermissionSeed[] =
-  readTsvRows<RolePermissionCsvRow>(ROLE_PERMISSIONS_TSV_PATH).map((row, index) => {
+function loadRolePermissionSeeds(): RolePermissionSeed[] {
+  return readTsvRows<RolePermissionCsvRow>(ROLE_PERMISSIONS_TSV_PATH).map((row, index) => {
     if (!row.role_key.trim()) {
       throw new Error(`Missing role_key in ${ROLE_PERMISSIONS_TSV_PATH} row ${index + 2}`);
     }
@@ -150,54 +152,58 @@ const rolePermissionSeeds: RolePermissionSeed[] =
       permissionKey: row.permission_key.trim(),
     };
   });
+}
 
-const userSeeds: UserSeed[] = [
-  ...readTsvRows<UserCsvRow>(USERS_TSV_PATH).map((row, index) => {
-    if (!row.email.trim()) throw new Error(`Missing email in ${USERS_TSV_PATH} row ${index + 2}`);
-    if (!row.display_name.trim()) {
-      throw new Error(`Missing display_name in ${USERS_TSV_PATH} row ${index + 2}`);
-    }
-    if (!row.password) throw new Error(`Missing password in ${USERS_TSV_PATH} row ${index + 2}`);
-    if (!row.role_key.trim()) {
-      throw new Error(`Missing role_key in ${USERS_TSV_PATH} row ${index + 2}`);
-    }
+function loadUserSeeds(): UserSeed[] {
+  return [
+    ...readTsvRows<UserCsvRow>(USERS_TSV_PATH).map((row, index) => {
+      if (!row.email.trim()) throw new Error(`Missing email in ${USERS_TSV_PATH} row ${index + 2}`);
+      if (!row.display_name.trim()) {
+        throw new Error(`Missing display_name in ${USERS_TSV_PATH} row ${index + 2}`);
+      }
+      if (!row.password) throw new Error(`Missing password in ${USERS_TSV_PATH} row ${index + 2}`);
+      if (!row.role_key.trim()) {
+        throw new Error(`Missing role_key in ${USERS_TSV_PATH} row ${index + 2}`);
+      }
 
-    return {
-      email: row.email.trim(),
-      displayName: row.display_name.trim(),
-      password: row.password,
-      roleKey: row.role_key.trim(),
-      emailVerified: parseBoolean(row.email_verified, USERS_TSV_PATH, index + 2),
-    };
-  }),
-  ...readOptionalTsvRows<UserCsvRow>(USERS_LOCAL_TSV_PATH).map((row, index) => {
-    if (!row.email.trim()) {
-      throw new Error(`Missing email in ${USERS_LOCAL_TSV_PATH} row ${index + 2}`);
-    }
-    if (!row.display_name.trim()) {
-      throw new Error(`Missing display_name in ${USERS_LOCAL_TSV_PATH} row ${index + 2}`);
-    }
-    if (!row.password) {
-      throw new Error(`Missing password in ${USERS_LOCAL_TSV_PATH} row ${index + 2}`);
-    }
-    if (!row.role_key.trim()) {
-      throw new Error(`Missing role_key in ${USERS_LOCAL_TSV_PATH} row ${index + 2}`);
-    }
+      return {
+        email: row.email.trim(),
+        displayName: row.display_name.trim(),
+        password: row.password,
+        roleKey: row.role_key.trim(),
+        emailVerified: parseBoolean(row.email_verified, USERS_TSV_PATH, index + 2),
+      };
+    }),
+    ...readOptionalTsvRows<UserCsvRow>(USERS_LOCAL_TSV_PATH).map((row, index) => {
+      if (!row.email.trim()) {
+        throw new Error(`Missing email in ${USERS_LOCAL_TSV_PATH} row ${index + 2}`);
+      }
+      if (!row.display_name.trim()) {
+        throw new Error(`Missing display_name in ${USERS_LOCAL_TSV_PATH} row ${index + 2}`);
+      }
+      if (!row.password) {
+        throw new Error(`Missing password in ${USERS_LOCAL_TSV_PATH} row ${index + 2}`);
+      }
+      if (!row.role_key.trim()) {
+        throw new Error(`Missing role_key in ${USERS_LOCAL_TSV_PATH} row ${index + 2}`);
+      }
 
-    return {
-      email: row.email.trim(),
-      displayName: row.display_name.trim(),
-      password: row.password,
-      roleKey: row.role_key.trim(),
-      emailVerified: parseBoolean(row.email_verified, USERS_LOCAL_TSV_PATH, index + 2),
-    };
-  }),
-];
+      return {
+        email: row.email.trim(),
+        displayName: row.display_name.trim(),
+        password: row.password,
+        roleKey: row.role_key.trim(),
+        emailVerified: parseBoolean(row.email_verified, USERS_LOCAL_TSV_PATH, index + 2),
+      };
+    }),
+  ];
+}
 
 export async function seedAuth(
   em: EntityManager,
 ): Promise<{ usersByEmail: Map<string, CurrentUserEntity> }> {
   const { roleByKey } = await seedAuthReferenceData(em);
+  const userSeeds = loadUserSeeds();
   const authConfig = buildAuthConfig({
     get(key: string) {
       return process.env[key];
@@ -314,6 +320,9 @@ export async function seedAuthReferenceData(
   roleByKey: Map<string, RoleEntity>;
   permissionByKey: Map<string, PermissionEntity>;
 }> {
+  const roles = loadRoleSeeds();
+  const permissions = loadPermissionSeeds();
+  const rolePermissionSeeds = loadRolePermissionSeeds();
   console.log(
     `[seed][auth] Upserting ${roles.length} roles, ${permissions.length} permissions, and ${rolePermissionSeeds.length} role-permission links`,
   );
