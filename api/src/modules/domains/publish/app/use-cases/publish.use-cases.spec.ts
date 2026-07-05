@@ -43,6 +43,8 @@ describe('Publish use cases', () => {
       findDocument: jest.fn(),
       findPublishedDocumentByDocumentId: jest.fn(),
       findPublishedDocumentById: jest.fn(),
+      buildPublicDocumentSummary: jest.fn(),
+      findPublicBreadcrumb: jest.fn(),
       publishDocument: jest.fn(),
       unpublishDocument: jest.fn(),
     } as unknown as jest.Mocked<PublishRepository>;
@@ -129,6 +131,16 @@ describe('Publish use cases', () => {
         updatedAt: new Date('2026-01-03T00:00:00.000Z'),
       },
     } as never);
+    publishRepository.buildPublicDocumentSummary.mockResolvedValue({
+      id: 'document-1',
+      publishedDocumentId: 'published-1',
+      title: 'Archived',
+      contentFormat: 'blocknote_v1',
+      content: [],
+      breadcrumb: [],
+      publishedAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-03T00:00:00.000Z'),
+    });
 
     const useCase = new GetPublicDocumentUseCase(publishRepository);
 

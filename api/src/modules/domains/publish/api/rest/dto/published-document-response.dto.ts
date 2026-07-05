@@ -32,6 +32,9 @@ export class PublicDocumentResponseDto {
   id!: string;
 
   @ApiProperty()
+  published_document_id!: string;
+
+  @ApiProperty()
   title!: string;
 
   @ApiProperty()
@@ -43,6 +46,25 @@ export class PublicDocumentResponseDto {
   })
   content!: unknown[];
 
+  @ApiProperty({
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        title: { type: 'string' },
+        published_document_id: { type: 'string' },
+        public_path: { type: 'string' },
+      },
+    },
+  })
+  breadcrumb!: Array<{
+    id: string;
+    title: string;
+    published_document_id: string;
+    public_path: string;
+  }>;
+
   @ApiProperty()
   published_at!: string;
 
@@ -52,9 +74,16 @@ export class PublicDocumentResponseDto {
   static fromSummary(summary: PublicDocumentSummary): PublicDocumentResponseDto {
     return {
       id: summary.id,
+      published_document_id: summary.publishedDocumentId,
       title: summary.title,
       content_format: summary.contentFormat,
       content: summary.content,
+      breadcrumb: summary.breadcrumb.map((item) => ({
+        id: item.id,
+        title: item.title,
+        published_document_id: item.publishedDocumentId,
+        public_path: item.publicPath,
+      })),
       published_at: summary.publishedAt.toISOString(),
       updated_at: summary.updatedAt.toISOString(),
     };

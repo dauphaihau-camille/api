@@ -1130,22 +1130,6 @@
           "comment": null,
           "enumItems": [],
           "generated": "(setweight(to_tsvector('simple'::regconfig, (COALESCE(title, ''::character varying))::text), 'A'::\"char\") || setweight(to_tsvector('simple'::regconfig, COALESCE(search_text, ''::text)), 'B'::\"char\")) stored"
-        },
-        "public_access_override": {
-          "name": "public_access_override",
-          "type": "text",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": true,
-          "unique": false,
-          "length": null,
-          "precision": null,
-          "scale": null,
-          "default": null,
-          "comment": null,
-          "enumItems": [],
-          "mappedType": "text"
         }
       },
       "name": "documents",
@@ -1223,14 +1207,7 @@
           "primary": false
         }
       ],
-      "checks": [
-        {
-          "name": "documents_public_access_override_check",
-          "columnName": "public_access_override",
-          "definition": "CHECK (((public_access_override = 'unpublished'::text) OR (public_access_override IS NULL)))",
-          "expression": "(public_access_override = 'unpublished'::text) OR (public_access_override IS NULL)"
-        }
-      ],
+      "checks": [],
       "foreignKeys": {
         "documents_created_by_foreign": {
           "columnNames": [

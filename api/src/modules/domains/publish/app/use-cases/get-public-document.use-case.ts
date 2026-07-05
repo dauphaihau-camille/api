@@ -4,7 +4,6 @@ import {
   ArchivedDocumentPublicAccessDeniedError,
   PublishedDocumentNotFoundError,
 } from '../errors/publish-app.error';
-import { toPublicDocumentSummary } from '../mappers/publish-summary.mapper';
 import { PublishRepository } from '../ports/publish.repository';
 
 @Injectable()
@@ -26,6 +25,6 @@ export class GetPublicDocumentUseCase {
       throw new ArchivedDocumentPublicAccessDeniedError();
     }
 
-    return toPublicDocumentSummary(publishedDocument);
+    return this.publishRepository.buildPublicDocumentSummary(publishedDocument);
   }
 }

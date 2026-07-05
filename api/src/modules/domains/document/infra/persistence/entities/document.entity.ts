@@ -47,6 +47,9 @@ export class DocumentEntity extends AbstractWorkspaceEntity {
   @Property({ fieldName: 'archived_at', nullable: true })
   archivedAt?: Date;
 
+  @Property({ fieldName: 'public_access_override', nullable: true })
+  publicAccessOverride?: 'unpublished';
+
   @ManyToOne(() => CurrentUserEntity, { fieldName: 'created_by' })
   createdBy!: CurrentUserEntity;
 
