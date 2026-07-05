@@ -2,6 +2,32 @@ import { z } from 'zod';
 
 type AppEnv = NodeJS.ProcessEnv;
 
+const optionalTrimmedString = () =>
+  z.preprocess(
+    (value) => {
+      if (typeof value !== 'string') {
+        return value;
+      }
+
+      const trimmed = value.trim();
+      return trimmed.length === 0 ? undefined : trimmed;
+    },
+    z.string().trim().min(1).optional(),
+  );
+
+const optionalUrlString = () =>
+  z.preprocess(
+    (value) => {
+      if (typeof value !== 'string') {
+        return value;
+      }
+
+      const trimmed = value.trim();
+      return trimmed.length === 0 ? undefined : trimmed;
+    },
+    z.url().optional(),
+  );
+
 const positiveIntegerString = z
   .string()
   .trim()
@@ -53,28 +79,28 @@ const appEnvBaseSchema = z.object({
   MAIL_DRIVER: z.enum(['logger', 'resend']).default('logger'),
   MAIL_DEFAULT_FROM_EMAIL: z.email().default('noreply@example.com'),
   MAIL_DEFAULT_FROM_NAME: z.string().trim().min(1).default('Nest Template'),
-  RESEND_API_KEY: z.string().trim().min(1).optional(),
-  APP_BASE_URL: z.url().optional(),
+  RESEND_API_KEY: optionalTrimmedString(),
+  APP_BASE_URL: optionalUrlString(),
   AI_DEFAULT_TEXT_MODEL: z.string().trim().min(1).default('general-text'),
   AI_DEFAULT_EMBEDDING_MODEL: z.string().trim().min(1).default('text-embedding'),
-  PAYMENT_PUBLIC_BASE_URL: z.url().optional(),
-  PAYMENT_WEBHOOK_SECRET: z.string().trim().min(1).optional(),
+  PAYMENT_PUBLIC_BASE_URL: optionalUrlString(),
+  PAYMENT_WEBHOOK_SECRET: optionalTrimmedString(),
   PAYMENT_SUCCESS_PATH: z.string().trim().min(1).default('/payments/success'),
   PAYMENT_CANCEL_PATH: z.string().trim().min(1).default('/payments/cancel'),
   STORAGE_DRIVER: z.enum(['local', 'minio']).default('local'),
   STORAGE_LOCAL_ROOT: z.string().trim().min(1).default('./storage'),
-  STORAGE_PUBLIC_BASE_URL: z.url().optional(),
-  STORAGE_OBJECT_STORAGE_ENDPOINT: z.url().optional(),
-  STORAGE_OBJECT_STORAGE_REGION: z.string().trim().min(1).optional(),
-  STORAGE_OBJECT_STORAGE_BUCKET: z.string().trim().min(1).optional(),
-  STORAGE_OBJECT_STORAGE_ACCESS_KEY: z.string().trim().min(1).optional(),
-  STORAGE_OBJECT_STORAGE_SECRET_KEY: z.string().trim().min(1).optional(),
+  STORAGE_PUBLIC_BASE_URL: optionalUrlString(),
+  STORAGE_OBJECT_STORAGE_ENDPOINT: optionalUrlString(),
+  STORAGE_OBJECT_STORAGE_REGION: optionalTrimmedString(),
+  STORAGE_OBJECT_STORAGE_BUCKET: optionalTrimmedString(),
+  STORAGE_OBJECT_STORAGE_ACCESS_KEY: optionalTrimmedString(),
+  STORAGE_OBJECT_STORAGE_SECRET_KEY: optionalTrimmedString(),
   STORAGE_OBJECT_STORAGE_FORCE_PATH_STYLE: z.enum(['true', 'false']).optional(),
-  STORAGE_MINIO_ENDPOINT: z.url().optional(),
+  STORAGE_MINIO_ENDPOINT: optionalUrlString(),
   STORAGE_MINIO_REGION: z.string().trim().min(1).default('us-east-1'),
-  STORAGE_MINIO_BUCKET: z.string().trim().min(1).optional(),
-  STORAGE_MINIO_ACCESS_KEY: z.string().trim().min(1).optional(),
-  STORAGE_MINIO_SECRET_KEY: z.string().trim().min(1).optional(),
+  STORAGE_MINIO_BUCKET: optionalTrimmedString(),
+  STORAGE_MINIO_ACCESS_KEY: optionalTrimmedString(),
+  STORAGE_MINIO_SECRET_KEY: optionalTrimmedString(),
   STORAGE_MINIO_FORCE_PATH_STYLE: z.enum(['true', 'false']).default('true'),
 });
 
