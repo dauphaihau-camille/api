@@ -9,8 +9,8 @@ export interface CreateUserAccountInput {
   email: Email;
   displayName?: string;
   status: UserStatus;
-  passwordHash: PasswordHash;
-  passwordUpdatedAt: Date;
+  passwordHash?: PasswordHash;
+  passwordUpdatedAt?: Date;
   emailVerifiedAt?: Date;
 }
 
@@ -44,6 +44,7 @@ export abstract class AuthUserRepository {
     passwordHash: PasswordHash;
     passwordUpdatedAt: Date;
   }): Promise<void>;
+  abstract setEmailVerifiedAt(userId: string, emailVerifiedAt: Date): Promise<void>;
   abstract assignRole(userId: string, roleKey: RoleKey): Promise<void>;
   abstract ensureRole(role: RoleDefinition): Promise<void>;
 }

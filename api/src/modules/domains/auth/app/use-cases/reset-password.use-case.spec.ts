@@ -30,6 +30,7 @@ describe('ResetPasswordUseCase', () => {
       create: jest.fn(),
       update: jest.fn(),
       updatePassword: jest.fn().mockResolvedValue(undefined),
+      setEmailVerifiedAt: jest.fn(),
       assignRole: jest.fn(),
       ensureRole: jest.fn(),
     };

@@ -33,6 +33,7 @@ describe('RegisterUseCase', () => {
       create: jest.fn().mockResolvedValue(createdUser),
       update: jest.fn(),
       updatePassword: jest.fn(),
+      setEmailVerifiedAt: jest.fn(),
       assignRole: jest.fn().mockResolvedValue(undefined),
       ensureRole: jest.fn().mockResolvedValue(undefined),
     };

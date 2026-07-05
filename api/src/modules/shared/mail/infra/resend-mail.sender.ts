@@ -21,13 +21,14 @@ export class ResendMailSender implements MailSender {
   constructor(@Inject(MAIL_CONFIG) private readonly mailConfig: MailConfig) {}
 
   async send(input: SendMailInput): Promise<void> {
+    const payload = this.buildPayload(input);
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.mailConfig.resendApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(this.buildPayload(input)),
+      body: JSON.stringify(payload),
     });
 
     if (response.ok) {
@@ -37,7 +38,7 @@ export class ResendMailSender implements MailSender {
     const responseBody = await response.text();
 
     throw new Error(
-      `Resend mail request failed with status ${response.status}: ${responseBody}`,
+      `Resend mail request failed for from=${payload.from} with status ${response.status}: ${responseBody}`,
     );
   }
 

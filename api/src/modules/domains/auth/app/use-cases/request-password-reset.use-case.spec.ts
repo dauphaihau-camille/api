@@ -25,6 +25,7 @@ describe('RequestPasswordResetUseCase', () => {
       create: jest.fn(),
       update: jest.fn(),
       updatePassword: jest.fn(),
+      setEmailVerifiedAt: jest.fn(),
       assignRole: jest.fn(),
       ensureRole: jest.fn(),
     };
@@ -91,6 +92,7 @@ describe('RequestPasswordResetUseCase', () => {
       create: jest.fn(),
       update: jest.fn(),
       updatePassword: jest.fn(),
+      setEmailVerifiedAt: jest.fn(),
       assignRole: jest.fn(),
       ensureRole: jest.fn(),
     };

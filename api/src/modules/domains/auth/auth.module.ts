@@ -8,6 +8,7 @@ import { CacheModule } from '../../shared/cache/cache.module';
 import { AuthSessionRepository } from './app/ports/auth-session.repository';
 import { AuthTokenService } from './app/ports/auth-token.service';
 import { AuthUserRepository } from './app/ports/auth-user.repository';
+import { EmailLoginChallengeRepository } from './app/ports/email-login-challenge.repository';
 import { PasswordHasher } from './app/ports/password-hasher';
 import { PasswordResetTokenRepository } from './app/ports/password-reset-token.repository';
 import { TokenHasher } from './app/ports/token-hasher';
@@ -19,7 +20,9 @@ import { RequestPasswordResetUseCase } from './app/use-cases/request-password-re
 import { RefreshSessionUseCase } from './app/use-cases/refresh-session.use-case';
 import { ResetPasswordUseCase } from './app/use-cases/reset-password.use-case';
 import { RegisterUseCase } from './app/use-cases/register.use-case';
+import { StartEmailAuthUseCase } from './app/use-cases/start-email-auth.use-case';
 import { IssueSessionUseCase } from './app/use-cases/shared/issue-session.use-case';
+import { VerifyEmailAuthUseCase } from './app/use-cases/verify-email-auth.use-case';
 import { VerifyResetPasswordTokenUseCase } from './app/use-cases/verify-reset-password-token.use-case';
 import { AuthCookieService } from './api/rest/auth-cookie.utils';
 import { AuthController } from './api/rest/auth.controller';
@@ -29,9 +32,11 @@ import { AuthHttpExceptionFilter } from './api/rest/auth-http-exception.filter';
 import { JwtStrategy } from './infra/jwt.strategy';
 import { CurrentUserEntity } from './infra/persistence/entities/current-user.entity';
 import { CurrentUserCredentialEntity } from './infra/persistence/entities/current-user-credential.entity';
+import { EmailLoginChallengeEntity } from './infra/persistence/entities/email-login-challenge.entity';
 import { EmailVerificationTokenEntity } from './infra/persistence/entities/email-verification-token.entity';
 import { MikroOrmAuthSessionRepository } from './infra/persistence/mikro-orm-auth-session.repository';
 import { MikroOrmAuthUserRepository } from './infra/persistence/mikro-orm-auth-user.repository';
+import { MikroOrmEmailLoginChallengeRepository } from './infra/persistence/mikro-orm-email-login-challenge.repository';
 import { MikroOrmPasswordResetTokenRepository } from './infra/persistence/mikro-orm-password-reset-token.repository';
 import { PermissionEntity } from './infra/persistence/entities/permission.entity';
 import { PasswordResetTokenEntity } from './infra/persistence/entities/password-reset-token.entity';
@@ -50,6 +55,7 @@ const authEntities = [
   CurrentUserCredentialEntity,
   UserSessionEntity,
   PasswordResetTokenEntity,
+  EmailLoginChallengeEntity,
   EmailVerificationTokenEntity,
   RoleEntity,
   PermissionEntity,
@@ -96,6 +102,10 @@ const authEntities = [
       useClass: MikroOrmAuthSessionRepository,
     },
     {
+      provide: EmailLoginChallengeRepository,
+      useClass: MikroOrmEmailLoginChallengeRepository,
+    },
+    {
       provide: PasswordHasher,
       useClass: BcryptPasswordHasher,
     },
@@ -112,6 +122,8 @@ const authEntities = [
       useClass: JwtAuthTokenService,
     },
     RegisterUseCase,
+    StartEmailAuthUseCase,
+    VerifyEmailAuthUseCase,
     LoginUseCase,
     RefreshSessionUseCase,
     LogoutUseCase,

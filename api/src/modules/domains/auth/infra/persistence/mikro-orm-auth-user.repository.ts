@@ -66,9 +66,6 @@ export class MikroOrmAuthUserRepository implements AuthUserRepository {
   async create(input: CreateUserAccountInput): Promise<UserAccount> {
     const entityManager = this.entityManager.fork();
     const userRepository = entityManager.getRepository(CurrentUserEntity);
-    const credentialRepository = entityManager.getRepository(
-      CurrentUserCredentialEntity,
-    );
     const user = userRepository.create({
       email: input.email.toString(),
       displayName: input.displayName,
@@ -76,15 +73,23 @@ export class MikroOrmAuthUserRepository implements AuthUserRepository {
       status: input.status,
       emailVerifiedAt: input.emailVerifiedAt,
     });
-    const credential = credentialRepository.create({
-      user,
-      passwordHash: input.passwordHash.toString(),
-      passwordUpdatedAt: input.passwordUpdatedAt,
-    });
 
-    user.credential = credential;
+    if (input.passwordHash && input.passwordUpdatedAt) {
+      const credentialRepository = entityManager.getRepository(
+        CurrentUserCredentialEntity,
+      );
+      const credential = credentialRepository.create({
+        user,
+        passwordHash: input.passwordHash.toString(),
+        passwordUpdatedAt: input.passwordUpdatedAt,
+      });
 
-    await entityManager.persist([user, credential]).flush();
+      user.credential = credential;
+      await entityManager.persist([user, credential]).flush();
+    }
+    else {
+      await entityManager.persist(user).flush();
+    }
 
     return this.toUserAccount(user);
   }
@@ -143,6 +148,16 @@ export class MikroOrmAuthUserRepository implements AuthUserRepository {
 
     credential.passwordHash = input.passwordHash.toString();
     credential.passwordUpdatedAt = input.passwordUpdatedAt;
+
+    await entityManager.flush();
+  }
+
+  async setEmailVerifiedAt(userId: string, emailVerifiedAt: Date): Promise<void> {
+    const entityManager = this.entityManager.fork();
+    const userRepository = entityManager.getRepository(CurrentUserEntity);
+    const user = await userRepository.findOneOrFail({ id: userId });
+
+    user.emailVerifiedAt = emailVerifiedAt;
 
     await entityManager.flush();
   }

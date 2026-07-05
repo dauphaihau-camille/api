@@ -7,8 +7,10 @@ import {
 import {
   AuthAppError,
   EmailAlreadyRegisteredError,
+  EmailLoginCodeExpiredError,
   InactiveUserError,
   InvalidCredentialsError,
+  InvalidEmailLoginCodeError,
   InvalidPasswordResetTokenError,
   InvalidRefreshTokenError,
   PasswordResetTokenExpiredError,
@@ -30,7 +32,9 @@ export function mapAuthAppErrorToHttpException(
     error instanceof InvalidCredentialsError
     || error instanceof SessionNotActiveError
     || error instanceof UserNotFoundError
+    || error instanceof InvalidEmailLoginCodeError
     || error instanceof InvalidRefreshTokenError
+    || error instanceof EmailLoginCodeExpiredError
     || error instanceof InvalidPasswordResetTokenError
     || error instanceof PasswordResetTokenExpiredError
     || error instanceof RefreshSessionNotFoundError

@@ -36,6 +36,8 @@ import { RequestPasswordResetUseCase } from '../../app/use-cases/request-passwor
 import { RefreshSessionUseCase } from '../../app/use-cases/refresh-session.use-case';
 import { ResetPasswordUseCase } from '../../app/use-cases/reset-password.use-case';
 import { RegisterUseCase } from '../../app/use-cases/register.use-case';
+import { StartEmailAuthUseCase } from '../../app/use-cases/start-email-auth.use-case';
+import { VerifyEmailAuthUseCase } from '../../app/use-cases/verify-email-auth.use-case';
 import { VerifyResetPasswordTokenUseCase } from '../../app/use-cases/verify-reset-password-token.use-case';
 import { CurrentUser } from '../../../../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../guard/jwt-auth.guard';
@@ -49,7 +51,12 @@ import { LoginDto } from './dto/login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
+import {
+  StartEmailAuthDto,
+  StartEmailAuthResponseDto,
+} from './dto/start-email-auth.dto';
 import { TokenQueryDto } from './dto/token-query.dto';
+import { VerifyEmailAuthDto } from './dto/verify-email-auth.dto';
 import { VerifyTokenDto } from './dto/verify-token.dto';
 import { IdempotencyKeyInterceptor } from '../../../../../common/interceptors/idempotency-key.interceptor';
 
@@ -63,6 +70,16 @@ const authRouteRateLimits = {
     limit: 5,
     ttl: parseDurationToMilliseconds('1m', 60_000),
     blockDuration: parseDurationToMilliseconds('5m', 300_000),
+  },
+  emailStart: {
+    limit: 5,
+    ttl: parseDurationToMilliseconds('5m', 300_000),
+    blockDuration: parseDurationToMilliseconds('10m', 600_000),
+  },
+  emailVerify: {
+    limit: 10,
+    ttl: parseDurationToMilliseconds('5m', 300_000),
+    blockDuration: parseDurationToMilliseconds('10m', 600_000),
   },
   refresh: {
     limit: 10,
@@ -82,6 +99,8 @@ const authRouteRateLimits = {
 export class AuthController {
   constructor(
     private readonly registerUseCase: RegisterUseCase,
+    private readonly startEmailAuthUseCase: StartEmailAuthUseCase,
+    private readonly verifyEmailAuthUseCase: VerifyEmailAuthUseCase,
     private readonly loginUseCase: LoginUseCase,
     private readonly refreshSessionUseCase: RefreshSessionUseCase,
     private readonly logoutUseCase: LogoutUseCase,
@@ -143,6 +162,55 @@ export class AuthController {
   ): Promise<AuthResponseDto> {
     const authResponse = resolveOrThrow(
       await this.loginUseCase.execute(body),
+      mapAuthAppErrorToHttpException,
+    );
+
+    this.authCookieService.setAuthCookies(response, authResponse);
+
+    return AuthResponseDto.fromAuthResponse(authResponse);
+  }
+
+  @Post('email/start')
+  @Throttle({
+    default: authRouteRateLimits.emailStart,
+  })
+  @Header('Cache-Control', 'no-store')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Send a one-time email login code',
+  })
+  @ApiOkResponse({
+    type: StartEmailAuthResponseDto,
+  })
+  async startEmailAuth(
+    @Body() body: StartEmailAuthDto,
+  ): Promise<StartEmailAuthResponseDto> {
+    const result = await this.startEmailAuthUseCase.execute(body.email);
+
+    return StartEmailAuthResponseDto.fromResult(result);
+  }
+
+  @Post('email/verify')
+  @Throttle({
+    default: authRouteRateLimits.emailVerify,
+  })
+  @Header('Cache-Control', 'no-store')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Verify a one-time email login code',
+  })
+  @ApiOkResponse({
+    type: AuthResponseDto,
+  })
+  async verifyEmailAuth(
+    @Body() body: VerifyEmailAuthDto,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<AuthResponseDto> {
+    const authResponse = resolveOrThrow(
+      await this.verifyEmailAuthUseCase.execute({
+        challengeId: body.challenge_id,
+        code: body.code,
+      }),
       mapAuthAppErrorToHttpException,
     );
 

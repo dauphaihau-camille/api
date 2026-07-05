@@ -65,6 +65,7 @@ describe('UpdateUserUseCase', () => {
         }),
       ),
       updatePassword: jest.fn(),
+      setEmailVerifiedAt: jest.fn(),
       assignRole: jest.fn(),
       ensureRole: jest.fn(),
     };

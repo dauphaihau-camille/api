@@ -12,6 +12,18 @@ export class InvalidCredentialsError extends AuthAppError {
   }
 }
 
+export class InvalidEmailLoginCodeError extends AuthAppError {
+  constructor() {
+    super('Invalid login code');
+  }
+}
+
+export class EmailLoginCodeExpiredError extends AuthAppError {
+  constructor() {
+    super('Login code has expired');
+  }
+}
+
 export class InactiveUserError extends AuthAppError {
   constructor() {
     super('User account is not active');

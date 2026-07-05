@@ -50,11 +50,12 @@ const appEnvBaseSchema = z.object({
       'Expected a comma-separated list without empty entries.',
     )
     .optional(),
-  DB_HOST: z.string().trim().min(1),
+  DATABASE_URL: optionalUrlString(),
+  DB_HOST: optionalTrimmedString(),
   DB_PORT: positiveIntegerString.default('5432'),
-  DB_USER: z.string().trim().min(1),
-  DB_PASSWORD: z.string().trim().min(1),
-  DB_NAME: z.string().trim().min(1),
+  DB_USER: optionalTrimmedString(),
+  DB_PASSWORD: optionalTrimmedString(),
+  DB_NAME: optionalTrimmedString(),
   REDIS_URL: z.url().default('redis://127.0.0.1:6379'),
   CACHE_DRIVER: z.enum(['memory', 'redis']).optional(),
   CACHE_TTL: z.string().trim().min(1).default('60s'),
@@ -105,11 +106,37 @@ const appEnvBaseSchema = z.object({
 });
 
 const appEnvSchema = appEnvBaseSchema.superRefine((env, context) => {
+  if (!env.DATABASE_URL) {
+    const requiredDatabaseFields = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'] as const;
+
+    for (const field of requiredDatabaseFields) {
+      if (!env[field]) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [field],
+          message: `Expected ${field} when DATABASE_URL is not set.`,
+        });
+      }
+    }
+  }
+
   if (env.MAIL_DRIVER === 'resend' && !env.RESEND_API_KEY) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
       path: ['RESEND_API_KEY'],
       message: 'Expected RESEND_API_KEY when MAIL_DRIVER is resend.',
+    });
+  }
+
+  if (
+    env.MAIL_DRIVER === 'resend'
+    && env.MAIL_DEFAULT_FROM_EMAIL.toLowerCase().endsWith('@example.com')
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['MAIL_DEFAULT_FROM_EMAIL'],
+      message:
+        'Expected MAIL_DEFAULT_FROM_EMAIL to use a verified sender domain when MAIL_DRIVER is resend.',
     });
   }
 
