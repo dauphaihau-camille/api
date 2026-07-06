@@ -54,6 +54,7 @@
     "@aws-sdk/client-s3": "^3.1045.0",
     "@bull-board/api": "^7.1.5",
     "@bull-board/express": "^7.1.5",
+    "@infisical/cli": "^0.43.100",
     "@keyv/redis": "^5.1.6",
     "@mikro-orm/cli": "^6.6.14",
     "@mikro-orm/core": "^6.5.8",

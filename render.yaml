@@ -1,0 +1,18 @@
+services:
+  - name: camille-api
+    type: web
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: api
+    buildCommand: pnpm install --prod=false && pnpm build
+    startCommand: pnpm exec infisical run --projectId="$INFISICAL_PROJECT_ID" --env="$INFISICAL_ENV" --token="$INFISICAL_TOKEN" -- sh -lc 'pnpm db:migration:up && exec pnpm start:prod'
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: INFISICAL_PROJECT_ID
+        sync: false
+      - key: INFISICAL_ENV
+        value: prod
+      - key: INFISICAL_TOKEN
+        sync: false
