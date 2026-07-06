@@ -130,7 +130,7 @@ export class RequestLoggingInterceptor implements NestInterceptor {
     const requestContext = this.requestContextService.get();
     const traceContext = getActiveTraceContext();
 
-    if (requestContext.requestId) {
+    if (requestContext.requestId && !request.res?.headersSent) {
       request.res?.setHeader('X-Request-Id', requestContext.requestId);
     }
 
