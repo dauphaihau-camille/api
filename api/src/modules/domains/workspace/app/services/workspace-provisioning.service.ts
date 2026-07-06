@@ -4,33 +4,21 @@ import type { AuthenticatedUser } from '~/modules/domains/auth/app/auth.types';
 import { CurrentUserEntity } from '~/modules/domains/auth/infra/persistence/entities/current-user.entity';
 import {
   DEFAULT_CONTENT_FORMAT,
-  SORT_STEP,
 } from '~/modules/domains/document/app/constants/document.constants';
 import { extractDocumentSearchText } from '~/modules/domains/document/app/utils/document-search-text.util';
 import { DocumentEntity } from '~/modules/domains/document/infra/persistence/entities/document.entity';
-import { TeamspaceEntity } from '~/modules/domains/teamspace/infra/persistence/entities/teamspace.entity';
 import { AuditService } from '~/modules/shared/audit/audit.service';
 import { WorkspaceRole } from '../../domain/enums/workspace-role.enum';
 import { WorkspaceMemberEntity } from '../../infra/persistence/entities/workspace-member.entity';
 import { WorkspaceEntity } from '../../infra/persistence/entities/workspace.entity';
 import type { WorkspaceSummary } from '../contracts/workspace.contract';
 
-const DEFAULT_TEAMSPACE_NAME = 'General';
-const DEFAULT_TEAMSPACE_DESCRIPTION = 'Shared team docs and collaboration space.';
-const DEFAULT_WORKSPACE_DOCUMENTS = [
-  {
-    title: 'Home',
-    content: [
-      { type: 'paragraph', content: [{ type: 'text', text: 'Welcome to your workspace.' }] },
-    ],
-  },
-  {
-    title: 'Getting started',
-    content: [
-      { type: 'paragraph', content: [{ type: 'text', text: 'Capture plans, notes, and decisions here.' }] },
-    ],
-  },
-] as const;
+const DEFAULT_WORKSPACE_DOCUMENT = {
+  title: 'Home',
+  content: [
+    { type: 'paragraph', content: [{ type: 'text', text: 'Welcome to your workspace.' }] },
+  ],
+} as const;
 
 @Injectable()
 export class WorkspaceProvisioningService {
@@ -47,7 +35,7 @@ export class WorkspaceProvisioningService {
       description?: string;
     },
   ): Promise<WorkspaceSummary> {
-    const { workspace, teamspace, documents } = await this.entityManager.transactional(async (entityManager) => {
+    const { workspace, document } = await this.entityManager.transactional(async (entityManager) => {
       const owner = await entityManager.findOneOrFail(CurrentUserEntity, { id: currentUser.userId });
       const createdWorkspace = entityManager.create(WorkspaceEntity, {
         name: input.name,
@@ -60,28 +48,20 @@ export class WorkspaceProvisioningService {
         role: WorkspaceRole.OWNER,
         joinedAt: new Date(),
       });
-      const defaultTeamspace = entityManager.create(TeamspaceEntity, {
+      const defaultDocument = entityManager.create(DocumentEntity, {
         workspace: createdWorkspace,
-        name: DEFAULT_TEAMSPACE_NAME,
-        description: DEFAULT_TEAMSPACE_DESCRIPTION,
+        title: DEFAULT_WORKSPACE_DOCUMENT.title,
+        contentFormat: DEFAULT_CONTENT_FORMAT,
+        contentJson: [...DEFAULT_WORKSPACE_DOCUMENT.content],
+        searchText: extractDocumentSearchText([...DEFAULT_WORKSPACE_DOCUMENT.content]),
+        sortKey: 0,
+        createdBy: owner,
+        updatedBy: owner,
       });
-      const defaultDocuments = DEFAULT_WORKSPACE_DOCUMENTS.map((item, index) =>
-        entityManager.create(DocumentEntity, {
-          workspace: createdWorkspace,
-          teamspace: defaultTeamspace,
-          title: item.title,
-          contentFormat: DEFAULT_CONTENT_FORMAT,
-          contentJson: [...item.content],
-          searchText: extractDocumentSearchText([...item.content]),
-          sortKey: index * SORT_STEP,
-          createdBy: owner,
-          updatedBy: owner,
-        }),
-      );
 
-      await entityManager.persist([createdWorkspace, membership, defaultTeamspace, ...defaultDocuments]).flush();
+      await entityManager.persist([createdWorkspace, membership, defaultDocument]).flush();
 
-      return { workspace: createdWorkspace, teamspace: defaultTeamspace, documents: defaultDocuments };
+      return { workspace: createdWorkspace, document: defaultDocument };
     });
 
     await this.auditService.record({
@@ -93,27 +73,14 @@ export class WorkspaceProvisioningService {
       },
     });
     await this.auditService.record({
-      action: 'teamspace.created',
-      resourceType: 'teamspace',
-      resourceId: teamspace.id,
+      action: 'document.created',
+      resourceType: 'document',
+      resourceId: document.id,
       metadata: {
         workspaceId: workspace.id,
-        name: teamspace.name,
         source: 'workspace-bootstrap',
       },
     });
-    await Promise.all(documents.map((document) =>
-      this.auditService.record({
-        action: 'document.created',
-        resourceType: 'document',
-        resourceId: document.id,
-        metadata: {
-          workspaceId: workspace.id,
-          teamspaceId: teamspace.id,
-          source: 'workspace-bootstrap',
-        },
-      }),
-    ));
 
     return {
       id: workspace.id,
