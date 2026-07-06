@@ -1,5 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail } from 'class-validator';
+import {
+  IsEmail, IsIn, IsOptional, IsString, MaxLength, 
+} from 'class-validator';
+import type { EmailAuthIntent } from '../../../app/auth.types';
 
 export class StartEmailAuthDto {
   @ApiProperty({
@@ -7,6 +10,23 @@ export class StartEmailAuthDto {
   })
   @IsEmail()
   email!: string;
+
+  @ApiProperty({
+    required: false,
+    enum: ['login', 'signup'],
+  })
+  @IsOptional()
+  @IsIn(['login', 'signup'])
+  intent?: EmailAuthIntent;
+
+  @ApiProperty({
+    required: false,
+    example: 'Jane',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  display_name?: string;
 }
 
 export class StartEmailAuthResponseDto {

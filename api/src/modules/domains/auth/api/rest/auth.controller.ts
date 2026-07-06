@@ -228,7 +228,10 @@ export class AuthController {
   async startEmailAuth(
     @Body() body: StartEmailAuthDto,
   ): Promise<StartEmailAuthResponseDto> {
-    const result = await this.startEmailAuthUseCase.execute(body.email);
+    const result = await this.startEmailAuthUseCase.execute({
+      email: body.email,
+      intent: body.intent,
+    });
 
     return StartEmailAuthResponseDto.fromResult(result);
   }
@@ -253,6 +256,8 @@ export class AuthController {
       await this.verifyEmailAuthUseCase.execute({
         challengeId: body.challenge_id,
         code: body.code,
+        intent: body.intent,
+        displayName: body.display_name,
       }),
       mapAuthAppErrorToHttpException,
     );

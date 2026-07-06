@@ -2,8 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { err, Result } from '../../../../../common/application/result';
 import { UserCreatedEvent } from '../../../../../common/events/user-created.event';
-import { AuthResponse } from '../auth.types';
+import { AuthResponse, type EmailAuthIntent } from '../auth.types';
 import {
+  EmailAuthAccountNotFoundError,
+  EmailAlreadyRegisteredError,
   EmailLoginCodeExpiredError,
   InactiveUserError,
   InvalidEmailLoginCodeError,
@@ -36,10 +38,14 @@ export class VerifyEmailAuthUseCase {
   async execute(input: {
     challengeId: string;
     code: string;
+    intent?: EmailAuthIntent;
+    displayName?: string;
   }): Promise<
     Result<
       AuthResponse,
+      | EmailAuthAccountNotFoundError
       | EmailLoginCodeExpiredError
+      | EmailAlreadyRegisteredError
       | InactiveUserError
       | InvalidEmailLoginCodeError
       | UserNotFoundError
@@ -64,14 +70,23 @@ export class VerifyEmailAuthUseCase {
     challenge.consumedAt = new Date();
     await this.emailLoginChallengeRepository.save(challenge);
 
+    const intent = input.intent ?? 'login';
     const email = Email.create(challenge.email);
     let user = await this.authUserRepository.findByEmail(email);
+
+    if (intent === 'login' && !user) {
+      return err(new EmailAuthAccountNotFoundError());
+    }
+
+    if (intent === 'signup' && user) {
+      return err(new EmailAlreadyRegisteredError());
+    }
 
     if (!user) {
       await this.authUserRepository.ensureRole(defaultRole);
       user = await this.authUserRepository.create({
         email,
-        displayName: undefined,
+        displayName: input.displayName?.trim() || undefined,
         status: UserStatus.ACTIVE,
         emailVerifiedAt: new Date(),
       });

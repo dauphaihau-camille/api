@@ -2,6 +2,7 @@ import { randomInt } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { parseDurationToMilliseconds } from '~/libs/duration';
 import { NotificationService } from '~/modules/shared/notification/notification.service';
+import type { EmailAuthIntent } from '../auth.types';
 import { Email } from '../../domain/value-objects/email';
 import { EmailLoginChallengeRepository } from '../ports/email-login-challenge.repository';
 import { TokenHasher } from '../ports/token-hasher';
@@ -22,7 +23,12 @@ export class StartEmailAuthUseCase {
     private readonly notificationService: NotificationService,
   ) {}
 
-  async execute(emailRaw: string): Promise<StartEmailAuthResult> {
+  async execute(input: {
+    email: string;
+    intent?: EmailAuthIntent;
+  }): Promise<StartEmailAuthResult> {
+    const intent = input.intent ?? 'login';
+    const emailRaw = input.email;
     const email = Email.create(emailRaw);
     const code = generateEmailLoginCode();
     const expiresAt = new Date(Date.now() + EMAIL_LOGIN_CODE_TTL_MS);
@@ -43,9 +49,9 @@ export class StartEmailAuthUseCase {
       to: {
         email: email.toString(),
       },
-      subject: 'Your Camille sign-in code',
-      text: `Use this code to sign in to Camille: ${code}`,
-      html: `<p>Use this code to sign in to Camille:</p><p><strong>${code}</strong></p>`,
+      subject: intent === 'signup' ? 'Your Camille sign-up code' : 'Your Camille sign-in code',
+      text: `Use this code to ${intent === 'signup' ? 'create your Camille account' : 'sign in to Camille'}: ${code}`,
+      html: `<p>Use this code to ${intent === 'signup' ? 'create your Camille account' : 'sign in to Camille'}:</p><p><strong>${code}</strong></p>`,
       tags: ['auth-login-code'],
     });
 

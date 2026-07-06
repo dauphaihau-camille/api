@@ -5,6 +5,8 @@ import type { UserAccount } from '../../domain/models/user-account';
 import { Email } from '../../domain/value-objects/email';
 import { RoleKey } from '../../domain/value-objects/role-key';
 import {
+  EmailAuthAccountNotFoundError,
+  EmailAlreadyRegisteredError,
   EmailLoginCodeExpiredError,
   InvalidEmailLoginCodeError,
 } from '../errors/auth-app.error';
@@ -89,6 +91,7 @@ describe('VerifyEmailAuthUseCase', () => {
     const result = await useCase.execute({
       challengeId: 'challenge-1',
       code: '123456',
+      intent: 'login',
     });
 
     expect(result.isOk).toBe(true);
@@ -153,6 +156,8 @@ describe('VerifyEmailAuthUseCase', () => {
     const result = await useCase.execute({
       challengeId: 'challenge-1',
       code: '123456',
+      intent: 'signup',
+      displayName: 'New User',
     });
 
     expect(result.isOk).toBe(true);
@@ -161,6 +166,7 @@ describe('VerifyEmailAuthUseCase', () => {
         email: expect.objectContaining({
           toString: expect.any(Function),
         }),
+        displayName: 'New User',
         emailVerifiedAt: expect.any(Date),
       }),
     );
@@ -215,6 +221,107 @@ describe('VerifyEmailAuthUseCase', () => {
       throw new Error('Expected verification to fail');
     }
     expect(result.error).toBeInstanceOf(InvalidEmailLoginCodeError);
+  });
+
+  it('rejects login intent when the verified email does not have an account yet', async () => {
+    const emailLoginChallengeRepository: jest.Mocked<EmailLoginChallengeRepository> = {
+      create: jest.fn(),
+      findById: jest.fn().mockResolvedValue({
+        id: 'challenge-1',
+        email: 'new@example.com',
+        codeHash: 'hashed-code',
+        expiresAt: new Date(Date.now() + 60_000),
+      }),
+      save: jest.fn().mockResolvedValue(undefined),
+      invalidateActiveChallengesForEmail: jest.fn(),
+    };
+    const authUserRepository: jest.Mocked<AuthUserRepository> = {
+      findByEmail: jest.fn().mockResolvedValue(null),
+      findLoginByEmail: jest.fn(),
+      findById: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      updatePassword: jest.fn(),
+      setEmailVerifiedAt: jest.fn(),
+      assignRole: jest.fn(),
+      ensureRole: jest.fn(),
+    };
+    const tokenHasher: jest.Mocked<TokenHasher> = {
+      hash: jest.fn().mockReturnValue('hashed-code'),
+    };
+    const issueSessionUseCase = buildIssueSessionUseCase();
+    const eventEmitter = { emit: jest.fn() } as unknown as EventEmitter2;
+    const useCase = new VerifyEmailAuthUseCase(
+      emailLoginChallengeRepository,
+      authUserRepository,
+      tokenHasher,
+      issueSessionUseCase,
+      eventEmitter,
+    );
+
+    const result = await useCase.execute({
+      challengeId: 'challenge-1',
+      code: '123456',
+      intent: 'login',
+    });
+
+    expect(result.isOk).toBe(false);
+    if (result.isOk) {
+      throw new Error('Expected verification to fail');
+    }
+    expect(result.error).toBeInstanceOf(EmailAuthAccountNotFoundError);
+    expect(authUserRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects signup intent when the email already belongs to an account', async () => {
+    const emailLoginChallengeRepository: jest.Mocked<EmailLoginChallengeRepository> = {
+      create: jest.fn(),
+      findById: jest.fn().mockResolvedValue({
+        id: 'challenge-1',
+        email: 'member@example.com',
+        codeHash: 'hashed-code',
+        expiresAt: new Date(Date.now() + 60_000),
+      }),
+      save: jest.fn().mockResolvedValue(undefined),
+      invalidateActiveChallengesForEmail: jest.fn(),
+    };
+    const authUserRepository: jest.Mocked<AuthUserRepository> = {
+      findByEmail: jest.fn().mockResolvedValue(existingUser),
+      findLoginByEmail: jest.fn(),
+      findById: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      updatePassword: jest.fn(),
+      setEmailVerifiedAt: jest.fn(),
+      assignRole: jest.fn(),
+      ensureRole: jest.fn(),
+    };
+    const tokenHasher: jest.Mocked<TokenHasher> = {
+      hash: jest.fn().mockReturnValue('hashed-code'),
+    };
+    const issueSessionUseCase = buildIssueSessionUseCase();
+    const eventEmitter = { emit: jest.fn() } as unknown as EventEmitter2;
+    const useCase = new VerifyEmailAuthUseCase(
+      emailLoginChallengeRepository,
+      authUserRepository,
+      tokenHasher,
+      issueSessionUseCase,
+      eventEmitter,
+    );
+
+    const result = await useCase.execute({
+      challengeId: 'challenge-1',
+      code: '123456',
+      intent: 'signup',
+      displayName: 'Existing Member',
+    });
+
+    expect(result.isOk).toBe(false);
+    if (result.isOk) {
+      throw new Error('Expected verification to fail');
+    }
+    expect(result.error).toBeInstanceOf(EmailAlreadyRegisteredError);
+    expect(issueSessionUseCase.execute).not.toHaveBeenCalled();
   });
 
   it('rejects an expired login code', async () => {

@@ -42,6 +42,12 @@ export class EmailAlreadyRegisteredError extends AuthAppError {
   }
 }
 
+export class EmailAuthAccountNotFoundError extends AuthAppError {
+  constructor() {
+    super('No account found for this email');
+  }
+}
+
 export class SessionNotActiveError extends AuthAppError {
   constructor() {
     super('Session is not active');

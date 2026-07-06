@@ -37,6 +37,8 @@ export interface LoginUserInput {
   password: string;
 }
 
+export type EmailAuthIntent = 'login' | 'signup';
+
 export type OAuthProvider = 'google' | 'github';
 
 export interface OAuthIdentity {

@@ -31,7 +31,9 @@ describe('StartEmailAuthUseCase', () => {
       notificationService as unknown as NotificationService,
     );
 
-    const result = await useCase.execute('member@example.com');
+    const result = await useCase.execute({
+      email: 'member@example.com',
+    });
 
     expect(result).toEqual({
       challengeId: 'challenge-1',
@@ -58,5 +60,44 @@ describe('StartEmailAuthUseCase', () => {
       }),
     );
     expect(tokenHasher.hash).toHaveBeenCalledWith(expect.stringMatching(/^\d{6}$/));
+  });
+
+  it('uses sign-up copy when the auth intent is signup', async () => {
+    const emailLoginChallengeRepository: jest.Mocked<EmailLoginChallengeRepository> = {
+      create: jest.fn().mockResolvedValue({
+        id: 'challenge-1',
+        email: 'member@example.com',
+        codeHash: 'hashed-code',
+        expiresAt: new Date(Date.now() + 600_000),
+      }),
+      findById: jest.fn(),
+      save: jest.fn(),
+      invalidateActiveChallengesForEmail: jest.fn().mockResolvedValue(undefined),
+    };
+    const tokenHasher: jest.Mocked<TokenHasher> = {
+      hash: jest.fn().mockReturnValue('hashed-code'),
+    };
+    const notificationService: Pick<
+      jest.Mocked<NotificationService>,
+      'send'
+    > = {
+      send: jest.fn().mockResolvedValue(undefined),
+    };
+    const useCase = new StartEmailAuthUseCase(
+      emailLoginChallengeRepository,
+      tokenHasher,
+      notificationService as unknown as NotificationService,
+    );
+
+    await useCase.execute({
+      email: 'member@example.com',
+      intent: 'signup',
+    });
+
+    expect(notificationService.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subject: 'Your Camille sign-up code',
+      }),
+    );
   });
 });

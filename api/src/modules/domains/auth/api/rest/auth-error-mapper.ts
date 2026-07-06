@@ -2,10 +2,12 @@ import type { HttpException } from '@nestjs/common';
 import {
   ConflictException,
   ForbiddenException,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import {
   AuthAppError,
+  EmailAuthAccountNotFoundError,
   EmailAlreadyRegisteredError,
   EmailLoginCodeExpiredError,
   InactiveUserError,
@@ -48,6 +50,10 @@ export function mapAuthAppErrorToHttpException(
 
   if (error instanceof InactiveUserError) {
     return new ForbiddenException(error.message);
+  }
+
+  if (error instanceof EmailAuthAccountNotFoundError) {
+    return new NotFoundException(error.message);
   }
 
   if (error instanceof EmailAlreadyRegisteredError) {
