@@ -13,6 +13,7 @@ import {
   InvalidEmailLoginCodeError,
   InvalidPasswordResetTokenError,
   InvalidRefreshTokenError,
+  OAuthEmailNotVerifiedError,
   PasswordResetTokenExpiredError,
   RefreshSessionInactiveError,
   RefreshSessionNotFoundError,
@@ -36,6 +37,7 @@ export function mapAuthAppErrorToHttpException(
     || error instanceof InvalidRefreshTokenError
     || error instanceof EmailLoginCodeExpiredError
     || error instanceof InvalidPasswordResetTokenError
+    || error instanceof OAuthEmailNotVerifiedError
     || error instanceof PasswordResetTokenExpiredError
     || error instanceof RefreshSessionNotFoundError
     || error instanceof RefreshSessionInactiveError

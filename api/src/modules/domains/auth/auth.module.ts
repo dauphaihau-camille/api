@@ -9,6 +9,7 @@ import { AuthSessionRepository } from './app/ports/auth-session.repository';
 import { AuthTokenService } from './app/ports/auth-token.service';
 import { AuthUserRepository } from './app/ports/auth-user.repository';
 import { EmailLoginChallengeRepository } from './app/ports/email-login-challenge.repository';
+import { OAuthAccountRepository } from './app/ports/oauth-account.repository';
 import { PasswordHasher } from './app/ports/password-hasher';
 import { PasswordResetTokenRepository } from './app/ports/password-reset-token.repository';
 import { TokenHasher } from './app/ports/token-hasher';
@@ -20,15 +21,20 @@ import { RequestPasswordResetUseCase } from './app/use-cases/request-password-re
 import { RefreshSessionUseCase } from './app/use-cases/refresh-session.use-case';
 import { ResetPasswordUseCase } from './app/use-cases/reset-password.use-case';
 import { RegisterUseCase } from './app/use-cases/register.use-case';
+import { AuthenticateOAuthUseCase } from './app/use-cases/authenticate-oauth.use-case';
 import { StartEmailAuthUseCase } from './app/use-cases/start-email-auth.use-case';
 import { IssueSessionUseCase } from './app/use-cases/shared/issue-session.use-case';
 import { VerifyEmailAuthUseCase } from './app/use-cases/verify-email-auth.use-case';
 import { VerifyResetPasswordTokenUseCase } from './app/use-cases/verify-reset-password-token.use-case';
 import { AuthCookieService } from './api/rest/auth-cookie.utils';
 import { AuthController } from './api/rest/auth.controller';
+import { GithubOAuthGuard } from './api/guard/github-oauth.guard';
+import { GoogleOAuthGuard } from './api/guard/google-oauth.guard';
 import { JwtAuthGuard } from './api/guard/jwt-auth.guard';
 import { PermissionsGuard } from './api/guard/permissions.guard';
 import { AuthHttpExceptionFilter } from './api/rest/auth-http-exception.filter';
+import { GithubStrategy } from './infra/github.strategy';
+import { GoogleStrategy } from './infra/google.strategy';
 import { JwtStrategy } from './infra/jwt.strategy';
 import { CurrentUserEntity } from './infra/persistence/entities/current-user.entity';
 import { CurrentUserCredentialEntity } from './infra/persistence/entities/current-user-credential.entity';
@@ -37,7 +43,9 @@ import { EmailVerificationTokenEntity } from './infra/persistence/entities/email
 import { MikroOrmAuthSessionRepository } from './infra/persistence/mikro-orm-auth-session.repository';
 import { MikroOrmAuthUserRepository } from './infra/persistence/mikro-orm-auth-user.repository';
 import { MikroOrmEmailLoginChallengeRepository } from './infra/persistence/mikro-orm-email-login-challenge.repository';
+import { MikroOrmOAuthAccountRepository } from './infra/persistence/mikro-orm-oauth-account.repository';
 import { MikroOrmPasswordResetTokenRepository } from './infra/persistence/mikro-orm-password-reset-token.repository';
+import { OAuthAccountEntity } from './infra/persistence/entities/oauth-account.entity';
 import { PermissionEntity } from './infra/persistence/entities/permission.entity';
 import { PasswordResetTokenEntity } from './infra/persistence/entities/password-reset-token.entity';
 import { RoleEntity } from './infra/persistence/entities/role.entity';
@@ -57,6 +65,7 @@ const authEntities = [
   PasswordResetTokenEntity,
   EmailLoginChallengeEntity,
   EmailVerificationTokenEntity,
+  OAuthAccountEntity,
   RoleEntity,
   PermissionEntity,
   UserRoleEntity,
@@ -106,6 +115,10 @@ const authEntities = [
       useClass: MikroOrmEmailLoginChallengeRepository,
     },
     {
+      provide: OAuthAccountRepository,
+      useClass: MikroOrmOAuthAccountRepository,
+    },
+    {
       provide: PasswordHasher,
       useClass: BcryptPasswordHasher,
     },
@@ -121,6 +134,7 @@ const authEntities = [
       provide: AuthTokenService,
       useClass: JwtAuthTokenService,
     },
+    AuthenticateOAuthUseCase,
     RegisterUseCase,
     StartEmailAuthUseCase,
     VerifyEmailAuthUseCase,
@@ -135,6 +149,10 @@ const authEntities = [
     IssueSessionUseCase,
     AuthCookieService,
     AuthHttpExceptionFilter,
+    GoogleStrategy,
+    GithubStrategy,
+    GoogleOAuthGuard,
+    GithubOAuthGuard,
     JwtStrategy,
     JwtAuthGuard,
     PermissionsGuard,

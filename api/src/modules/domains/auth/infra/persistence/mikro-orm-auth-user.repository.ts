@@ -69,7 +69,7 @@ export class MikroOrmAuthUserRepository implements AuthUserRepository {
     const user = userRepository.create({
       email: input.email.toString(),
       displayName: input.displayName,
-      avatar: undefined,
+      avatar: input.avatar,
       status: input.status,
       emailVerifiedAt: input.emailVerifiedAt,
     });

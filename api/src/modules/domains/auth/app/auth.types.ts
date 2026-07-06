@@ -37,6 +37,17 @@ export interface LoginUserInput {
   password: string;
 }
 
+export type OAuthProvider = 'google' | 'github';
+
+export interface OAuthIdentity {
+  provider: OAuthProvider;
+  providerUserId: string;
+  email: string;
+  emailVerified: boolean;
+  displayName?: string;
+  avatar?: string;
+}
+
 export interface UserProfile {
   id: string;
   email: string;

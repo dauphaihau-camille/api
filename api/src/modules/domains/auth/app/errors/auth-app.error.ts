@@ -24,6 +24,12 @@ export class EmailLoginCodeExpiredError extends AuthAppError {
   }
 }
 
+export class OAuthEmailNotVerifiedError extends AuthAppError {
+  constructor() {
+    super('OAuth provider email is not verified');
+  }
+}
+
 export class InactiveUserError extends AuthAppError {
   constructor() {
     super('User account is not active');

@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { CookieOptions } from 'express';
 import { AUTH_CONFIG } from '~/config/auth.config';
 import type { AuthConfig } from '~/config/auth.config';
@@ -39,7 +40,10 @@ export function extractCookieValue(
 
 @Injectable()
 export class AuthCookieService {
-  constructor(@Inject(AUTH_CONFIG) private readonly authConfig: AuthConfig) {}
+  constructor(
+    @Inject(AUTH_CONFIG) private readonly authConfig: AuthConfig,
+    private readonly configService: ConfigService,
+  ) {}
 
   setAuthCookies(response: Response, authResponse: AuthResponse): void {
     response.cookie(
@@ -63,6 +67,12 @@ export class AuthCookieService {
 
   extractRefreshToken(request: Request): string {
     return extractCookieValue(request, this.authConfig.refreshCookieName) ?? '';
+  }
+
+  getAppBaseUrl(): string {
+    return this.configService
+      .get<string>('APP_BASE_URL', 'http://localhost:4000')
+      .replace(/\/+$/, '');
   }
 
   private buildCookieOptions(maxAgeSeconds: number): CookieOptions {

@@ -11,6 +11,7 @@ import { AbstractAuthEntity } from './abstract-auth.entity';
 import { UserStatus } from '~/modules/domains/auth/domain/enums/user-status.enum';
 import { CurrentUserCredentialEntity } from './current-user-credential.entity';
 import { EmailVerificationTokenEntity } from './email-verification-token.entity';
+import { OAuthAccountEntity } from './oauth-account.entity';
 import { PasswordResetTokenEntity } from './password-reset-token.entity';
 import { UserSessionEntity } from './user-session.entity';
 import { UserRoleEntity } from './user-role.entity';
@@ -57,4 +58,7 @@ export class CurrentUserEntity extends AbstractAuthEntity {
 
   @OneToMany(() => UserRoleEntity, (userRole) => userRole.user)
   userRoles = new Collection<UserRoleEntity>(this);
+
+  @OneToMany(() => OAuthAccountEntity, (oauthAccount) => oauthAccount.user)
+  oauthAccounts = new Collection<OAuthAccountEntity>(this);
 }

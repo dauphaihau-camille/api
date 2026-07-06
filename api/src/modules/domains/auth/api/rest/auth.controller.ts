@@ -28,7 +28,9 @@ import { resolveOrThrow } from '../../../../../common/application/result';
 import { parseDurationToMilliseconds } from '../../../../../libs/duration';
 import type {
   AuthenticatedUser,
+  OAuthIdentity,
 } from '../../app/auth.types';
+import { AuthenticateOAuthUseCase } from '../../app/use-cases/authenticate-oauth.use-case';
 import { GetCurrentUserUseCase } from '../../app/use-cases/get-current-user.use-case';
 import { LoginUseCase } from '../../app/use-cases/login.use-case';
 import { LogoutUseCase } from '../../app/use-cases/logout.use-case';
@@ -40,6 +42,8 @@ import { StartEmailAuthUseCase } from '../../app/use-cases/start-email-auth.use-
 import { VerifyEmailAuthUseCase } from '../../app/use-cases/verify-email-auth.use-case';
 import { VerifyResetPasswordTokenUseCase } from '../../app/use-cases/verify-reset-password-token.use-case';
 import { CurrentUser } from '../../../../../common/decorators/current-user.decorator';
+import { GithubOAuthGuard } from '../guard/github-oauth.guard';
+import { GoogleOAuthGuard } from '../guard/google-oauth.guard';
 import { JwtAuthGuard } from '../guard/jwt-auth.guard';
 import { PermissionsGuard } from '../guard/permissions.guard';
 import { mapAuthAppErrorToHttpException } from './auth-error-mapper';
@@ -99,6 +103,7 @@ const authRouteRateLimits = {
 export class AuthController {
   constructor(
     private readonly registerUseCase: RegisterUseCase,
+    private readonly authenticateOAuthUseCase: AuthenticateOAuthUseCase,
     private readonly startEmailAuthUseCase: StartEmailAuthUseCase,
     private readonly verifyEmailAuthUseCase: VerifyEmailAuthUseCase,
     private readonly loginUseCase: LoginUseCase,
@@ -142,6 +147,44 @@ export class AuthController {
     this.authCookieService.setAuthCookies(response, authResponse);
 
     return AuthResponseDto.fromAuthResponse(authResponse);
+  }
+
+  @Get('oauth/google')
+  @UseGuards(GoogleOAuthGuard)
+  @ApiOperation({
+    summary: 'Start Google OAuth sign-in',
+  })
+  async googleOAuth(): Promise<void> {}
+
+  @Get('oauth/google/callback')
+  @UseGuards(GoogleOAuthGuard)
+  @ApiOperation({
+    summary: 'Handle Google OAuth callback',
+  })
+  async googleOAuthCallback(
+    @Req() request: Request & { user: OAuthIdentity },
+    @Res() response: Response,
+  ): Promise<void> {
+    await this.completeOAuthAuthentication(request, response);
+  }
+
+  @Get('oauth/github')
+  @UseGuards(GithubOAuthGuard)
+  @ApiOperation({
+    summary: 'Start GitHub OAuth sign-in',
+  })
+  async githubOAuth(): Promise<void> {}
+
+  @Get('oauth/github/callback')
+  @UseGuards(GithubOAuthGuard)
+  @ApiOperation({
+    summary: 'Handle GitHub OAuth callback',
+  })
+  async githubOAuthCallback(
+    @Req() request: Request & { user: OAuthIdentity },
+    @Res() response: Response,
+  ): Promise<void> {
+    await this.completeOAuthAuthentication(request, response);
   }
 
   @Post('login')
@@ -362,5 +405,38 @@ export class AuthController {
     return UserProfileResponseDto.fromUserProfile(
       userProfile,
     );
+  }
+
+  private async completeOAuthAuthentication(
+    request: Request & { user: OAuthIdentity },
+    response: Response,
+  ): Promise<void> {
+    const authResponse = resolveOrThrow(
+      await this.authenticateOAuthUseCase.execute(request.user),
+      mapAuthAppErrorToHttpException,
+    );
+
+    this.authCookieService.setAuthCookies(response, authResponse);
+    response.redirect(302, this.buildAppRedirectUrl(request.query.state));
+  }
+
+  private buildAppRedirectUrl(state: unknown): string {
+    const redirectTarget = this.getSafeRedirectTarget(
+      typeof state === 'string' ? state : undefined,
+    ) ?? '/workspace';
+
+    return `${this.authCookieService.getAppBaseUrl()}${redirectTarget}`;
+  }
+
+  private getSafeRedirectTarget(redirectTarget: string | undefined): string | null {
+    if (!redirectTarget) {
+      return null;
+    }
+
+    if (!redirectTarget.startsWith('/') || redirectTarget.startsWith('//')) {
+      return null;
+    }
+
+    return redirectTarget;
   }
 }

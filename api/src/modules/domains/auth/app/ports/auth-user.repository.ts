@@ -8,6 +8,7 @@ import type { RoleKey } from '../../domain/value-objects/role-key';
 export interface CreateUserAccountInput {
   email: Email;
   displayName?: string;
+  avatar?: string;
   status: UserStatus;
   passwordHash?: PasswordHash;
   passwordUpdatedAt?: Date;
