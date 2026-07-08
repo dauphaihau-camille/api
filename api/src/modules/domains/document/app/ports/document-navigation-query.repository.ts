@@ -1,5 +1,6 @@
 import type { TeamspaceEntity } from '../../../teamspace/infra/persistence/entities/teamspace.entity';
 import type { DocumentEntity } from '../../infra/persistence/entities/document.entity';
+import type { DocumentBreadcrumbItem } from '../contracts/document.contract';
 
 export abstract class DocumentNavigationQueryRepository {
   abstract findDocument(
@@ -21,7 +22,7 @@ export abstract class DocumentNavigationQueryRepository {
     workspaceId: string;
     query?: string;
   }): Promise<DocumentEntity[]>;
-  abstract findAncestorTitles(parentDocumentId?: string): Promise<string[]>;
+  abstract findAncestors(parentDocumentId?: string): Promise<DocumentBreadcrumbItem[]>;
   abstract findChildren(input: {
     workspaceId: string;
     parentDocumentId: string;

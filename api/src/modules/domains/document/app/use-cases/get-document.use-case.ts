@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/modules/domains/auth/app/auth.types';
+import { PublishRepository } from '../../../publish/app/ports/publish.repository';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import type { DocumentSummary } from '../contracts/document.contract';
 import { DocumentNotFoundError } from '../errors/document-app.error';
@@ -14,6 +15,7 @@ export class GetDocumentUseCase {
     private readonly workspaceRepository: WorkspaceRepository,
     private readonly documentNavigationQueryRepository: DocumentNavigationQueryRepository,
     private readonly documentVisitRepository: DocumentVisitRepository,
+    private readonly publishRepository: PublishRepository,
   ) {}
 
   async execute(
@@ -27,8 +29,25 @@ export class GetDocumentUseCase {
     }
 
     await resolveWorkspaceForUser(this.workspaceRepository, document.workspace.id, currentUser);
+
+    const [favoriteDocumentIds, publishedDocument, breadcrumb] = await Promise.all([
+      this.documentNavigationQueryRepository.findFavoriteDocumentIds({
+        workspaceId: document.workspace.id,
+        userId: currentUser.userId,
+        documentIds: [document.id],
+      }),
+      this.publishRepository.findPublishedDocumentByDocumentId(document.id),
+      this.documentNavigationQueryRepository.findAncestors(document.parentDocument?.id),
+    ]);
+
     await this.documentVisitRepository.recordVisit(document, currentUser.userId);
 
-    return toDocumentSummary(document);
+    return {
+      ...toDocumentSummary(document),
+      isFavorite: favoriteDocumentIds.includes(document.id),
+      publishedDocumentId: publishedDocument?.id,
+      publicPath: publishedDocument ? `/share/${publishedDocument.id}` : undefined,
+      breadcrumb,
+    };
   }
 }

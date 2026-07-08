@@ -81,9 +81,9 @@ export class ListArchivedWorkspaceDocumentsUseCase {
 
     return [
       ...breadcrumbPath,
-      ...await this.documentNavigationQueryRepository.findAncestorTitles(
+      ...(await this.documentNavigationQueryRepository.findAncestors(
         document.parentDocument?.id,
-      ),
+      )).map((ancestor) => ancestor.title),
     ];
   }
 

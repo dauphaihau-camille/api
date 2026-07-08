@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { DocumentFavoriteEntity } from '../../favorite/infra/persistence/entities/document-favorite.entity';
 import { TeamspaceEntity } from '../../teamspace/infra/persistence/entities/teamspace.entity';
+import type { DocumentBreadcrumbItem } from '../app/contracts/document.contract';
 import { DocumentNavigationQueryRepository } from '../app/ports/document-navigation-query.repository';
 import { DocumentEntity } from './persistence/entities/document.entity';
 
@@ -79,14 +80,14 @@ export class MikroOrmDocumentNavigationQueryRepository implements DocumentNaviga
     });
   }
 
-  async findAncestorTitles(parentDocumentId?: string): Promise<string[]> {
+  async findAncestors(parentDocumentId?: string): Promise<DocumentBreadcrumbItem[]> {
     if (!parentDocumentId) {
       return [];
     }
 
     const entityManager = this.entityManager.fork();
     const cache = new Map<string, DocumentEntity | null>();
-    const ancestorTitles: string[] = [];
+    const ancestors: DocumentBreadcrumbItem[] = [];
     let currentParentDocumentId: string | undefined = parentDocumentId;
 
     while (currentParentDocumentId) {
@@ -100,11 +101,15 @@ export class MikroOrmDocumentNavigationQueryRepository implements DocumentNaviga
         break;
       }
 
-      ancestorTitles.push(ancestor.title);
+      ancestors.push({
+        id: ancestor.id,
+        publicId: ancestor.publicId,
+        title: ancestor.title,
+      });
       currentParentDocumentId = ancestor.parentDocument?.id;
     }
 
-    return ancestorTitles.reverse();
+    return ancestors.reverse();
   }
 
   async findChildren(input: { workspaceId: string; parentDocumentId: string }): Promise<DocumentEntity[]> {

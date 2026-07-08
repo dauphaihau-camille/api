@@ -1,5 +1,27 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import type { DocumentSummary } from '../../../app/contracts/document.contract';
+import type {
+  DocumentBreadcrumbItem,
+  DocumentSummary,
+} from '../../../app/contracts/document.contract';
+
+class DocumentBreadcrumbItemDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  public_id!: string;
+
+  @ApiProperty()
+  title!: string;
+
+  static fromSummary(item: DocumentBreadcrumbItem): DocumentBreadcrumbItemDto {
+    return {
+      id: item.id,
+      public_id: item.publicId,
+      title: item.title,
+    };
+  }
+}
 
 export class DocumentResponseDto {
   @ApiProperty()
@@ -47,6 +69,21 @@ export class DocumentResponseDto {
   @ApiProperty()
   updated_at!: string;
 
+  @ApiPropertyOptional()
+  is_favorite?: boolean;
+
+  @ApiPropertyOptional()
+  published_document_id?: string;
+
+  @ApiPropertyOptional()
+  public_path?: string;
+
+  @ApiPropertyOptional({
+    type: DocumentBreadcrumbItemDto,
+    isArray: true,
+  })
+  breadcrumb?: DocumentBreadcrumbItemDto[];
+
   static fromSummary(document: DocumentSummary): DocumentResponseDto {
     return {
       id: document.id,
@@ -63,6 +100,10 @@ export class DocumentResponseDto {
       archived_by_name: document.archivedByName,
       created_at: document.createdAt.toISOString(),
       updated_at: document.updatedAt.toISOString(),
+      is_favorite: document.isFavorite,
+      published_document_id: document.publishedDocumentId,
+      public_path: document.publicPath,
+      breadcrumb: document.breadcrumb?.map(DocumentBreadcrumbItemDto.fromSummary),
     };
   }
 }

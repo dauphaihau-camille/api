@@ -1,5 +1,11 @@
 export type DocumentContentFormat = 'blocknote_v1';
 
+export interface DocumentBreadcrumbItem {
+  id: string;
+  publicId: string;
+  title: string;
+}
+
 export interface DocumentSummary {
   id: string;
   publicId: string;
@@ -15,6 +21,10 @@ export interface DocumentSummary {
   archivedByName?: string;
   createdAt: Date;
   updatedAt: Date;
+  isFavorite?: boolean;
+  publishedDocumentId?: string;
+  publicPath?: string;
+  breadcrumb?: DocumentBreadcrumbItem[];
 }
 
 export interface DocumentTreeChild {
