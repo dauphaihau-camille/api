@@ -38,7 +38,6 @@ export class CreateDocumentUseCase {
     input: CreateDocumentInput,
   ): Promise<DocumentSummary> {
     const workspace = await resolveWorkspaceForUser(this.workspaceRepository, input.workspaceId, currentUser);
-    const user = await this.documentCommandRepository.findCurrentUser(currentUser.userId) as CurrentUserEntity;
 
     const parentDocument = input.parentDocumentId
       ? await this.documentNavigationQueryRepository.findDocument(input.parentDocumentId)
@@ -62,25 +61,64 @@ export class CreateDocumentUseCase {
     }
 
     const normalizedContent = normalizeContent(input.content);
-    const document = this.documentCommandRepository.createDocument({
-      workspace: workspace.id,
-      teamspace: teamspace?.id,
-      parentDocument: parentDocument?.id,
-      title: normalizeTitle(input.title),
-      contentFormat: input.contentFormat ?? DEFAULT_CONTENT_FORMAT,
-      contentJson: normalizedContent,
-      searchText: extractDocumentSearchText(normalizedContent),
-      sortKey: await this.documentTreeService.resolveSortKeyForCreate(
-        workspace.id,
-        parentDocument?.id,
-        teamspace?.id,
-      ),
-      createdBy: user,
-      updatedBy: user,
-    });
 
-    await this.documentCommandRepository.saveDocument(document);
-    await this.documentSubdocService.syncSubdocReferencesForDoc(document);
+    const document = await this.documentCommandRepository.withTransaction(async ({
+      commandRepository,
+      subdocReferenceRepository,
+    }) => {
+      const user = await commandRepository.findCurrentUser(currentUser.userId) as CurrentUserEntity;
+
+      const transactionalParentDocument = parentDocument?.id
+        ? await commandRepository.findDocument(parentDocument.id)
+        : null;
+
+      const createdDocument = commandRepository.createDocument({
+        workspace: workspace.id,
+        teamspace: teamspace?.id,
+        parentDocument: transactionalParentDocument?.id,
+        title: normalizeTitle(input.title),
+        contentFormat: input.contentFormat ?? DEFAULT_CONTENT_FORMAT,
+        contentJson: normalizedContent,
+        searchText: extractDocumentSearchText(normalizedContent),
+        sortKey: await this.documentTreeService.resolveSortKeyForCreate(
+          workspace.id,
+          parentDocument?.id,
+          teamspace?.id,
+        ),
+        createdBy: user,
+        updatedBy: user,
+      });
+
+      if (transactionalParentDocument) {
+        transactionalParentDocument.contentJson = this.documentSubdocService.appendSubdocBlock(
+          transactionalParentDocument.contentJson,
+          createdDocument,
+        );
+        transactionalParentDocument.searchText = extractDocumentSearchText(
+          transactionalParentDocument.contentJson,
+        );
+        transactionalParentDocument.updatedBy = user;
+      }
+
+      await commandRepository.saveDocuments(
+        transactionalParentDocument
+          ? [createdDocument, transactionalParentDocument]
+          : [createdDocument],
+      );
+      await this.documentSubdocService.syncSubdocReferencesForDoc(
+        createdDocument,
+        subdocReferenceRepository,
+      );
+      if (transactionalParentDocument) {
+        await this.documentSubdocService.syncSubdocReferencesForDoc(
+          transactionalParentDocument,
+          subdocReferenceRepository,
+        );
+      }
+      await commandRepository.flush();
+
+      return createdDocument;
+    });
 
     await this.auditService.record({
       action: 'document.created',
