@@ -12,6 +12,7 @@ export interface DocumentSummary {
   content: unknown[];
   sortKey: number;
   archivedAt?: Date;
+  archivedByName?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +43,21 @@ export interface DocumentNavigationNode {
 
 export interface DocumentNavigationPage {
   items: DocumentNavigationNode[];
+  nextCursor?: string;
+}
+
+export interface ArchivedDocumentListItem {
+  id: string;
+  publicId: string;
+  version: number;
+  title: string;
+  hasContent: boolean;
+  breadcrumbPath: string[];
+  archivedAt: Date;
+}
+
+export interface ArchivedDocumentListPage {
+  items: ArchivedDocumentListItem[];
   nextCursor?: string;
 }
 

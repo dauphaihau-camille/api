@@ -17,6 +17,13 @@ export class InlineJobDispatcher implements JobDispatcher {
     payload: AppJobPayloadMap[TName],
     options?: DispatchJobOptions,
   ): Promise<void> {
+    if ((options?.delayMs ?? 0) > 0) {
+      this.logger.warn(
+        `Skipping inline delayed job ${name}; delayed execution requires the redis queue driver`,
+      );
+      return;
+    }
+
     this.logger.log(
       `Running inline job ${name}${options?.deduplicationKey ? ` (${options.deduplicationKey})` : ''}`,
     );

@@ -43,8 +43,10 @@ implements JobDispatcher, OnApplicationShutdown {
     payload: AppJobPayloadMap[TName],
     options?: DispatchJobOptions,
   ): Promise<void> {
+    const normalizedJobId = options?.deduplicationKey?.replaceAll(':', '__');
     const job = await this.queue.add(name, payload, {
-      jobId: options?.deduplicationKey,
+      delay: options?.delayMs,
+      jobId: normalizedJobId,
     });
 
     this.logger.log(

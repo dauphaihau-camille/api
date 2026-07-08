@@ -38,6 +38,9 @@ export class DocumentResponseDto {
   @ApiPropertyOptional()
   archived_at?: string;
 
+  @ApiPropertyOptional()
+  archived_by_name?: string;
+
   @ApiProperty()
   created_at!: string;
 
@@ -57,6 +60,7 @@ export class DocumentResponseDto {
       content: document.content,
       sort_key: document.sortKey,
       archived_at: document.archivedAt?.toISOString(),
+      archived_by_name: document.archivedByName,
       created_at: document.createdAt.toISOString(),
       updated_at: document.updatedAt.toISOString(),
     };

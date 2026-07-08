@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MikroOrmModule } from '@mikro-orm/nestjs';
+import { CurrentUserEntity } from '../../domains/auth/infra/persistence/entities/current-user.entity';
 import { SendNotificationEmailJob } from '../../../common/jobs/send-notification-email.job';
+import { PermanentlyDeleteArchivedDocumentJob } from '../../../common/jobs/permanently-delete-archived-document.job';
 import {
   QueueConfig,
   QUEUE_CONFIG,
@@ -12,6 +15,7 @@ import { ObservabilityModule } from '../observability/observability.module';
 import { ObservabilityService } from '../observability/observability.service';
 import Redis from 'ioredis';
 import { SendWelcomeEmailJob } from '../../../common/jobs/send-welcome-email.job';
+import { DocumentEntity } from '../../domains/document/infra/persistence/entities/document.entity';
 import { JobDispatcher } from './app/ports/job-dispatcher';
 import { AppJobRunner } from './infra/app-job-runner';
 import { BullMqConnectionManager } from './infra/bullmq-connection-manager';
@@ -20,7 +24,12 @@ import { InlineJobDispatcher } from './infra/inline-job-dispatcher';
 import { BULLMQ_CONNECTION, BULLMQ_QUEUE } from './infra/queue.constants';
 
 @Module({
-  imports: [ConfigModule, MailModule, ObservabilityModule],
+  imports: [
+    ConfigModule,
+    MailModule,
+    ObservabilityModule,
+    MikroOrmModule.forFeature([CurrentUserEntity, DocumentEntity]),
+  ],
   providers: [
     {
       provide: QUEUE_CONFIG,
@@ -76,6 +85,7 @@ import { BULLMQ_CONNECTION, BULLMQ_QUEUE } from './infra/queue.constants';
     },
     BullMqConnectionManager,
     AppJobRunner,
+    PermanentlyDeleteArchivedDocumentJob,
     SendNotificationEmailJob,
     SendWelcomeEmailJob,
     {

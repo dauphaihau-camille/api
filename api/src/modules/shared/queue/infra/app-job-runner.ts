@@ -4,6 +4,7 @@ import {
   AppJobName,
   AppJobPayloadMap,
 } from '../../../../common/jobs/job.types';
+import { PermanentlyDeleteArchivedDocumentJob } from '../../../../common/jobs/permanently-delete-archived-document.job';
 import { SendNotificationEmailJob } from '../../../../common/jobs/send-notification-email.job';
 import { SendWelcomeEmailJob } from '../../../../common/jobs/send-welcome-email.job';
 
@@ -14,6 +15,7 @@ export class AppJobRunner {
   constructor(
     private readonly sendWelcomeEmailJob: SendWelcomeEmailJob,
     private readonly sendNotificationEmailJob: SendNotificationEmailJob,
+    private readonly permanentlyDeleteArchivedDocumentJob: PermanentlyDeleteArchivedDocumentJob,
   ) {}
 
   async run<TName extends AppJobName>(
@@ -31,6 +33,11 @@ export class AppJobRunner {
       case appJobName.notificationSendEmail:
         await this.sendNotificationEmailJob.run(
           payload as AppJobPayloadMap[typeof appJobName.notificationSendEmail],
+        );
+        return;
+      case appJobName.permanentlyDeleteArchivedDocument:
+        await this.permanentlyDeleteArchivedDocumentJob.run(
+          payload as AppJobPayloadMap[typeof appJobName.permanentlyDeleteArchivedDocument],
         );
         return;
     }

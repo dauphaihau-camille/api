@@ -10,6 +10,7 @@ import {
   DocumentAppError,
   DocumentDescendantMoveError,
   DocumentNotFoundError,
+  DocumentNotArchivedError,
   DocumentPermissionDeniedError,
   DocumentTeamspaceNotFoundError,
   DocumentVersionConflictError,
@@ -46,6 +47,7 @@ export function mapDocumentAppErrorToHttpException(error: DocumentAppError): Htt
     || error instanceof InvalidDocumentCursorError
     || error instanceof DocumentDescendantMoveError
     || error instanceof ArchivedDocumentDuplicationError
+    || error instanceof DocumentNotArchivedError
   ) {
     return new BadRequestException(error.message);
   }

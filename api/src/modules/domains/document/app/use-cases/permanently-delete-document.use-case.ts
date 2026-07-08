@@ -1,48 +1,41 @@
 import { OptimisticLockError } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
-import { appJobName } from '~/common/jobs/job.types';
 import type { AuthenticatedUser } from '~/modules/domains/auth/app/auth.types';
-import { CurrentUserEntity } from '~/modules/domains/auth/infra/persistence/entities/current-user.entity';
 import { AuditService } from '~/modules/shared/audit/audit.service';
-import { JobDispatcher } from '~/modules/shared/queue/app/ports/job-dispatcher';
-import { PublishRepository } from '../../../publish/app/ports/publish.repository';
 import { canEditWorkspace } from '../../../workspace/app/workspace-permissions';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import { DocumentCommandRepository } from '../ports/document-command.repository';
 import {
+  DocumentNotArchivedError,
   DocumentNotFoundError,
   DocumentPermissionDeniedError,
   DocumentVersionConflictError,
 } from '../errors/document-app.error';
 import { DocumentTreeService } from '../services/document-tree.service';
-import { DocumentSubdocService } from '../services/document-subdoc.service';
-import type { DocumentSummary } from '../contracts/document.contract';
-import { toDocumentSummary } from '../mappers/document-summary.mapper';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
 
 @Injectable()
-export class ArchiveDocumentUseCase {
-  private static readonly TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
-
+export class PermanentlyDeleteDocumentUseCase {
   constructor(
     private readonly auditService: AuditService,
-    private readonly jobDispatcher: JobDispatcher,
     private readonly workspaceRepository: WorkspaceRepository,
-    private readonly publishRepository: PublishRepository,
     private readonly documentCommandRepository: DocumentCommandRepository,
     private readonly documentTreeService: DocumentTreeService,
-    private readonly documentSubdocService: DocumentSubdocService,
   ) {}
 
   async execute(
     documentId: string,
     version: number,
     currentUser: AuthenticatedUser,
-  ): Promise<DocumentSummary> {
+  ): Promise<void> {
     const existingDocument = await this.documentCommandRepository.findDocument(documentId);
     if (!existingDocument) {
       throw new DocumentNotFoundError(documentId);
     }
+    if (!existingDocument.archivedAt) {
+      throw new DocumentNotArchivedError();
+    }
+
     const workspace = await resolveWorkspaceForUser(
       this.workspaceRepository,
       existingDocument.workspace.id,
@@ -59,6 +52,7 @@ export class ArchiveDocumentUseCase {
       if (error instanceof OptimisticLockError) {
         throw new DocumentVersionConflictError();
       }
+
       throw error;
     }
 
@@ -66,13 +60,13 @@ export class ArchiveDocumentUseCase {
       await this.documentTreeService.findDescendants(existingDocument.id, existingDocument.workspace.id)
     ).map((document) => document.id);
 
-    const archivedDocument = await this.documentCommandRepository.withTransaction(async ({
-      commandRepository,
-      subdocReferenceRepository,
-    }) => {
+    await this.documentCommandRepository.withTransaction(async ({ commandRepository }) => {
       const document = await commandRepository.findDocument(documentId);
       if (!document) {
         throw new DocumentNotFoundError(documentId);
+      }
+      if (!document.archivedAt) {
+        throw new DocumentNotArchivedError();
       }
 
       await commandRepository.lockDocumentVersion(document, version);
@@ -88,48 +82,16 @@ export class ArchiveDocumentUseCase {
         }),
       );
 
-      const archivedAt = new Date();
-      const actor = await commandRepository.findCurrentUser(currentUser.userId) as CurrentUserEntity;
-
-      for (const item of [document, ...descendants]) {
-        item.archivedAt = archivedAt;
-        item.updatedBy = actor;
-      }
-
-      await this.documentSubdocService.removeArchivedSubdocReferences(
-        [document, ...descendants],
-        subdocReferenceRepository,
-      );
-      await commandRepository.saveDocuments([document, ...descendants]);
-
-      return document;
+      await commandRepository.removeDocuments([document, ...descendants]);
     });
 
-    await this.publishRepository.unpublishDocument(archivedDocument.id);
-
     await this.auditService.record({
-      action: 'document.archived',
+      action: 'document.permanently_deleted',
       resourceType: 'document',
-      resourceId: archivedDocument.id,
+      resourceId: existingDocument.id,
       metadata: {
         workspaceId: workspace.id,
       },
     });
-
-    if (archivedDocument.archivedAt) {
-      await this.jobDispatcher.dispatch(
-        appJobName.permanentlyDeleteArchivedDocument,
-        {
-          documentId: archivedDocument.id,
-          archivedAt: archivedDocument.archivedAt.toISOString(),
-        },
-        {
-          deduplicationKey: `${appJobName.permanentlyDeleteArchivedDocument}:${archivedDocument.id}:${archivedDocument.archivedAt.toISOString()}`,
-          delayMs: ArchiveDocumentUseCase.TRASH_RETENTION_MS,
-        },
-      );
-    }
-
-    return toDocumentSummary(archivedDocument);
   }
 }

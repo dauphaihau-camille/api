@@ -1,5 +1,6 @@
 import type { AuthenticatedUser } from '~/modules/domains/auth/app/auth.types';
 import { UserStatus } from '~/modules/domains/auth/domain/enums/user-status.enum';
+import type { PublishRepository } from '../../../publish/app/ports/publish.repository';
 import { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.enum';
 import type { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import type { DocumentCommandRepository } from '../ports/document-command.repository';
@@ -56,13 +57,23 @@ describe('ArchiveDocumentUseCase', () => {
     } as unknown as jest.Mocked<DocumentSubdocService>;
   }
 
+  function createPublishRepository() {
+    return {
+      unpublishDocument: jest.fn().mockResolvedValue(null),
+    } as unknown as jest.Mocked<PublishRepository>;
+  }
+
   it('removes archived subdoc references for the archived subtree', async () => {
     const workspaceRepository = createWorkspaceRepository();
     const commandRepository = createCommandRepository();
     const treeService = createTreeService();
     const subdocService = createSubdocService();
+    const publishRepository = createPublishRepository();
     const auditService = {
       record: jest.fn(),
+    };
+    const jobDispatcher = {
+      dispatch: jest.fn(),
     };
 
     const document = {
@@ -95,7 +106,9 @@ describe('ArchiveDocumentUseCase', () => {
 
     const useCase = new ArchiveDocumentUseCase(
       auditService as never,
+      jobDispatcher as never,
       workspaceRepository,
+      publishRepository,
       commandRepository,
       treeService,
       subdocService,

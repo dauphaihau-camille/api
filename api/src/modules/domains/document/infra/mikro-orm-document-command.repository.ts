@@ -49,6 +49,10 @@ export class MikroOrmDocumentCommandRepository implements DocumentCommandReposit
     await this.scopedEntityManager.persist(documents).flush();
   }
 
+  async removeDocuments(documents: DocumentEntity[]): Promise<void> {
+    await this.scopedEntityManager.remove(documents).flush();
+  }
+
   async flush(): Promise<void> {
     await this.scopedEntityManager.flush();
   }

@@ -14,6 +14,9 @@ export function toDocumentSummary(document: DocumentEntity): DocumentSummary {
     content: document.contentJson,
     sortKey: document.sortKey,
     archivedAt: document.archivedAt,
+    archivedByName: document.archivedAt
+      ? (document.updatedBy.displayName ?? document.updatedBy.email)
+      : undefined,
     createdAt: document.createdAt,
     updatedAt: document.updatedAt,
   };

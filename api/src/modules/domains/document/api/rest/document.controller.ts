@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Header,
   HttpCode,
@@ -28,8 +29,10 @@ import { DuplicateDocumentUseCase } from '../../app/use-cases/duplicate-document
 import { GetDefaultWorkspaceDocumentUseCase } from '../../app/use-cases/get-default-workspace-document.use-case';
 import { GetDocumentUseCase } from '../../app/use-cases/get-document.use-case';
 import { ListDocumentChildrenUseCase } from '../../app/use-cases/list-document-children.use-case';
+import { ListArchivedWorkspaceDocumentsUseCase } from '../../app/use-cases/list-archived-workspace-documents.use-case';
 import { ListWorkspaceDocumentsUseCase } from '../../app/use-cases/list-workspace-documents.use-case';
 import { MoveDocumentUseCase } from '../../app/use-cases/move-document.use-case';
+import { PermanentlyDeleteDocumentUseCase } from '../../app/use-cases/permanently-delete-document.use-case';
 import { RestoreDocumentUseCase } from '../../app/use-cases/restore-document.use-case';
 import { UpdateDocumentUseCase } from '../../app/use-cases/update-document.use-case';
 import {
@@ -48,6 +51,7 @@ import {
   WorkspaceDocumentNavigationResponseDto,
 } from './dto/document-navigation-response.dto';
 import { WorkspaceDefaultDocumentResponseDto } from './dto/workspace-default-document-response.dto';
+import { ArchivedDocumentListPageResponseDto } from './dto/archived-document-list-response.dto';
 
 @Controller()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -56,6 +60,7 @@ import { WorkspaceDefaultDocumentResponseDto } from './dto/workspace-default-doc
 export class DocumentController {
   constructor(
     private readonly listWorkspaceDocumentsUseCase: ListWorkspaceDocumentsUseCase,
+    private readonly listArchivedWorkspaceDocumentsUseCase: ListArchivedWorkspaceDocumentsUseCase,
     private readonly getDefaultWorkspaceDocumentUseCase: GetDefaultWorkspaceDocumentUseCase,
     private readonly getDocumentUseCase: GetDocumentUseCase,
     private readonly listDocumentChildrenUseCase: ListDocumentChildrenUseCase,
@@ -64,13 +69,14 @@ export class DocumentController {
     private readonly updateDocumentUseCase: UpdateDocumentUseCase,
     private readonly archiveDocumentUseCase: ArchiveDocumentUseCase,
     private readonly restoreDocumentUseCase: RestoreDocumentUseCase,
+    private readonly permanentlyDeleteDocumentUseCase: PermanentlyDeleteDocumentUseCase,
     private readonly moveDocumentUseCase: MoveDocumentUseCase,
   ) {}
 
   @Get('workspaces/:workspaceId/documents/default')
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
-    summary: 'Get default workspace document',
+    summary: 'Get default document',
   })
   @ApiQuery({
     name: 'recent_document_id',
@@ -91,10 +97,48 @@ export class DocumentController {
       .catch(this.rethrowDocumentAppError);
   }
 
+  @Get('workspaces/:workspaceId/documents/archived')
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    summary: 'List archived workspace documents',
+  })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    type: String,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'cursor',
+    required: false,
+    type: String,
+  })
+  @ApiOkResponse({
+    type: ArchivedDocumentListPageResponseDto,
+  })
+  async listArchivedWorkspaceDocuments(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Query() query: ListWorkspaceDocumentsQueryDto,
+  ): Promise<ArchivedDocumentListPageResponseDto> {
+    return this.listArchivedWorkspaceDocumentsUseCase
+      .execute(workspaceId, currentUser, {
+        query: query.q,
+        limit: query.limit,
+        cursor: query.cursor,
+      })
+      .then(ArchivedDocumentListPageResponseDto.fromPage)
+      .catch(this.rethrowDocumentAppError);
+  }
+
   @Get('workspaces/:workspaceId/documents')
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
-    summary: 'List workspace documents for navigation',
+    summary: 'List workspace documents',
   })
   @ApiQuery({
     name: 'q',
@@ -280,6 +324,27 @@ export class DocumentController {
     return this.restoreDocumentUseCase
       .execute(documentId, body.version, currentUser)
       .then(DocumentResponseDto.fromSummary)
+      .catch(this.rethrowDocumentAppError);
+  }
+
+  @Delete('documents/:documentId')
+  @HttpCode(204)
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    summary: 'Permanently delete document',
+  })
+  @ApiQuery({
+    name: 'version',
+    required: true,
+    type: Number,
+  })
+  async permanentlyDeleteDocument(
+    @Param('documentId') documentId: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Query('version') version: string,
+  ): Promise<void> {
+    return this.permanentlyDeleteDocumentUseCase
+      .execute(documentId, Number(version), currentUser)
       .catch(this.rethrowDocumentAppError);
   }
 

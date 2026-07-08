@@ -65,3 +65,9 @@ export class ArchivedDocumentDuplicationError extends DocumentAppError {
     super('Archived document cannot be duplicated.');
   }
 }
+
+export class DocumentNotArchivedError extends DocumentAppError {
+  constructor() {
+    super('Document must be in trash before it can be permanently deleted.');
+  }
+}

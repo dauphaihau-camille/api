@@ -20,6 +20,7 @@ export abstract class DocumentCommandRepository {
   abstract createDocument(payload: Record<string, unknown>): DocumentEntity;
   abstract saveDocument(document: DocumentEntity): Promise<void>;
   abstract saveDocuments(documents: DocumentEntity[]): Promise<void>;
+  abstract removeDocuments(documents: DocumentEntity[]): Promise<void>;
   abstract flush(): Promise<void>;
   abstract lockDocumentVersion(
     document: DocumentEntity,

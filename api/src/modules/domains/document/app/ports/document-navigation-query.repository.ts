@@ -17,6 +17,11 @@ export abstract class DocumentNavigationQueryRepository {
     parentDocumentId?: string | null;
     query?: string;
   }): Promise<DocumentEntity[]>;
+  abstract findArchivedDocuments(input: {
+    workspaceId: string;
+    query?: string;
+  }): Promise<DocumentEntity[]>;
+  abstract findAncestorTitles(parentDocumentId?: string): Promise<string[]>;
   abstract findChildren(input: {
     workspaceId: string;
     parentDocumentId: string;
@@ -25,4 +30,9 @@ export abstract class DocumentNavigationQueryRepository {
     workspaceId: string,
     parentDocumentId: string,
   ): Promise<number>;
+  abstract findFavoriteDocumentIds(input: {
+    workspaceId: string;
+    userId: string;
+    documentIds: string[];
+  }): Promise<string[]>;
 }

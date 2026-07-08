@@ -2,6 +2,10 @@ import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { Module } from '@nestjs/common';
 import { CurrentUserEntity } from '../auth/infra/persistence/entities/current-user.entity';
 import { AuditModule } from '../../shared/audit/audit.module';
+import { QueueModule } from '../../shared/queue/queue.module';
+import { PublishRepository } from '../publish/app/ports/publish.repository';
+import { MikroOrmPublishRepository } from '../publish/infra/mikro-orm-publish.repository';
+import { PublishedDocumentEntity } from '../publish/infra/persistence/entities/published-document.entity';
 import { WorkspaceModule } from '../workspace/workspace.module';
 import { TeamspaceEntity } from '../teamspace/infra/persistence/entities/teamspace.entity';
 import { WorkspaceEntity } from '../workspace/infra/persistence/entities/workspace.entity';
@@ -19,8 +23,10 @@ import { DuplicateDocumentUseCase } from './app/use-cases/duplicate-document.use
 import { GetDefaultWorkspaceDocumentUseCase } from './app/use-cases/get-default-workspace-document.use-case';
 import { GetDocumentUseCase } from './app/use-cases/get-document.use-case';
 import { ListDocumentChildrenUseCase } from './app/use-cases/list-document-children.use-case';
+import { ListArchivedWorkspaceDocumentsUseCase } from './app/use-cases/list-archived-workspace-documents.use-case';
 import { ListWorkspaceDocumentsUseCase } from './app/use-cases/list-workspace-documents.use-case';
 import { MoveDocumentUseCase } from './app/use-cases/move-document.use-case';
+import { PermanentlyDeleteDocumentUseCase } from './app/use-cases/permanently-delete-document.use-case';
 import { RestoreDocumentUseCase } from './app/use-cases/restore-document.use-case';
 import { UpdateDocumentUseCase } from './app/use-cases/update-document.use-case';
 import { MikroOrmDocumentCommandRepository } from './infra/mikro-orm-document-command.repository';
@@ -31,10 +37,12 @@ import { MikroOrmDocumentVisitRepository } from './infra/mikro-orm-document-visi
 import { DocumentEntity } from './infra/persistence/entities/document.entity';
 import { DocumentSubdocReferenceEntity } from './infra/persistence/entities/document-subdoc-reference.entity';
 import { DocumentVisitEntity } from './infra/persistence/entities/document-visit.entity';
+import { DocumentFavoriteEntity } from '../favorite/infra/persistence/entities/document-favorite.entity';
 
 @Module({
   imports: [
     AuditModule,
+    QueueModule,
     WorkspaceModule,
     MikroOrmModule.forFeature([
       CurrentUserEntity,
@@ -43,6 +51,8 @@ import { DocumentVisitEntity } from './infra/persistence/entities/document-visit
       DocumentEntity,
       DocumentSubdocReferenceEntity,
       DocumentVisitEntity,
+      DocumentFavoriteEntity,
+      PublishedDocumentEntity,
     ]),
   ],
   controllers: [DocumentController],
@@ -67,9 +77,14 @@ import { DocumentVisitEntity } from './infra/persistence/entities/document-visit
       provide: DocumentVisitRepository,
       useClass: MikroOrmDocumentVisitRepository,
     },
+    {
+      provide: PublishRepository,
+      useClass: MikroOrmPublishRepository,
+    },
     DocumentTreeService,
     DocumentSubdocService,
     ListWorkspaceDocumentsUseCase,
+    ListArchivedWorkspaceDocumentsUseCase,
     GetDefaultWorkspaceDocumentUseCase,
     GetDocumentUseCase,
     ListDocumentChildrenUseCase,
@@ -79,6 +94,7 @@ import { DocumentVisitEntity } from './infra/persistence/entities/document-visit
     DuplicateDocumentUseCase,
     ArchiveDocumentUseCase,
     RestoreDocumentUseCase,
+    PermanentlyDeleteDocumentUseCase,
   ],
 })
 export class DocumentModule {}

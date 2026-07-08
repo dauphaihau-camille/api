@@ -29,3 +29,9 @@ export interface ListWorkspaceDocumentsInput {
   cursor?: string;
   query?: string;
 }
+
+export interface ListArchivedWorkspaceDocumentsInput {
+  limit: number;
+  cursor?: string;
+  query?: string;
+}

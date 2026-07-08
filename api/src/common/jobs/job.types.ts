@@ -1,6 +1,7 @@
 export const appJobName = {
   sendWelcomeEmail: 'user.send-welcome-email',
   notificationSendEmail: 'notification.send-email',
+  permanentlyDeleteArchivedDocument: 'document.permanently-delete-archived',
 } as const;
 
 export interface AppJobPayloadMap {
@@ -40,10 +41,15 @@ export interface AppJobPayloadMap {
     }>;
     tags?: string[];
   };
+  [appJobName.permanentlyDeleteArchivedDocument]: {
+    documentId: string;
+    archivedAt: string;
+  };
 }
 
 export type AppJobName = keyof AppJobPayloadMap;
 
 export interface DispatchJobOptions {
   deduplicationKey?: string;
+  delayMs?: number;
 }
