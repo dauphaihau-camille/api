@@ -88,7 +88,7 @@ export class MembershipController {
   @Patch('workspaces/:workspaceId/members/:memberId')
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
-    summary: 'Update workspace member role',
+    summary: 'Update member role',
   })
   @ApiOkResponse({
     type: WorkspaceMemberResponseDto,

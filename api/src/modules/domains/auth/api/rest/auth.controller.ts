@@ -152,14 +152,14 @@ export class AuthController {
   @Get('oauth/google')
   @UseGuards(GoogleOAuthGuard)
   @ApiOperation({
-    summary: 'Start Google OAuth sign-in',
+    summary: 'Start Google OAuth',
   })
   async googleOAuth(): Promise<void> {}
 
   @Get('oauth/google/callback')
   @UseGuards(GoogleOAuthGuard)
   @ApiOperation({
-    summary: 'Handle Google OAuth callback',
+    summary: 'Handle Google callback',
   })
   async googleOAuthCallback(
     @Req() request: Request & { user: OAuthIdentity },
@@ -171,14 +171,14 @@ export class AuthController {
   @Get('oauth/github')
   @UseGuards(GithubOAuthGuard)
   @ApiOperation({
-    summary: 'Start GitHub OAuth sign-in',
+    summary: 'Start GitHub OAuth',
   })
   async githubOAuth(): Promise<void> {}
 
   @Get('oauth/github/callback')
   @UseGuards(GithubOAuthGuard)
   @ApiOperation({
-    summary: 'Handle GitHub OAuth callback',
+    summary: 'Handle GitHub callback',
   })
   async githubOAuthCallback(
     @Req() request: Request & { user: OAuthIdentity },
@@ -220,7 +220,7 @@ export class AuthController {
   @Header('Cache-Control', 'no-store')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Send a one-time email login code',
+    summary: 'Send login code',
   })
   @ApiOkResponse({
     type: StartEmailAuthResponseDto,
@@ -243,7 +243,7 @@ export class AuthController {
   @Header('Cache-Control', 'no-store')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Verify a one-time email login code',
+    summary: 'Verify login code',
   })
   @ApiOkResponse({
     type: AuthResponseDto,

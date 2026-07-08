@@ -44,7 +44,7 @@ export class FavoriteController {
   @Get('workspaces/:workspaceId/favorites')
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
-    summary: 'List workspace favorite documents',
+    summary: 'List favorite documents',
   })
   @ApiOkResponse({
     type: FavoriteDocumentResponseDto,
@@ -71,7 +71,7 @@ export class FavoriteController {
   @Get('documents/:documentId/favorite')
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
-    summary: 'Get favorite status for a document',
+    summary: 'Get favorite status',
   })
   @ApiOkResponse({
     type: FavoriteStatusResponseDto,

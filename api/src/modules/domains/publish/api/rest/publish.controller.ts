@@ -44,7 +44,7 @@ export class PublishController {
   @Get('published/:publishedDocumentId')
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
-    summary: 'Get a publicly published document',
+    summary: 'Get published document',
   })
   @ApiOkResponse({
     type: PublicDocumentResponseDto,
@@ -63,7 +63,7 @@ export class PublishController {
   @ApiCookieAuth('access_token')
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
-    summary: 'Get document publish status',
+    summary: 'Get publish status',
   })
   @ApiOkResponse({
     type: PublishedDocumentResponseDto,

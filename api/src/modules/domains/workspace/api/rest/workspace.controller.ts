@@ -42,7 +42,7 @@ export class WorkspaceController {
   @Get('me/workspaces')
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
-    summary: 'List current user workspaces',
+    summary: 'List user workspaces',
   })
   @ApiOkResponse({
     type: WorkspaceResponseDto,

@@ -39,7 +39,7 @@ export class WorkspacePreferenceController {
   @Get('workspaces/:workspaceId/preferences')
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
-    summary: 'Get workspace sidebar preferences',
+    summary: 'Get sidebar preferences',
   })
   @ApiOkResponse({
     type: WorkspacePreferenceResponseDto,
@@ -57,7 +57,7 @@ export class WorkspacePreferenceController {
   @Patch('workspaces/:workspaceId/preferences')
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
-    summary: 'Update workspace sidebar preferences',
+    summary: 'Update sidebar preferences',
   })
   @ApiOkResponse({
     type: WorkspacePreferenceResponseDto,
