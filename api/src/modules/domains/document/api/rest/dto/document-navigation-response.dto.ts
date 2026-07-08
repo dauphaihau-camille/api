@@ -31,6 +31,9 @@ export class DocumentNavigationNodeResponseDto {
   @ApiProperty()
   has_content!: boolean;
 
+  @ApiProperty()
+  is_favorite!: boolean;
+
   static fromNode(node: DocumentNavigationNode): DocumentNavigationNodeResponseDto {
     return {
       id: node.id,
@@ -41,6 +44,7 @@ export class DocumentNavigationNodeResponseDto {
       sort_key: node.sortKey,
       has_children: node.hasChildren,
       has_content: node.hasContent,
+      is_favorite: node.isFavorite,
     };
   }
 }

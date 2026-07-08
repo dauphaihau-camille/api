@@ -31,13 +31,20 @@ export class ListDocumentChildrenUseCase {
       parentDocumentId: document.id,
     });
 
-    const hasChildrenByDocumentId = new Map<string, boolean>(
-      await Promise.all(children.map(async (child) => {
+    const [hasChildrenEntries, favoriteDocumentIds] = await Promise.all([
+      Promise.all(children.map(async (child) => {
         const count = await this.documentNavigationQueryRepository.countActiveChildren(document.workspace.id, child.id);
 
         return [child.id, count > 0] as const;
       })),
-    );
+      this.documentNavigationQueryRepository.findFavoriteDocumentIds({
+        workspaceId: document.workspace.id,
+        userId: currentUser.userId,
+        documentIds: children.map((child) => child.id),
+      }),
+    ]);
+    const hasChildrenByDocumentId = new Map<string, boolean>(hasChildrenEntries);
+    const favoriteDocumentIdsSet = new Set(favoriteDocumentIds);
 
     return children.map((child) => ({
       id: child.id,
@@ -48,6 +55,7 @@ export class ListDocumentChildrenUseCase {
       sortKey: child.sortKey,
       hasChildren: hasChildrenByDocumentId.get(child.id) ?? false,
       hasContent: hasMeaningfulContent(child.contentJson),
+      isFavorite: favoriteDocumentIdsSet.has(child.id),
     }));
   }
 }

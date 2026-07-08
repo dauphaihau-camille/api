@@ -26,6 +26,9 @@ export class DocumentTreeChildResponseDto {
   @ApiProperty()
   has_content!: boolean;
 
+  @ApiProperty()
+  is_favorite!: boolean;
+
   static fromNode(node: DocumentTreeChild): DocumentTreeChildResponseDto {
     return {
       id: node.id,
@@ -36,6 +39,7 @@ export class DocumentTreeChildResponseDto {
       sort_key: node.sortKey,
       has_children: node.hasChildren,
       has_content: node.hasContent,
+      is_favorite: node.isFavorite,
     };
   }
 }

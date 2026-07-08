@@ -25,6 +25,7 @@ export interface DocumentTreeChild {
   sortKey: number;
   hasChildren: boolean;
   hasContent: boolean;
+  isFavorite: boolean;
 }
 
 export interface DocumentNavigationNode {
@@ -36,6 +37,7 @@ export interface DocumentNavigationNode {
   sortKey: number;
   hasChildren: boolean;
   hasContent: boolean;
+  isFavorite: boolean;
 }
 
 export interface DocumentNavigationPage {

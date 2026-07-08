@@ -38,6 +38,7 @@ export class ListWorkspaceDocumentsUseCase {
       }
 
       return this.listDocumentNavigationPage(workspace.id, {
+        userId: currentUser.userId,
         parentDocumentId: input.parentDocumentId,
         limit: input.limit,
         cursor: input.cursor,
@@ -49,6 +50,7 @@ export class ListWorkspaceDocumentsUseCase {
 
     const [privateDocuments, teamspaceDocuments] = await Promise.all([
       this.listDocumentNavigationPage(workspace.id, {
+        userId: currentUser.userId,
         teamspaceId: null,
         parentDocumentId: null,
         limit: input.limit,
@@ -60,6 +62,7 @@ export class ListWorkspaceDocumentsUseCase {
         name: teamspace.name,
         description: teamspace.description,
         documents: await this.listDocumentNavigationPage(workspace.id, {
+          userId: currentUser.userId,
           teamspaceId: teamspace.id,
           parentDocumentId: null,
           limit: input.limit,
@@ -78,6 +81,7 @@ export class ListWorkspaceDocumentsUseCase {
   private async listDocumentNavigationPage(
     workspaceId: string,
     input: {
+      userId: string;
       teamspaceId?: string | null;
       parentDocumentId?: string | null;
       limit: number;
@@ -104,7 +108,7 @@ export class ListWorkspaceDocumentsUseCase {
     const items = pagedDocuments.slice(0, input.limit);
 
     return {
-      items: await this.toDocumentNavigationNodes(items, workspaceId),
+      items: await this.toDocumentNavigationNodes(items, workspaceId, input.userId),
       nextCursor: hasMore ? this.encodeDocumentListCursor(items[items.length - 1]!) : undefined,
     };
   }
@@ -112,14 +116,22 @@ export class ListWorkspaceDocumentsUseCase {
   private async toDocumentNavigationNodes(
     documents: DocumentEntity[],
     workspaceId: string,
+    userId: string,
   ): Promise<DocumentNavigationNode[]> {
-    const hasChildrenByDocumentId = new Map<string, boolean>(
-      await Promise.all(documents.map(async (document) => {
+    const [hasChildrenEntries, favoriteDocumentIds] = await Promise.all([
+      Promise.all(documents.map(async (document) => {
         const childCount = await this.documentNavigationQueryRepository.countActiveChildren(workspaceId, document.id);
 
         return [document.id, childCount > 0] as const;
       })),
-    );
+      this.documentNavigationQueryRepository.findFavoriteDocumentIds({
+        workspaceId,
+        userId,
+        documentIds: documents.map((document) => document.id),
+      }),
+    ]);
+    const hasChildrenByDocumentId = new Map<string, boolean>(hasChildrenEntries);
+    const favoriteDocumentIdsSet = new Set(favoriteDocumentIds);
 
     return documents.map((document) => ({
       id: document.id,
@@ -130,6 +142,7 @@ export class ListWorkspaceDocumentsUseCase {
       sortKey: document.sortKey,
       hasChildren: hasChildrenByDocumentId.get(document.id) ?? false,
       hasContent: hasMeaningfulContent(document.contentJson),
+      isFavorite: favoriteDocumentIdsSet.has(document.id),
     }));
   }
 

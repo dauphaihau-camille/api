@@ -43,6 +43,7 @@ describe('Document read use cases', () => {
       findRootDocuments: jest.fn(),
       findChildren: jest.fn(),
       countActiveChildren: jest.fn(),
+      findFavoriteDocumentIds: jest.fn(),
     } as unknown as jest.Mocked<DocumentNavigationQueryRepository>;
   }
 
@@ -68,6 +69,7 @@ describe('Document read use cases', () => {
     navigationRepository.findTeamspaces.mockResolvedValue([]);
     navigationRepository.findRootDocuments.mockResolvedValue([]);
     navigationRepository.countActiveChildren.mockResolvedValue(0);
+    navigationRepository.findFavoriteDocumentIds.mockResolvedValue([]);
 
     const useCase = new ListWorkspaceDocumentsUseCase(workspaceRepository, navigationRepository);
 
