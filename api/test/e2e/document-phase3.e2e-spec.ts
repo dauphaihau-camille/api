@@ -165,6 +165,8 @@ describe('Document phase 3 flow (e2e)', () => {
       expect.objectContaining({
         document_id: document.id,
         title: 'Weekly review',
+        has_children: false,
+        has_content: true,
       }),
     ]);
 

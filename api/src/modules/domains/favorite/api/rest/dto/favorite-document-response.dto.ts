@@ -24,6 +24,12 @@ export class FavoriteDocumentResponseDto {
   sort_key!: number;
 
   @ApiProperty()
+  has_children!: boolean;
+
+  @ApiProperty()
+  has_content!: boolean;
+
+  @ApiProperty()
   favorited_at!: string;
 
   static fromSummary(summary: FavoriteDocumentSummary): FavoriteDocumentResponseDto {
@@ -35,6 +41,8 @@ export class FavoriteDocumentResponseDto {
       parent_document_id: summary.parentDocumentId,
       title: summary.title,
       sort_key: summary.sortKey,
+      has_children: summary.hasChildren,
+      has_content: summary.hasContent,
       favorited_at: summary.favoritedAt.toISOString(),
     };
   }

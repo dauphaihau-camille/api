@@ -2,6 +2,8 @@ import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { Module } from '@nestjs/common';
 import { CurrentUserEntity } from '../auth/infra/persistence/entities/current-user.entity';
 import { DocumentEntity } from '../document/infra/persistence/entities/document.entity';
+import { DocumentNavigationQueryRepository } from '../document/app/ports/document-navigation-query.repository';
+import { MikroOrmDocumentNavigationQueryRepository } from '../document/infra/mikro-orm-document-navigation-query.repository';
 import { WorkspaceEntity } from '../workspace/infra/persistence/entities/workspace.entity';
 import { AuditModule } from '../../shared/audit/audit.module';
 import { WorkspaceModule } from '../workspace/workspace.module';
@@ -34,6 +36,10 @@ import { DocumentFavoriteEntity } from './infra/persistence/entities/document-fa
     {
       provide: FavoriteRepository,
       useClass: MikroOrmFavoriteRepository,
+    },
+    {
+      provide: DocumentNavigationQueryRepository,
+      useClass: MikroOrmDocumentNavigationQueryRepository,
     },
   ],
   exports: [FavoriteRepository],

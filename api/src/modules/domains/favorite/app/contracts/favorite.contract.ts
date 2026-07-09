@@ -6,6 +6,8 @@ export interface FavoriteDocumentSummary {
   parentDocumentId?: string;
   title: string;
   sortKey: number;
+  hasChildren: boolean;
+  hasContent: boolean;
   favoritedAt: Date;
 }
 

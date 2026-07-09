@@ -3,6 +3,10 @@ import type { FavoriteDocumentSummary } from '../contracts/favorite.contract';
 
 export function toFavoriteDocumentSummary(
   favorite: DocumentFavoriteEntity,
+  input: {
+    hasChildren: boolean;
+    hasContent: boolean;
+  },
 ): FavoriteDocumentSummary {
   return {
     documentId: favorite.document.id,
@@ -12,6 +16,8 @@ export function toFavoriteDocumentSummary(
     parentDocumentId: favorite.document.parentDocument?.id,
     title: favorite.document.title,
     sortKey: favorite.document.sortKey,
+    hasChildren: input.hasChildren,
+    hasContent: input.hasContent,
     favoritedAt: favorite.createdAt,
   };
 }
