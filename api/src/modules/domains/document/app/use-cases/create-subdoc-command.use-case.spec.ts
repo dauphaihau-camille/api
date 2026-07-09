@@ -6,9 +6,10 @@ import type { DocumentNavigationQueryRepository } from '../ports/document-naviga
 import type { DocumentCommandRepository } from '../ports/document-command.repository';
 import type { DocumentTreeService } from '../services/document-tree.service';
 import type { DocumentSubdocService } from '../services/document-subdoc.service';
-import { CreateDocumentUseCase } from './create-document.use-case';
+import { DEFAULT_DOCUMENT_CONTENT } from '../constants/document.constants';
+import { CreateSubdocCommandUseCase } from './create-subdoc-command.use-case';
 
-describe('CreateDocumentUseCase', () => {
+describe('CreateSubdocCommandUseCase', () => {
   const currentUser: AuthenticatedUser = {
     userId: 'user-1',
     email: 'user@example.com',
@@ -55,12 +56,12 @@ describe('CreateDocumentUseCase', () => {
 
   function createSubdocService() {
     return {
-      appendSubdocBlock: jest.fn(),
+      insertSubdocBlock: jest.fn(),
       syncSubdocReferencesForDoc: jest.fn(),
     } as unknown as jest.Mocked<DocumentSubdocService>;
   }
 
-  it('creates a child document without mutating parent content', async () => {
+  it('creates a child document and updates the parent content in one command', async () => {
     const workspaceRepository = createWorkspaceRepository();
     const navigationQueryRepository = createNavigationQueryRepository();
     const commandRepository = createCommandRepository();
@@ -72,13 +73,36 @@ describe('CreateDocumentUseCase', () => {
 
     const parentDocument = {
       id: 'parent-1',
+      publicId: 'public-parent-1',
+      version: 3,
       workspace: { id: 'workspace-1' },
       teamspace: undefined,
+      parentDocument: undefined,
+      title: 'Parent',
+      contentFormat: 'blocknote_v1',
       contentJson: [{
-        id: 'existing-block', type: 'paragraph', props: {}, children: [], 
+        id: 'existing-block', type: 'paragraph', props: {}, children: [],
       }],
+      searchText: '',
+      sortKey: 9,
       updatedBy: { id: 'user-0' },
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
     };
+    const unsavedParentContent = [
+      {
+        id: 'existing-block',
+        type: 'paragraph',
+        props: {},
+        children: [],
+      },
+      {
+        id: 'new-empty-block',
+        type: 'paragraph',
+        props: {},
+        children: [],
+      },
+    ];
     const actor = { id: 'user-1' };
     const childDocument = {
       id: 'child-1',
@@ -89,7 +113,7 @@ describe('CreateDocumentUseCase', () => {
       parentDocument: { id: 'parent-1' },
       title: 'Untitled',
       contentFormat: 'blocknote_v1',
-      contentJson: [],
+      contentJson: DEFAULT_DOCUMENT_CONTENT,
       searchText: '',
       sortKey: 17,
       createdBy: actor,
@@ -97,21 +121,34 @@ describe('CreateDocumentUseCase', () => {
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
       updatedAt: new Date('2026-01-01T00:00:00.000Z'),
     };
+    const nextParentContent = [
+      ...parentDocument.contentJson,
+      {
+        id: 'subpage-block',
+        type: 'subpage',
+        props: {
+          documentId: childDocument.id,
+        },
+        children: [],
+      },
+    ];
 
     navigationQueryRepository.findDocument.mockResolvedValue(parentDocument as never);
+    subdocService.insertSubdocBlock.mockReturnValue(nextParentContent);
     commandRepository.withTransaction.mockImplementation(async (callback) =>
       callback({
         commandRepository: {
           findCurrentUser: jest.fn().mockResolvedValue(actor),
           findDocument: jest.fn().mockResolvedValue(parentDocument),
+          lockDocumentVersion: jest.fn(),
           createDocument: jest.fn().mockReturnValue(childDocument),
-          saveDocument: jest.fn(),
+          saveDocuments: jest.fn(),
           flush: jest.fn(),
         },
         subdocReferenceRepository: { id: 'subdoc-repo' },
       } as never));
 
-    const useCase = new CreateDocumentUseCase(
+    const useCase = new CreateSubdocCommandUseCase(
       auditService as never,
       workspaceRepository,
       commandRepository,
@@ -120,24 +157,39 @@ describe('CreateDocumentUseCase', () => {
       treeService,
     );
 
-    const result = await useCase.execute(currentUser, {
-      workspaceId: 'workspace-1',
-      parentDocumentId: 'parent-1',
+    const result = await useCase.execute(currentUser, 'parent-1', {
+      anchorBlockId: 'anchor-block-1',
+      slashCommandText: '/doc',
+      version: 3,
+      content: unsavedParentContent,
     });
 
-    expect(subdocService.appendSubdocBlock).not.toHaveBeenCalled();
-    expect(parentDocument.contentJson).toEqual([{
-      id: 'existing-block', type: 'paragraph', props: {}, children: [],
-    }]);
-    expect(parentDocument.updatedBy).toEqual({ id: 'user-0' });
-    expect(subdocService.syncSubdocReferencesForDoc).toHaveBeenCalledWith(
+    expect(subdocService.insertSubdocBlock).toHaveBeenCalledWith(
+      unsavedParentContent,
       childDocument,
+      'anchor-block-1',
+      '/doc',
+    );
+    expect(parentDocument.contentJson).toEqual(nextParentContent);
+    expect(parentDocument.updatedBy).toBe(actor);
+    expect(subdocService.syncSubdocReferencesForDoc).toHaveBeenNthCalledWith(
+      1,
+      childDocument,
+      { id: 'subdoc-repo' },
+    );
+    expect(subdocService.syncSubdocReferencesForDoc).toHaveBeenNthCalledWith(
+      2,
+      parentDocument,
       { id: 'subdoc-repo' },
     );
     expect(auditService.record).toHaveBeenCalledWith(expect.objectContaining({
       action: 'document.created',
       resourceId: 'child-1',
+      metadata: expect.objectContaining({
+        command: 'create-subdoc',
+      }),
     }));
-    expect(result.parentDocumentId).toBe('parent-1');
+    expect(result.parentDocument.id).toBe('parent-1');
+    expect(result.childDocument.id).toBe('child-1');
   });
 });

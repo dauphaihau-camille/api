@@ -27,6 +27,11 @@ export interface DocumentSummary {
   breadcrumb?: DocumentBreadcrumbItem[];
 }
 
+export interface CreateSubdocCommandResult {
+  parentDocument: DocumentSummary;
+  childDocument: DocumentSummary;
+}
+
 export interface DocumentTreeChild {
   id: string;
   publicId: string;

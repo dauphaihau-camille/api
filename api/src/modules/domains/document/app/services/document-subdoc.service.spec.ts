@@ -87,6 +87,7 @@ describe('DocumentSubdocService', () => {
         publicId: 'public-child-2',
         workspaceId: 'workspace-1',
         title: 'Child 2',
+        hasContent: false,
       },
       children: [],
     });
@@ -122,6 +123,7 @@ describe('DocumentSubdocService', () => {
         publicId: 'public-child-2',
         workspaceId: 'workspace-1',
         title: 'Child 2',
+        hasContent: false,
       },
       children: [],
     });
@@ -129,6 +131,158 @@ describe('DocumentSubdocService', () => {
     expect(
       service.appendSubdocBlock(result, duplicatedDocument as never),
     ).toBe(result);
+  });
+
+  it('replaces an empty anchor paragraph block with the new subdoc block', () => {
+    const childDocument = {
+      id: 'child-2',
+      publicId: 'public-child-2',
+      title: 'Child 2',
+      workspace: { id: 'workspace-1' },
+    };
+    const content = [
+      {
+        id: 'empty-paragraph',
+        type: 'paragraph',
+        props: {
+          textColor: 'default',
+          backgroundColor: 'default',
+          textAlignment: 'left',
+        },
+        content: [],
+      },
+      {
+        id: 'block-2',
+        type: 'paragraph',
+        content: [{ type: 'text', text: 'After' }],
+      },
+    ];
+
+    const result = service.insertSubdocBlock(
+      content,
+      childDocument as never,
+      'empty-paragraph',
+    );
+
+    expect(result).toHaveLength(2);
+    expect(result[0]).toMatchObject({
+      type: 'subpage',
+      props: {
+        documentId: 'child-2',
+        publicId: 'public-child-2',
+        workspaceId: 'workspace-1',
+        title: 'Child 2',
+      },
+    });
+    expect(result[1]).toEqual(content[1]);
+  });
+
+  it('inserts a new subdoc block after a non-empty anchor paragraph block', () => {
+    const childDocument = {
+      id: 'child-2',
+      publicId: 'public-child-2',
+      title: 'Child 2',
+      workspace: { id: 'workspace-1' },
+    };
+    const content = [
+      {
+        id: 'filled-paragraph',
+        type: 'paragraph',
+        content: [{ type: 'text', text: 'Hello' }],
+      },
+      {
+        id: 'block-2',
+        type: 'paragraph',
+        content: [{ type: 'text', text: 'After' }],
+      },
+    ];
+
+    const result = service.insertSubdocBlock(
+      content,
+      childDocument as never,
+      'filled-paragraph',
+    );
+
+    expect(result).toHaveLength(3);
+    expect(result[0]).toEqual(content[0]);
+    expect(result[1]).toMatchObject({
+      type: 'subpage',
+      props: {
+        documentId: 'child-2',
+      },
+    });
+    expect(result[2]).toEqual(content[1]);
+  });
+
+  it('replaces a persisted slash command paragraph when slash command text matches', () => {
+    const childDocument = {
+      id: 'child-2',
+      publicId: 'public-child-2',
+      title: 'Child 2',
+      workspace: { id: 'workspace-1' },
+    };
+    const content = [
+      {
+        id: 'slash-command-block',
+        type: 'paragraph',
+        props: {
+          textColor: 'default',
+          backgroundColor: 'default',
+          textAlignment: 'left',
+        },
+        content: [{ type: 'text', text: '/doc' }],
+      },
+    ];
+
+    const result = service.insertSubdocBlock(
+      content,
+      childDocument as never,
+      'slash-command-block',
+      '/doc',
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      type: 'subpage',
+      props: {
+        documentId: 'child-2',
+      },
+    });
+  });
+
+  it('replaces the only empty paragraph candidate when the anchor id is missing', () => {
+    const childDocument = {
+      id: 'child-2',
+      publicId: 'public-child-2',
+      title: 'Child 2',
+      workspace: { id: 'workspace-1' },
+    };
+    const content = [
+      {
+        type: 'paragraph',
+        props: {
+          textColor: 'default',
+          backgroundColor: 'default',
+          textAlignment: 'left',
+        },
+        content: [],
+      },
+    ];
+
+    const result = service.insertSubdocBlock(
+      content,
+      childDocument as never,
+      'missing-anchor-id',
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      type: 'subpage',
+      props: {
+        documentId: 'child-2',
+        publicId: 'public-child-2',
+      },
+    });
   });
 
   it('removes archived subdoc blocks from content', () => {

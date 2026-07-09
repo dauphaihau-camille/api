@@ -89,32 +89,11 @@ export class CreateDocumentUseCase {
         updatedBy: user,
       });
 
-      if (transactionalParentDocument) {
-        transactionalParentDocument.contentJson = this.documentSubdocService.appendSubdocBlock(
-          transactionalParentDocument.contentJson,
-          createdDocument,
-        );
-        transactionalParentDocument.searchText = extractDocumentSearchText(
-          transactionalParentDocument.contentJson,
-        );
-        transactionalParentDocument.updatedBy = user;
-      }
-
-      await commandRepository.saveDocuments(
-        transactionalParentDocument
-          ? [createdDocument, transactionalParentDocument]
-          : [createdDocument],
-      );
+      await commandRepository.saveDocument(createdDocument);
       await this.documentSubdocService.syncSubdocReferencesForDoc(
         createdDocument,
         subdocReferenceRepository,
       );
-      if (transactionalParentDocument) {
-        await this.documentSubdocService.syncSubdocReferencesForDoc(
-          transactionalParentDocument,
-          subdocReferenceRepository,
-        );
-      }
       await commandRepository.flush();
 
       return createdDocument;
