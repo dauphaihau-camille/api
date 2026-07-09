@@ -15,6 +15,7 @@ import {
 import {
   ApiCookieAuth,
   ApiCreatedResponse,
+  ApiFoundResponse,
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
@@ -154,12 +155,18 @@ export class AuthController {
   @ApiOperation({
     summary: 'Start Google OAuth',
   })
+  @ApiFoundResponse({
+    description: 'Redirects to Google OAuth consent screen.',
+  })
   async googleOAuth(): Promise<void> {}
 
   @Get('oauth/google/callback')
   @UseGuards(GoogleOAuthGuard)
   @ApiOperation({
     summary: 'Handle Google callback',
+  })
+  @ApiFoundResponse({
+    description: 'Sets auth cookies and redirects to the app.',
   })
   async googleOAuthCallback(
     @Req() request: Request & { user: OAuthIdentity },
@@ -173,12 +180,18 @@ export class AuthController {
   @ApiOperation({
     summary: 'Start GitHub OAuth',
   })
+  @ApiFoundResponse({
+    description: 'Redirects to GitHub OAuth consent screen.',
+  })
   async githubOAuth(): Promise<void> {}
 
   @Get('oauth/github/callback')
   @UseGuards(GithubOAuthGuard)
   @ApiOperation({
     summary: 'Handle GitHub callback',
+  })
+  @ApiFoundResponse({
+    description: 'Sets auth cookies and redirects to the app.',
   })
   async githubOAuthCallback(
     @Req() request: Request & { user: OAuthIdentity },
