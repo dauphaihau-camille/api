@@ -32,6 +32,11 @@ export interface CreateSubdocCommandResult {
   childDocument: DocumentSummary;
 }
 
+export interface ArchiveSubdocCommandResult {
+  parentDocument: DocumentSummary;
+  archivedChildDocument: DocumentSummary;
+}
+
 export interface DocumentTreeChild {
   id: string;
   publicId: string;

@@ -24,6 +24,7 @@ import type { AuthenticatedUser } from '~/modules/domains/auth/app/auth.types';
 import { JwtAuthGuard } from '~/modules/domains/auth/api/guard/jwt-auth.guard';
 import { PermissionsGuard } from '~/modules/domains/auth/api/guard/permissions.guard';
 import { ArchiveDocumentUseCase } from '../../app/use-cases/archive-document.use-case';
+import { ArchiveSubdocCommandUseCase } from '../../app/use-cases/archive-subdoc-command.use-case';
 import { CreateDocumentUseCase } from '../../app/use-cases/create-document.use-case';
 import { CreateSubdocCommandUseCase } from '../../app/use-cases/create-subdoc-command.use-case';
 import { DuplicateDocumentUseCase } from '../../app/use-cases/duplicate-document.use-case';
@@ -41,6 +42,7 @@ import {
   mapDocumentAppErrorToHttpException,
 } from './document-http-error-mapper';
 import { CreateDocumentDto } from './dto/create-document.dto';
+import { ArchiveSubdocCommandDto } from './dto/archive-subdoc-command.dto';
 import { CreateSubdocCommandDto } from './dto/create-subdoc-command.dto';
 import { ListWorkspaceDocumentsQueryDto } from './dto/list-workspace-documents-query.dto';
 import { DocumentResponseDto } from './dto/document-response.dto';
@@ -55,6 +57,7 @@ import {
 import { WorkspaceDefaultDocumentResponseDto } from './dto/workspace-default-document-response.dto';
 import { ArchivedDocumentListPageResponseDto } from './dto/archived-document-list-response.dto';
 import { CreateSubdocCommandResponseDto } from './dto/create-subdoc-command-response.dto';
+import { ArchiveSubdocCommandResponseDto } from './dto/archive-subdoc-command-response.dto';
 
 @Controller()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -69,6 +72,7 @@ export class DocumentController {
     private readonly listDocumentChildrenUseCase: ListDocumentChildrenUseCase,
     private readonly createDocumentUseCase: CreateDocumentUseCase,
     private readonly createSubdocCommandUseCase: CreateSubdocCommandUseCase,
+    private readonly archiveSubdocCommandUseCase: ArchiveSubdocCommandUseCase,
     private readonly duplicateDocumentUseCase: DuplicateDocumentUseCase,
     private readonly updateDocumentUseCase: UpdateDocumentUseCase,
     private readonly archiveDocumentUseCase: ArchiveDocumentUseCase,
@@ -233,6 +237,30 @@ export class DocumentController {
         content: body.content,
       })
       .then(CreateSubdocCommandResponseDto.fromResult)
+      .catch(this.rethrowDocumentAppError);
+  }
+
+  @Post('documents/:documentId/commands/archive-subdoc')
+  @HttpCode(200)
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    summary: 'Archive subdocument command',
+  })
+  @ApiOkResponse({
+    type: ArchiveSubdocCommandResponseDto,
+  })
+  async archiveSubdoc(
+    @Param('documentId') documentId: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Body() body: ArchiveSubdocCommandDto,
+  ): Promise<ArchiveSubdocCommandResponseDto> {
+    return this.archiveSubdocCommandUseCase
+      .execute(currentUser, documentId, {
+        subdocumentId: body.subdocument_id,
+        version: body.version,
+        content: body.content,
+      })
+      .then(ArchiveSubdocCommandResponseDto.fromResult)
       .catch(this.rethrowDocumentAppError);
   }
 

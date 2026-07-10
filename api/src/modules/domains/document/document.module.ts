@@ -16,6 +16,7 @@ import { DocumentSubdocReferenceRepository } from './app/ports/document-subdoc-r
 import { DocumentTreeQueryRepository } from './app/ports/document-tree-query.repository';
 import { DocumentVisitRepository } from './app/ports/document-visit.repository';
 import { ArchiveDocumentUseCase } from './app/use-cases/archive-document.use-case';
+import { ArchiveSubdocCommandUseCase } from './app/use-cases/archive-subdoc-command.use-case';
 import { CreateDocumentUseCase } from './app/use-cases/create-document.use-case';
 import { CreateSubdocCommandUseCase } from './app/use-cases/create-subdoc-command.use-case';
 import { DocumentSubdocService } from './app/services/document-subdoc.service';
@@ -91,6 +92,7 @@ import { DocumentFavoriteEntity } from '../favorite/infra/persistence/entities/d
     ListDocumentChildrenUseCase,
     CreateDocumentUseCase,
     CreateSubdocCommandUseCase,
+    ArchiveSubdocCommandUseCase,
     UpdateDocumentUseCase,
     MoveDocumentUseCase,
     DuplicateDocumentUseCase,
