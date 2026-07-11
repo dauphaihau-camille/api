@@ -16,7 +16,7 @@ export function collectReferencedSubdocIds(content: unknown[]): string[] {
     const block = node as ContentBlock;
 
     if (
-      block.type === 'subpage'
+      block.type === 'subdoc'
       && block.props
       && typeof block.props.documentId === 'string'
       && block.props.documentId.length > 0
@@ -51,7 +51,7 @@ export function withPublishedSubdocTargets(
     let nextNode = node as Record<string, unknown>;
 
     if (
-      block.type === 'subpage'
+      block.type === 'subdoc'
       && block.props
       && typeof block.props.documentId === 'string'
       && block.props.documentId.length > 0

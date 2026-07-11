@@ -12,7 +12,7 @@ describe('DocumentSubdocService', () => {
     const content = [
       {
         id: 'block-1',
-        type: 'subpage',
+        type: 'subdoc',
         props: {
           documentId: 'original-1',
           publicId: 'public-original-1',
@@ -30,7 +30,7 @@ describe('DocumentSubdocService', () => {
     expect(result).toEqual([
       {
         id: 'block-1',
-        type: 'subpage',
+        type: 'subdoc',
         props: {
           documentId: 'duplicated-1',
           publicId: 'public-duplicated-1',
@@ -62,7 +62,7 @@ describe('DocumentSubdocService', () => {
     const content = [
       {
         id: 'block-1',
-        type: 'subpage',
+        type: 'subdoc',
         props: {
           documentId: 'child-1',
           publicId: 'public-child-1',
@@ -81,7 +81,7 @@ describe('DocumentSubdocService', () => {
     expect(result).toHaveLength(2);
     expect(result[0]).toEqual(content[0]);
     expect(result[1]).toMatchObject({
-      type: 'subpage',
+      type: 'subdoc',
       props: {
         documentId: 'child-2',
         publicId: 'public-child-2',
@@ -103,7 +103,7 @@ describe('DocumentSubdocService', () => {
     const content = [
       {
         id: 'block-1',
-        type: 'subpage',
+        type: 'subdoc',
         props: {
           documentId: 'child-1',
           publicId: 'public-child-1',
@@ -117,7 +117,7 @@ describe('DocumentSubdocService', () => {
 
     expect(result).toHaveLength(2);
     expect(result[1]).toMatchObject({
-      type: 'subpage',
+      type: 'subdoc',
       props: {
         documentId: 'child-2',
         publicId: 'public-child-2',
@@ -166,7 +166,7 @@ describe('DocumentSubdocService', () => {
 
     expect(result).toHaveLength(2);
     expect(result[0]).toMatchObject({
-      type: 'subpage',
+      type: 'subdoc',
       props: {
         documentId: 'child-2',
         publicId: 'public-child-2',
@@ -206,7 +206,7 @@ describe('DocumentSubdocService', () => {
     expect(result).toHaveLength(3);
     expect(result[0]).toEqual(content[0]);
     expect(result[1]).toMatchObject({
-      type: 'subpage',
+      type: 'subdoc',
       props: {
         documentId: 'child-2',
       },
@@ -243,7 +243,7 @@ describe('DocumentSubdocService', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({
-      type: 'subpage',
+      type: 'subdoc',
       props: {
         documentId: 'child-2',
       },
@@ -277,7 +277,7 @@ describe('DocumentSubdocService', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({
-      type: 'subpage',
+      type: 'subdoc',
       props: {
         documentId: 'child-2',
         publicId: 'public-child-2',
@@ -299,7 +299,7 @@ describe('DocumentSubdocService', () => {
       },
       {
         id: 'block-2',
-        type: 'subpage',
+        type: 'subdoc',
         props: {
           documentId: 'child-1',
           publicId: 'public-child-1',
@@ -313,8 +313,8 @@ describe('DocumentSubdocService', () => {
         props: {},
         children: [
           {
-            id: 'nested-subpage',
-            type: 'subpage',
+            id: 'nested-subdoc',
+            type: 'subdoc',
             props: {
               documentId: 'child-2',
               publicId: 'public-child-2',

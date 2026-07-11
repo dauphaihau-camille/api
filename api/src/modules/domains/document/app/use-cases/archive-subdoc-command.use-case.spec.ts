@@ -89,8 +89,8 @@ describe('ArchiveSubdocCommandUseCase', () => {
       title: 'Parent',
       contentFormat: 'blocknote_v1',
       contentJson: [{
-        id: 'subpage-block',
-        type: 'subpage',
+        id: 'subdoc-block',
+        type: 'subdoc',
         props: { documentId: 'child-1' },
         children: [],
       }],

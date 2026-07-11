@@ -6,7 +6,7 @@ import { DocumentSubdocReferenceEntity } from '../../infra/persistence/entities/
 import { hasMeaningfulContent } from '../utils/document-content.util';
 import { extractDocumentSearchText } from '../utils/document-search-text.util';
 
-const SUBDOC_BLOCK_TYPE = 'subpage';
+const SUBDOC_BLOCK_TYPE = 'subdoc';
 
 @Injectable()
 export class DocumentSubdocService {

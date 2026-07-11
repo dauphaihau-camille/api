@@ -12,7 +12,7 @@ describe('public-document-content util', () => {
     },
     {
       id: '2',
-      type: 'subpage',
+      type: 'subdoc',
       props: {
         documentId: 'child-1',
         title: 'Child 1',
@@ -25,7 +25,7 @@ describe('public-document-content util', () => {
       children: [
         {
           id: '4',
-          type: 'subpage',
+          type: 'subdoc',
           props: {
             documentId: 'child-2',
             title: 'Child 2',
@@ -40,7 +40,7 @@ describe('public-document-content util', () => {
     expect(collectReferencedSubdocIds(content)).toEqual(['child-1', 'child-2']);
   });
 
-  it('adds published share targets to subpage props', () => {
+  it('adds published share targets to subdoc props', () => {
     const nextContent = withPublishedSubdocTargets(
       content,
       new Map([

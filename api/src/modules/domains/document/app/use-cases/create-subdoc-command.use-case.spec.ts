@@ -124,8 +124,8 @@ describe('CreateSubdocCommandUseCase', () => {
     const nextParentContent = [
       ...parentDocument.contentJson,
       {
-        id: 'subpage-block',
-        type: 'subpage',
+        id: 'subdoc-block',
+        type: 'subdoc',
         props: {
           documentId: childDocument.id,
         },

@@ -231,8 +231,8 @@ function buildSubpageBlock(input: {
   title: string;
 }): unknown {
   return {
-    id: buildSeededPublicId(`subpage:${input.documentId}`),
-    type: 'subpage',
+    id: buildSeededPublicId(`subdoc:${input.documentId}`),
+    type: 'subdoc',
     props: {
       documentId: input.documentId,
       publicId: input.publicId,
@@ -351,10 +351,10 @@ async function seedGeneratedUsers(
   const existingUserRoles =
     generatedEmails.length > 0
       ? await em.find(
-          UserRoleEntity,
-          { user: { email: { $in: generatedEmails } } },
-          { populate: ['user', 'role'] },
-        )
+        UserRoleEntity,
+        { user: { email: { $in: generatedEmails } } },
+        { populate: ['user', 'role'] },
+      )
       : [];
   const existingUserRoleKeys = new Set(
     existingUserRoles.map((userRole) => `${userRole.user.email}::${userRole.role.key}`),
@@ -469,11 +469,11 @@ async function seedWorkspaceMemberships(
   const existingMemberships =
     memberUsers.length > 0
       ? await em.find(WorkspaceMemberEntity, {
-          workspace: workspaceId,
-          user: { $in: memberUsers.map((user) => user.id) },
-        }, {
-          populate: ['user'],
-        })
+        workspace: workspaceId,
+        user: { $in: memberUsers.map((user) => user.id) },
+      }, {
+        populate: ['user'],
+      })
       : [];
   const existingMembershipsByUserId = new Map(
     existingMemberships.map((membership) => [membership.user.id, membership]),
@@ -569,8 +569,8 @@ async function upsertDocumentPayloads(
     );
 
     for (const payload of payloadChunk) {
-      const document = existingByPublicId.get(payload.publicId)
-        ?? em.create(DocumentEntity, {
+      const document = existingByPublicId.get(payload.publicId) ??
+        em.create(DocumentEntity, {
           publicId: payload.publicId,
           workspace: em.getReference(WorkspaceEntity, payload.workspaceId),
           teamspace: payload.teamspaceId
@@ -773,18 +773,18 @@ async function seedWorkspacePreferences(
   const existingPreferences =
     memberUsers.length > 0
       ? await em.find(WorkspacePreferenceEntity, {
-          workspace: workspaceId,
-          user: { $in: memberUsers.map((user) => user.id) },
-        }, {
-          populate: ['user'],
-        })
+        workspace: workspaceId,
+        user: { $in: memberUsers.map((user) => user.id) },
+      }, {
+        populate: ['user'],
+      })
       : [];
   const existingByUserId = new Map(existingPreferences.map((preference) => [preference.user.id, preference]));
 
   for (const [index, user] of memberUsers.entries()) {
     const expandedDocumentIds = rootDocumentIds.slice(index, index + config.expandedDocumentsPerPreference);
-    const preference = existingByUserId.get(user.id)
-      ?? em.create(WorkspacePreferenceEntity, {
+    const preference = existingByUserId.get(user.id) ??
+      em.create(WorkspacePreferenceEntity, {
         workspace: em.getReference(WorkspaceEntity, workspaceId),
         user: em.getReference(CurrentUserEntity, user.id),
         expandedDocumentIds: [],
@@ -820,12 +820,12 @@ async function seedDocumentFavorites(
   const existingFavorites =
     desiredPairs.length > 0
       ? await em.find(DocumentFavoriteEntity, {
-          workspace: workspaceId,
-          user: { $in: memberUsers.map((user) => user.id) },
-          document: { $in: candidateDocuments.map((document) => document.id) },
-        }, {
-          populate: ['user', 'document'],
-        })
+        workspace: workspaceId,
+        user: { $in: memberUsers.map((user) => user.id) },
+        document: { $in: candidateDocuments.map((document) => document.id) },
+      }, {
+        populate: ['user', 'document'],
+      })
       : [];
   const existingKeys = new Set(
     existingFavorites.map((favorite) => `${favorite.user.id}::${favorite.document.id}`),
@@ -874,12 +874,12 @@ async function seedDocumentVisits(
   const existingVisits =
     desiredPairs.length > 0
       ? await em.find(DocumentVisitEntity, {
-          workspace: workspaceId,
-          user: { $in: memberUsers.map((user) => user.id) },
-          document: { $in: documents.map((document) => document.id) },
-        }, {
-          populate: ['user', 'document'],
-        })
+        workspace: workspaceId,
+        user: { $in: memberUsers.map((user) => user.id) },
+        document: { $in: documents.map((document) => document.id) },
+      }, {
+        populate: ['user', 'document'],
+      })
       : [];
   const existingByKey = new Map(
     existingVisits.map((visit) => [`${visit.user.id}::${visit.document.id}`, visit]),
@@ -887,8 +887,8 @@ async function seedDocumentVisits(
 
   for (const pair of desiredPairs) {
     const key = `${pair.userId}::${pair.documentId}`;
-    const visit = existingByKey.get(key)
-      ?? em.create(DocumentVisitEntity, {
+    const visit = existingByKey.get(key) ??
+      em.create(DocumentVisitEntity, {
         workspace: em.getReference(WorkspaceEntity, workspaceId),
         user: em.getReference(CurrentUserEntity, pair.userId),
         document: em.getReference(DocumentEntity, pair.documentId),
@@ -922,10 +922,10 @@ async function seedPublishedDocuments(
   const existingPublishedDocuments =
     selectedDocuments.length > 0
       ? await em.find(PublishedDocumentEntity, {
-          document: { $in: selectedDocuments.map((document) => document.id) },
-        }, {
-          populate: ['document'],
-        })
+        document: { $in: selectedDocuments.map((document) => document.id) },
+      }, {
+        populate: ['document'],
+      })
       : [];
   const existingDocumentIds = new Set(
     existingPublishedDocuments.map((publishedDocument) => publishedDocument.document.id),
@@ -981,12 +981,12 @@ async function seedDocumentSubdocReferences(
   const existingReferences =
     desiredPairs.length > 0
       ? await em.find(DocumentSubdocReferenceEntity, {
-          workspace: workspaceId,
-          sourceDocument: { $in: desiredPairs.map((pair) => pair.sourceDocumentId) },
-          targetDocument: { $in: desiredPairs.map((pair) => pair.targetDocumentId) },
-        }, {
-          populate: ['sourceDocument', 'targetDocument'],
-        })
+        workspace: workspaceId,
+        sourceDocument: { $in: desiredPairs.map((pair) => pair.sourceDocumentId) },
+        targetDocument: { $in: desiredPairs.map((pair) => pair.targetDocumentId) },
+      }, {
+        populate: ['sourceDocument', 'targetDocument'],
+      })
       : [];
   const existingKeys = new Set(
     existingReferences.map(

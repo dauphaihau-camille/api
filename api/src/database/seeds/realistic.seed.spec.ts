@@ -40,7 +40,7 @@ describe('realistic seed content builders', () => {
     ]);
   });
 
-  it('appends subpage blocks for child documents', () => {
+  it('appends subdoc blocks for child documents', () => {
     const content = buildRealisticParentContent({
       title: 'Engineering Hub',
       summary: 'Shared engineering entry point.',
@@ -56,7 +56,7 @@ describe('realistic seed content builders', () => {
     });
 
     expect(content.at(-1)).toMatchObject({
-      type: 'subpage',
+      type: 'subdoc',
       props: {
         documentId: 'child-1',
         publicId: 'abcdefabcdefabcdefabcdefabcdefab',

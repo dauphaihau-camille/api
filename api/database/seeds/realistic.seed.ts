@@ -377,8 +377,8 @@ function buildSubpageBlock(input: {
   title: string;
 }): unknown {
   return {
-    id: buildSeededPublicId(`subpage:${input.documentId}`),
-    type: 'subpage',
+    id: buildSeededPublicId(`subdoc:${input.documentId}`),
+    type: 'subdoc',
     props: {
       documentId: input.documentId,
       publicId: input.publicId,
@@ -567,8 +567,8 @@ async function upsertWorkspace(
   description: string,
 ): Promise<WorkspaceEntity> {
   const existingWorkspace = await em.findOne(WorkspaceEntity, { slug });
-  const workspace = existingWorkspace
-    ?? em.create(WorkspaceEntity, { slug, name, description });
+  const workspace = existingWorkspace ??
+    em.create(WorkspaceEntity, { slug, name, description });
 
   workspace.name = name;
   workspace.description = description;
@@ -630,8 +630,8 @@ async function upsertWorkspaceMembers(
       : index === 1
         ? WorkspaceRole.ADMIN
         : WorkspaceRole.MEMBER;
-    const membership = existingByUserId.get(memberUser.id)
-      ?? em.create(WorkspaceMemberEntity, {
+    const membership = existingByUserId.get(memberUser.id) ??
+      em.create(WorkspaceMemberEntity, {
         workspace: em.getReference(WorkspaceEntity, workspaceId),
         user: em.getReference(CurrentUserEntity, memberUser.id),
         role,
@@ -650,8 +650,8 @@ async function upsertDocument(
   payload: DocumentPayload,
 ): Promise<SeedDocumentSummary> {
   const existingDocument = await em.findOne(DocumentEntity, { publicId: payload.publicId });
-  const document = existingDocument
-    ?? em.create(DocumentEntity, {
+  const document = existingDocument ??
+    em.create(DocumentEntity, {
       publicId: payload.publicId,
       workspace: em.getReference(WorkspaceEntity, payload.workspaceId),
       title: payload.title,
@@ -772,8 +772,8 @@ async function seedWorkspacePreferences(
   const existingByUserId = new Map(existingPreferences.map((preference) => [preference.user.id, preference]));
 
   for (const [index, memberUser] of memberUsers.entries()) {
-    const preference = existingByUserId.get(memberUser.id)
-      ?? em.create(WorkspacePreferenceEntity, {
+    const preference = existingByUserId.get(memberUser.id) ??
+      em.create(WorkspacePreferenceEntity, {
         workspace: em.getReference(WorkspaceEntity, workspaceId),
         user: em.getReference(CurrentUserEntity, memberUser.id),
         expandedDocumentIds: [],
@@ -821,8 +821,8 @@ async function seedFavoritesAndVisits(
         user: memberUser.id,
         document: visitDocument.id,
       });
-      const visit = existingVisit
-        ?? em.create(DocumentVisitEntity, {
+      const visit = existingVisit ??
+        em.create(DocumentVisitEntity, {
           workspace: em.getReference(WorkspaceEntity, workspaceId),
           user: em.getReference(CurrentUserEntity, memberUser.id),
           document: em.getReference(DocumentEntity, visitDocument.id),
