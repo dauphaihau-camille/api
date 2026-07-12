@@ -39,7 +39,7 @@ Top-level structure:
 - **DTO validation and config schema validation** - request payloads use Nest validation and environment config is validated with Zod at boot
 - **Idempotency support on selected writes** - the shared idempotency interceptor can safely deduplicate repeated client requests
 - **SSE and WebSocket foundations** - the workspace includes transport seams for server-sent events and authenticated Socket.IO-based realtime flows
-- **OAuth-ready auth module** - the auth layer already includes seams for email auth plus external identity providers
+- **OAuth sign-in (Google and GitHub)** - the API supports external identity-provider login flows with callback handling and linked OAuth accounts
 
 ### Shared Platform Capabilities
 
