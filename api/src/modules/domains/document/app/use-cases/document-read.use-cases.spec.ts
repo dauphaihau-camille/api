@@ -1,11 +1,14 @@
 import type { AuthenticatedUser } from '~/modules/domains/auth/app/auth.types';
 import { UserStatus } from '~/modules/domains/auth/domain/enums/user-status.enum';
+import type { PublishRepository } from '../../../publish/app/ports/publish.repository';
 import { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.enum';
 import type { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
+import type { DocumentObservabilityService } from '../../observability/document-observability.service';
 import type { DocumentNavigationQueryRepository } from '../ports/document-navigation-query.repository';
 import type { DocumentTreeQueryRepository } from '../ports/document-tree-query.repository';
 import type { DocumentVisitRepository } from '../ports/document-visit.repository';
 import { GetDefaultWorkspaceDocumentUseCase } from './get-default-workspace-document.use-case';
+import { GetDocumentUseCase } from './get-document.use-case';
 import { ListWorkspaceDocumentsUseCase } from './list-workspace-documents.use-case';
 
 describe('Document read use cases', () => {
@@ -44,6 +47,7 @@ describe('Document read use cases', () => {
       findChildren: jest.fn(),
       countActiveChildren: jest.fn(),
       findFavoriteDocumentIds: jest.fn(),
+      findAncestors: jest.fn(),
     } as unknown as jest.Mocked<DocumentNavigationQueryRepository>;
   }
 
@@ -61,6 +65,20 @@ describe('Document read use cases', () => {
       findSiblingDocumentsForMove: jest.fn(),
       findFirstSibling: jest.fn(),
     } as unknown as jest.Mocked<DocumentTreeQueryRepository>;
+  }
+
+  function createPublishRepository() {
+    return {
+      findPublishedDocumentByDocumentId: jest.fn(),
+    } as unknown as jest.Mocked<PublishRepository>;
+  }
+
+  function createObservabilityService() {
+    return {
+      recordDocumentReadDuration: jest.fn(),
+      recordDocumentVisitRecording: jest.fn(),
+      logDocumentVisitRecordingFailure: jest.fn(),
+    } as unknown as jest.Mocked<DocumentObservabilityService>;
   }
 
   it('passes a title search filter when listing workspace documents', async () => {
@@ -112,5 +130,85 @@ describe('Document read use cases', () => {
       archivedAt: null,
     });
     expect(result).toEqual({ documentId: 'document-private' });
+  });
+
+  it('returns document detail without waiting for visit recording', async () => {
+    const workspaceRepository = createWorkspaceRepository();
+    const navigationRepository = createNavigationRepository();
+    const visitRepository = createVisitRepository();
+    const publishRepository = createPublishRepository();
+    const observabilityService = createObservabilityService();
+    const visitPromise = new Promise<void>(() => {});
+    const documentCreatedAt = new Date('2026-01-01T00:00:00.000Z');
+    const documentUpdatedAt = new Date('2026-01-02T00:00:00.000Z');
+    const document = {
+      id: 'document-1',
+      publicId: 'public-document-1',
+      version: 3,
+      workspace: { id: 'workspace-1' },
+      teamspace: undefined,
+      parentDocument: undefined,
+      title: 'Document 1',
+      contentFormat: 'blocknote_v1',
+      contentJson: [],
+      sortKey: 10,
+      archivedAt: undefined,
+      createdAt: documentCreatedAt,
+      updatedAt: documentUpdatedAt,
+      updatedBy: {
+        displayName: 'Editor',
+        email: 'editor@example.com',
+      },
+    };
+
+    navigationRepository.findDocument.mockResolvedValue(document as never);
+    navigationRepository.findFavoriteDocumentIds.mockResolvedValue(['document-1']);
+    navigationRepository.findAncestors.mockResolvedValue([]);
+    publishRepository.findPublishedDocumentByDocumentId.mockResolvedValue(null);
+    visitRepository.recordVisit.mockReturnValue(visitPromise);
+
+    const useCase = new GetDocumentUseCase(
+      workspaceRepository,
+      navigationRepository,
+      visitRepository,
+      publishRepository,
+      observabilityService,
+    );
+
+    const result = await useCase.execute('document-1', currentUser);
+
+    expect(result).toEqual({
+      id: 'document-1',
+      publicId: 'public-document-1',
+      version: 3,
+      workspaceId: 'workspace-1',
+      teamspaceId: undefined,
+      parentDocumentId: undefined,
+      title: 'Document 1',
+      contentFormat: 'blocknote_v1',
+      content: [],
+      sortKey: 10,
+      archivedAt: undefined,
+      archivedByName: undefined,
+      createdAt: documentCreatedAt,
+      updatedAt: documentUpdatedAt,
+      isFavorite: true,
+      publishedDocumentId: undefined,
+      publicPath: undefined,
+      breadcrumb: [],
+    });
+    expect(visitRepository.recordVisit).toHaveBeenCalledWith(document, currentUser.userId);
+    expect(observabilityService.recordDocumentReadDuration).toHaveBeenCalledWith(
+      'workspace_access',
+      expect.any(Number),
+    );
+    expect(observabilityService.recordDocumentReadDuration).toHaveBeenCalledWith(
+      'related_queries',
+      expect.any(Number),
+    );
+    expect(observabilityService.recordDocumentReadDuration).toHaveBeenCalledWith(
+      'total',
+      expect.any(Number),
+    );
   });
 });

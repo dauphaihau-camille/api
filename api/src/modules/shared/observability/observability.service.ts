@@ -147,6 +147,10 @@ export class ObservabilityService {
     this.redisConnectionErrorsTotal.inc({ component });
   }
 
+  getRegistry(): Registry {
+    return this.registry;
+  }
+
   attachBullMqQueue(queue: Queue | null): void {
     if (!queue) {
       this.bullMqQueue = undefined;

@@ -2,6 +2,7 @@ import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { Module } from '@nestjs/common';
 import { CurrentUserEntity } from '../auth/infra/persistence/entities/current-user.entity';
 import { AuditModule } from '../../shared/audit/audit.module';
+import { ObservabilityModule } from '../../shared/observability/observability.module';
 import { QueueModule } from '../../shared/queue/queue.module';
 import { PublishRepository } from '../publish/app/ports/publish.repository';
 import { MikroOrmPublishRepository } from '../publish/infra/mikro-orm-publish.repository';
@@ -36,6 +37,7 @@ import { MikroOrmDocumentNavigationQueryRepository } from './infra/mikro-orm-doc
 import { MikroOrmDocumentSubdocReferenceRepository } from './infra/mikro-orm-document-subdoc-reference.repository';
 import { MikroOrmDocumentTreeQueryRepository } from './infra/mikro-orm-document-tree-query.repository';
 import { MikroOrmDocumentVisitRepository } from './infra/mikro-orm-document-visit.repository';
+import { DocumentObservabilityService } from './observability/document-observability.service';
 import { DocumentEntity } from './infra/persistence/entities/document.entity';
 import { DocumentSubdocReferenceEntity } from './infra/persistence/entities/document-subdoc-reference.entity';
 import { DocumentVisitEntity } from './infra/persistence/entities/document-visit.entity';
@@ -44,6 +46,7 @@ import { DocumentFavoriteEntity } from '../favorite/infra/persistence/entities/d
 @Module({
   imports: [
     AuditModule,
+    ObservabilityModule,
     QueueModule,
     WorkspaceModule,
     MikroOrmModule.forFeature([
@@ -85,6 +88,7 @@ import { DocumentFavoriteEntity } from '../favorite/infra/persistence/entities/d
     },
     DocumentTreeService,
     DocumentSubdocService,
+    DocumentObservabilityService,
     ListWorkspaceDocumentsUseCase,
     ListArchivedWorkspaceDocumentsUseCase,
     GetDefaultWorkspaceDocumentUseCase,
