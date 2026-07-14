@@ -93,6 +93,7 @@ const appEnvBaseSchema = z.object({
   PAYMENT_WEBHOOK_SECRET: optionalTrimmedString(),
   PAYMENT_SUCCESS_PATH: z.string().trim().min(1).default('/payments/success'),
   PAYMENT_CANCEL_PATH: z.string().trim().min(1).default('/payments/cancel'),
+  METRICS_BEARER_TOKEN: optionalTrimmedString(),
   STORAGE_DRIVER: z.enum(['local', 'minio']).default('local'),
   STORAGE_LOCAL_ROOT: z.string().trim().min(1).default('./storage'),
   STORAGE_PUBLIC_BASE_URL: optionalUrlString(),
