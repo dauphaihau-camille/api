@@ -1,4 +1,4 @@
-import { DomainError } from '../../../../platform/errors/domain.error';
+import { DomainError } from '~/platform/errors/domain.error';
 
 export abstract class AuthAppError extends DomainError {
   protected constructor(message: string) {

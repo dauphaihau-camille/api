@@ -19,7 +19,13 @@ import { CurrentUser } from '~/platform/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { JwtAuthGuard } from '~/domains/auth/api/guard/jwt-auth.guard';
 import { PermissionsGuard } from '~/domains/auth/api/guard/permissions.guard';
-import { TeamspaceService } from '../../app/teamspace.service';
+import { CreateTeamspaceUseCase } from '../../app/use-cases/create-teamspace.use-case';
+import { ListTeamspacesUseCase } from '../../app/use-cases/list-teamspaces.use-case';
+import { UpdateTeamspaceUseCase } from '../../app/use-cases/update-teamspace.use-case';
+import {
+  isTeamspaceLayeredError,
+  mapTeamspaceLayeredErrorToHttpException,
+} from './teamspace-http-error-mapper';
 import { CreateTeamspaceDto } from './dto/create-teamspace.dto';
 import { TeamspaceResponseDto } from './dto/teamspace-response.dto';
 import { UpdateTeamspaceDto } from './dto/update-teamspace.dto';
@@ -29,7 +35,11 @@ import { UpdateTeamspaceDto } from './dto/update-teamspace.dto';
 @ApiCookieAuth('access_token')
 @ApiTags('Teamspace')
 export class TeamspaceController {
-  constructor(private readonly teamspaceService: TeamspaceService) {}
+  constructor(
+    private readonly listTeamspacesUseCase: ListTeamspacesUseCase,
+    private readonly createTeamspaceUseCase: CreateTeamspaceUseCase,
+    private readonly updateTeamspaceUseCase: UpdateTeamspaceUseCase,
+  ) {}
 
   @Get('workspaces/:workspaceId/teamspaces')
   @Header('Cache-Control', 'no-store')
@@ -44,9 +54,10 @@ export class TeamspaceController {
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() currentUser: AuthenticatedUser,
   ): Promise<TeamspaceResponseDto[]> {
-    return this.teamspaceService
-      .listForWorkspace(workspaceId, currentUser)
-      .then((teamspaces) => teamspaces.map(TeamspaceResponseDto.fromSummary));
+    return this.listTeamspacesUseCase
+      .execute(workspaceId, currentUser)
+      .then((teamspaces) => teamspaces.map(TeamspaceResponseDto.fromSummary))
+      .catch(this.rethrowTeamspaceLayeredError);
   }
 
   @Post('workspaces/:workspaceId/teamspaces')
@@ -62,12 +73,13 @@ export class TeamspaceController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() body: CreateTeamspaceDto,
   ): Promise<TeamspaceResponseDto> {
-    return this.teamspaceService
-      .createForWorkspace(workspaceId, currentUser, {
+    return this.createTeamspaceUseCase
+      .execute(workspaceId, currentUser, {
         name: body.name,
         description: body.description,
       })
-      .then(TeamspaceResponseDto.fromSummary);
+      .then(TeamspaceResponseDto.fromSummary)
+      .catch(this.rethrowTeamspaceLayeredError);
   }
 
   @Patch('teamspaces/:teamspaceId')
@@ -83,12 +95,21 @@ export class TeamspaceController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() body: UpdateTeamspaceDto,
   ): Promise<TeamspaceResponseDto> {
-    return this.teamspaceService
-      .updateForWorkspace(teamspaceId, currentUser, {
+    return this.updateTeamspaceUseCase
+      .execute(teamspaceId, currentUser, {
         version: body.version,
         name: body.name,
         description: body.description,
       })
-      .then(TeamspaceResponseDto.fromSummary);
+      .then(TeamspaceResponseDto.fromSummary)
+      .catch(this.rethrowTeamspaceLayeredError);
+  }
+
+  private rethrowTeamspaceLayeredError(error: unknown): never {
+    if (isTeamspaceLayeredError(error)) {
+      throw mapTeamspaceLayeredErrorToHttpException(error);
+    }
+
+    throw error;
   }
 }
