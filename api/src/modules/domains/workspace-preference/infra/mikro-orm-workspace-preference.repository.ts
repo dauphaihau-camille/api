@@ -1,5 +1,6 @@
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
+import { isUniqueConstraintError } from '~/common/database/is-unique-constraint-error';
 import { CurrentUserEntity } from '../../auth/infra/persistence/entities/current-user.entity';
 import { WorkspaceEntity } from '../../workspace/infra/persistence/entities/workspace.entity';
 import { WorkspacePreferenceRepository } from '../app/ports/workspace-preference.repository';
@@ -19,36 +20,90 @@ export class MikroOrmWorkspacePreferenceRepository implements WorkspacePreferenc
     });
   }
 
+  async findLastActiveForUser(userId: string): Promise<WorkspacePreferenceEntity | null> {
+    return this.entityManager.fork().findOne(
+      WorkspacePreferenceEntity,
+      {
+        user: userId,
+        lastActiveAt: { $ne: null },
+      },
+      {
+        populate: ['workspace'],
+        orderBy: {
+          lastActiveAt: 'desc',
+        },
+      },
+    );
+  }
+
   async save(input: {
     workspaceId: string;
     userId: string;
     expandedDocumentIds: string[];
   }): Promise<WorkspacePreferenceEntity> {
     const entityManager = this.entityManager.fork();
-    const existingPreference = await entityManager.findOne(WorkspacePreferenceEntity, {
+
+    const preference = entityManager.create(WorkspacePreferenceEntity, {
+      user: entityManager.getReference(CurrentUserEntity, input.userId),
+      workspace: entityManager.getReference(WorkspaceEntity, input.workspaceId),
+      expandedDocumentIds: input.expandedDocumentIds,
+    });
+
+    try {
+      await entityManager.persist(preference).flush();
+      return preference;
+    }
+    catch (error) {
+      if (!isUniqueConstraintError(error)) {
+        throw error;
+      }
+    }
+
+    const recoveryEntityManager = this.entityManager.fork();
+    const existingPreference = await recoveryEntityManager.findOneOrFail(WorkspacePreferenceEntity, {
       workspace: input.workspaceId,
       user: input.userId,
     });
 
-    if (existingPreference) {
-      existingPreference.expandedDocumentIds = input.expandedDocumentIds;
-      await entityManager.persist(existingPreference).flush();
-      return existingPreference;
-    }
+    existingPreference.expandedDocumentIds = input.expandedDocumentIds;
+    await recoveryEntityManager.persist(existingPreference).flush();
 
-    const [user, workspace] = await Promise.all([
-      entityManager.findOneOrFail(CurrentUserEntity, { id: input.userId }),
-      entityManager.findOneOrFail(WorkspaceEntity, { id: input.workspaceId }),
-    ]);
+    return existingPreference;
+  }
+
+  async markAsLastActive(input: {
+    workspaceId: string;
+    userId: string;
+  }): Promise<WorkspacePreferenceEntity> {
+    const entityManager = this.entityManager.fork();
+    const lastActiveAt = new Date();
 
     const preference = entityManager.create(WorkspacePreferenceEntity, {
-      user,
-      workspace,
-      expandedDocumentIds: input.expandedDocumentIds,
+      user: entityManager.getReference(CurrentUserEntity, input.userId),
+      workspace: entityManager.getReference(WorkspaceEntity, input.workspaceId),
+      expandedDocumentIds: [],
+      lastActiveAt,
     });
 
-    await entityManager.persist(preference).flush();
+    try {
+      await entityManager.persist(preference).flush();
+      return preference;
+    }
+    catch (error) {
+      if (!isUniqueConstraintError(error)) {
+        throw error;
+      }
+    }
 
-    return preference;
+    const recoveryEntityManager = this.entityManager.fork();
+    const existingPreference = await recoveryEntityManager.findOneOrFail(WorkspacePreferenceEntity, {
+      workspace: input.workspaceId,
+      user: input.userId,
+    });
+
+    existingPreference.lastActiveAt = lastActiveAt;
+    await recoveryEntityManager.persist(existingPreference).flush();
+
+    return existingPreference;
   }
 }

@@ -3,6 +3,9 @@ export interface WorkspacePreferenceSummary {
   navigation: {
     expandedDocumentIds: string[];
   };
+  activity: {
+    lastActiveAt: Date | null;
+  };
 }
 
 export interface UpdateWorkspacePreferenceInput {

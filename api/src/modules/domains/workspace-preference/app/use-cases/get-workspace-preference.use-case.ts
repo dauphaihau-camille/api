@@ -32,6 +32,9 @@ export class GetWorkspacePreferenceUseCase {
       navigation: {
         expandedDocumentIds: normalizeExpandedDocumentIds(preference?.expandedDocumentIds),
       },
+      activity: {
+        lastActiveAt: preference?.lastActiveAt ?? null,
+      },
     };
   }
 }

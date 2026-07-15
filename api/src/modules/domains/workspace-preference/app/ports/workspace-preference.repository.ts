@@ -5,9 +5,14 @@ export abstract class WorkspacePreferenceRepository {
     workspaceId: string,
     userId: string,
   ): Promise<WorkspacePreferenceEntity | null>;
+  abstract findLastActiveForUser(userId: string): Promise<WorkspacePreferenceEntity | null>;
   abstract save(input: {
     workspaceId: string;
     userId: string;
     expandedDocumentIds: string[];
+  }): Promise<WorkspacePreferenceEntity>;
+  abstract markAsLastActive(input: {
+    workspaceId: string;
+    userId: string;
   }): Promise<WorkspacePreferenceEntity>;
 }
