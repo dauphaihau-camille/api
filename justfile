@@ -148,8 +148,8 @@ db-clear environment='':
   cd {{ api_dir }} && \
   test -f "$env_file" && \
   set -a && \
-  . "$env_file" && \
-  set +a && \
+            . "$env_file" && \
+    set +a && \
   pnpm db:clear
 
 db-clear-infisical project_id *env_name:
@@ -248,6 +248,6 @@ db-fresh-realistic-infisical project_id *env_name:
 
 
 # -------------------- Etc
-  
+
 mcp-up:
   @cd {{ mcp_dir }} && pnpm start
