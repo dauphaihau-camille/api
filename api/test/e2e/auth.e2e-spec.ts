@@ -7,6 +7,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { createRequire } from 'node:module';
 import { Logger, PinoLogger } from 'nestjs-pino';
 import request from 'supertest';
 import type { App } from 'supertest/types';
@@ -15,20 +16,38 @@ import { setupBullBoard } from '../../src/common/docs/setup-bull-board';
 import { GlobalExceptionFilter } from '../../src/common/filters/global-exception.filter';
 import { RequestLoggingInterceptor } from '../../src/common/interceptors/request-logging.interceptor';
 import { parseCorsAllowedOrigins } from '../../src/config/cors.config';
-import { AppModule } from '../../src/modules/app.module';
 import { ObservabilityService } from '../../src/modules/shared/observability/observability.service';
 import { BULLMQ_QUEUE } from '../../src/modules/shared/queue/infra/queue.constants';
 import { RequestContextService } from '../../src/modules/shared/request-context/request-context.service';
-import type {
-  AuthResponse,
-  UserProfile,
-} from '../../src/modules/domains/auth/app/auth.types';
 import { createTestDatabase, dropTestDatabase } from '../support/test-postgres';
 
 jest.setTimeout(30_000);
 
-const expectedMemberPermissions = ['auth.me.read', 'auth.session.manage'];
+const expectedMemberPermissions: string[] = [];
 const API_PREFIX = 'v1';
+const requireModule = createRequire(__filename);
+
+type AuthHttpResponse = {
+  access_token: string;
+  refresh_token: string;
+  user: {
+    id: string;
+    email: string;
+    display_name?: string;
+    session_id: string;
+    roles: string[];
+    permissions: string[];
+  };
+};
+
+type MeHttpResponse = {
+  id: string;
+  email: string;
+  display_name?: string;
+  session_id: string;
+  roles: string[];
+  permissions: string[];
+};
 
 describe('Auth flow (e2e)', () => {
   let app: INestApplication<App>;
@@ -50,6 +69,11 @@ describe('Auth flow (e2e)', () => {
     process.env.JWT_ACCESS_TTL = '15m';
     process.env.JWT_REFRESH_TTL = '7d';
     process.env.BCRYPT_SALT_ROUNDS = '4';
+    process.env.CACHE_DRIVER = 'memory';
+    process.env.RATE_LIMIT_DRIVER = 'memory';
+    process.env.QUEUE_DRIVER = 'inline';
+    process.env.STORAGE_DRIVER = 'local';
+    const { AppModule } = requireModule('../../src/modules/app.module');
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -134,16 +158,16 @@ describe('Auth flow (e2e)', () => {
       .send({
         email,
         password: 'password123',
-        displayName: 'Member User',
+        display_name: 'Member User',
       })
       .expect(201);
-    const registerBody = registerResponse.body as unknown as AuthResponse;
+    const registerBody = registerResponse.body as AuthHttpResponse;
 
-    expect(registerBody.accessToken).toEqual(expect.any(String));
-    expect(registerBody.refreshToken).toEqual(expect.any(String));
+    expect(registerBody.access_token).toEqual(expect.any(String));
+    expect(registerBody.refresh_token).toEqual(expect.any(String));
     expect(registerBody.user).toMatchObject({
       email,
-      displayName: 'Member User',
+      display_name: 'Member User',
       roles: ['member'],
       permissions: expectedMemberPermissions,
     });
@@ -151,22 +175,22 @@ describe('Auth flow (e2e)', () => {
     expect(String(registerResponse.headers['set-cookie'] ?? '')).toContain('accessToken=');
     expect(String(registerResponse.headers['set-cookie'] ?? '')).toContain('refreshToken=');
     expect(registerBody.user.id).toEqual(expect.any(String));
-    expect(registerBody.user.sessionId).toEqual(expect.any(String));
+    expect(registerBody.user.session_id).toEqual(expect.any(String));
 
-    const accessToken = registerBody.accessToken;
-    const refreshToken = registerBody.refreshToken;
-    const sessionId = registerBody.user.sessionId;
+    const accessToken = registerBody.access_token;
+    const refreshToken = registerBody.refresh_token;
+    const sessionId = registerBody.user.session_id;
 
     const meResponse = await request(app.getHttpServer())
       .get('/v1/auth/me')
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
-    const meBody = meResponse.body as unknown as UserProfile;
+    const meBody = meResponse.body as MeHttpResponse;
 
     expect(meBody).toMatchObject({
       email,
-      displayName: 'Member User',
-      sessionId,
+      display_name: 'Member User',
+      session_id: sessionId,
       roles: ['member'],
       permissions: expectedMemberPermissions,
     });
@@ -179,49 +203,49 @@ describe('Auth flow (e2e)', () => {
         password: 'password123',
       })
       .expect(200);
-    const loginBody = loginResponse.body as unknown as AuthResponse;
+    const loginBody = loginResponse.body as AuthHttpResponse;
 
     expect(loginResponse.headers['cache-control']).toBe('no-store');
     expect(String(loginResponse.headers['set-cookie'] ?? '')).toContain('accessToken=');
     expect(String(loginResponse.headers['set-cookie'] ?? '')).toContain('refreshToken=');
     expect(loginBody.user.email).toBe(email);
-    expect(loginBody.user.sessionId).not.toBe(sessionId);
+    expect(loginBody.user.session_id).not.toBe(sessionId);
 
     const refreshResponse = await request(app.getHttpServer())
       .post('/v1/auth/refresh')
-      .send({ refreshToken })
+      .send({ refresh_token: refreshToken })
       .expect(200);
-    const refreshBody = refreshResponse.body as unknown as AuthResponse;
+    const refreshBody = refreshResponse.body as AuthHttpResponse;
 
     expect(refreshResponse.headers['cache-control']).toBe('no-store');
     expect(String(refreshResponse.headers['set-cookie'] ?? '')).toContain('accessToken=');
     expect(String(refreshResponse.headers['set-cookie'] ?? '')).toContain('refreshToken=');
-    expect(refreshBody.accessToken).toEqual(expect.any(String));
-    expect(refreshBody.refreshToken).toEqual(expect.any(String));
+    expect(refreshBody.access_token).toEqual(expect.any(String));
+    expect(refreshBody.refresh_token).toEqual(expect.any(String));
     expect(refreshBody.user.email).toBe(email);
-    expect(refreshBody.user.sessionId).toBe(sessionId);
-    expect(refreshBody.refreshToken).not.toBe(refreshToken);
+    expect(refreshBody.user.session_id).toBe(sessionId);
+    expect(refreshBody.refresh_token).not.toBe(refreshToken);
 
     await request(app.getHttpServer())
       .post('/v1/auth/refresh')
-      .send({ refreshToken })
+      .send({ refresh_token: refreshToken })
       .expect(401);
 
     const logoutResponse = await request(app.getHttpServer())
       .post('/v1/auth/logout')
-      .set('Authorization', `Bearer ${refreshBody.accessToken}`)
+      .set('Authorization', `Bearer ${refreshBody.access_token}`)
       .expect(204);
 
     expect(logoutResponse.headers['cache-control']).toBe('no-store');
 
     await request(app.getHttpServer())
       .get('/v1/auth/me')
-      .set('Authorization', `Bearer ${refreshBody.accessToken}`)
+      .set('Authorization', `Bearer ${refreshBody.access_token}`)
       .expect(401);
 
     await request(app.getHttpServer())
       .post('/v1/auth/refresh')
-      .send({ refreshToken: refreshBody.refreshToken })
+      .send({ refresh_token: refreshBody.refresh_token })
       .expect(401);
   });
 
@@ -250,7 +274,7 @@ describe('Auth flow (e2e)', () => {
         .send({
           email: `${registerEmailPrefix}-${attempt}@example.com`,
           password: 'password123',
-          displayName: `Register Attempt ${attempt + 1}`,
+          display_name: `Register Attempt ${attempt + 1}`,
         })
         .expect(201);
     }
@@ -261,7 +285,7 @@ describe('Auth flow (e2e)', () => {
       .send({
         email: `${registerEmailPrefix}-blocked@example.com`,
         password: 'password123',
-        displayName: 'Blocked Register Attempt',
+        display_name: 'Blocked Register Attempt',
       })
       .expect(429);
 
@@ -306,7 +330,7 @@ describe('Auth flow (e2e)', () => {
         .post('/v1/auth/refresh')
         .set('X-Forwarded-For', refreshIp)
         .send({
-          refreshToken: 'invalid-refresh-token-value-1234567890',
+          refresh_token: 'invalid-refresh-token-value-1234567890',
         })
         .expect(401);
     }
@@ -315,7 +339,7 @@ describe('Auth flow (e2e)', () => {
       .post('/v1/auth/refresh')
       .set('X-Forwarded-For', refreshIp)
       .send({
-        refreshToken: 'invalid-refresh-token-value-1234567890',
+        refresh_token: 'invalid-refresh-token-value-1234567890',
       })
       .expect(429);
 

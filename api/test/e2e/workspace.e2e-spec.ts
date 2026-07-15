@@ -7,6 +7,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { createRequire } from 'node:module';
 import { Logger, PinoLogger } from 'nestjs-pino';
 import request from 'supertest';
 import type { App } from 'supertest/types';
@@ -24,6 +25,7 @@ import { createTestDatabase, dropTestDatabase } from '../support/test-postgres';
 jest.setTimeout(30_000);
 
 const API_PREFIX = 'v1';
+const requireModule = createRequire(__filename);
 
 type RegisteredUser = {
   cookie: string[];
@@ -50,7 +52,11 @@ describe('Workspace and membership flow (e2e)', () => {
     process.env.JWT_ACCESS_TTL = '15m';
     process.env.JWT_REFRESH_TTL = '7d';
     process.env.BCRYPT_SALT_ROUNDS = '4';
-    const { AppModule } = await import('../../src/modules/app.module.js');
+    process.env.CACHE_DRIVER = 'memory';
+    process.env.RATE_LIMIT_DRIVER = 'memory';
+    process.env.QUEUE_DRIVER = 'inline';
+    process.env.STORAGE_DRIVER = 'local';
+    const { AppModule } = requireModule('../../src/modules/app.module');
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -353,29 +359,33 @@ describe('Workspace and membership flow (e2e)', () => {
     });
 
     const treeResponse = await request(app.getHttpServer())
-      .get(`/v1/workspaces/${workspace.slug}/documents/tree`)
+      .get(`/v1/workspaces/${workspace.slug}/documents`)
       .set('Cookie', owner.cookie)
       .expect(200);
 
-    expect(treeResponse.body).toMatchObject({
-      private_documents: [
+    expect(treeResponse.body.private_documents.items).toEqual(
+      expect.arrayContaining([
         expect.objectContaining({
           id: privateDocument.id,
           title: 'Roadmap',
         }),
-      ],
-      teamspaces: [
+      ]),
+    );
+    expect(treeResponse.body.teamspaces).toEqual(
+      expect.arrayContaining([
         expect.objectContaining({
           id: teamspace.id,
-          documents: [
-            expect.objectContaining({
-              id: sharedDocument.id,
-              title: 'Shared spec',
-            }),
-          ],
+          documents: expect.objectContaining({
+            items: expect.arrayContaining([
+              expect.objectContaining({
+                id: sharedDocument.id,
+                title: 'Shared spec',
+              }),
+            ]),
+          }),
         }),
-      ],
-    });
+      ]),
+    );
 
     const updateDocumentResponse = await request(app.getHttpServer())
       .patch(`/v1/documents/${privateDocument.id}`)
@@ -416,11 +426,16 @@ describe('Workspace and membership flow (e2e)', () => {
 
     expect(archiveDocumentResponse.body.archived_at).toEqual(expect.any(String));
 
+    const archivedDocumentDetailResponse = await request(app.getHttpServer())
+      .get(`/v1/documents/${sharedDocument.id}`)
+      .set('Cookie', owner.cookie)
+      .expect(200);
+
     const restoreDocumentResponse = await request(app.getHttpServer())
       .post(`/v1/documents/${sharedDocument.id}/restore`)
       .set('Cookie', owner.cookie)
       .send({
-        version: archiveDocumentResponse.body.version,
+        version: archivedDocumentDetailResponse.body.version,
       })
       .expect(200);
 

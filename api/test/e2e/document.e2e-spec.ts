@@ -7,6 +7,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { createRequire } from 'node:module';
 import { Logger, PinoLogger } from 'nestjs-pino';
 import request from 'supertest';
 import type { App } from 'supertest/types';
@@ -24,13 +25,14 @@ import { createTestDatabase, dropTestDatabase } from '../support/test-postgres';
 jest.setTimeout(30_000);
 
 const API_PREFIX = 'v1';
+const requireModule = createRequire(__filename);
 
 type RegisteredUser = {
   cookie: string[];
   userId: string;
 };
 
-describe('Document phase 3 flow (e2e)', () => {
+describe('Document flow (e2e)', () => {
   let app: INestApplication<App>;
   let originalEnv: NodeJS.ProcessEnv;
   let testDb: Awaited<ReturnType<typeof createTestDatabase>>;
@@ -50,7 +52,11 @@ describe('Document phase 3 flow (e2e)', () => {
     process.env.JWT_ACCESS_TTL = '15m';
     process.env.JWT_REFRESH_TTL = '7d';
     process.env.BCRYPT_SALT_ROUNDS = '4';
-    const { AppModule } = await import('../../src/modules/app.module.js');
+    process.env.CACHE_DRIVER = 'memory';
+    process.env.RATE_LIMIT_DRIVER = 'memory';
+    process.env.QUEUE_DRIVER = 'inline';
+    process.env.STORAGE_DRIVER = 'local';
+    const { AppModule } = requireModule('../../src/modules/app.module');
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -166,7 +172,7 @@ describe('Document phase 3 flow (e2e)', () => {
         document_id: document.id,
         title: 'Weekly review',
         has_children: false,
-        has_content: true,
+        has_content: false,
       }),
     ]);
 

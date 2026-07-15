@@ -123,6 +123,10 @@ pnpm test:hurl
 
 E2E specs live under `test/e2e/`, shared test helpers live under `test/support/`, and the e2e Jest config stays in `test/jest-e2e.json`.
 
+`pnpm test:e2e` disables Watchman explicitly so Jest can run in restricted or sandboxed environments where the Watchman socket is not accessible.
+
+The e2e bootstrap loads `api/.env` before each suite file runs, then creates a real temporary PostgreSQL database per suite. Make sure local Postgres is reachable before running e2e, typically through the workspace Docker stack on `127.0.0.1:55433`, or override `DB_HOST`, `DB_PORT`, `DB_USER`, and `DB_PASSWORD` in the shell to point at another local instance.
+
 The template also includes a lightweight k6 load-test example for the login flow:
 
 ```bash

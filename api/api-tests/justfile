@@ -4,12 +4,14 @@ vars_file := "hurl.variables"
 stdout_file := "/tmp/hurl.out"
 stderr_file := "/tmp/hurl-verbose.out"
 api_dir := ".."
+generated_vars_file := "/tmp/camille-hurl.variables"
 
 default:
   @just --list
 
 suite:
-  hurl --test --glob "**/*.hurl" --variables-file {{vars_file}}
+  node scripts/generate-variables.mjs {{vars_file}} > {{generated_vars_file}}
+  hurl --test --glob "**/*.hurl" --variables-file {{generated_vars_file}}
 
 # -------------------- Seeding
 
@@ -30,8 +32,9 @@ run file:
   if [[ "$file_path" == api-tests/* ]]; then \
     file_path="${file_path#api-tests/}"; \
   fi; \
+  node scripts/generate-variables.mjs {{vars_file}} > {{generated_vars_file}}; \
   set +e; \
-  hurl --include --very-verbose --variables-file {{vars_file}} "$file_path" > {{stdout_file}} 2> {{stderr_file}}; \
+  hurl --include --very-verbose --variables-file {{generated_vars_file}} "$file_path" > {{stdout_file}} 2> {{stderr_file}}; \
   status=$?; \
   set -e; \
   nu scripts/format-response.nu {{stdout_file}} {{stderr_file}}; \

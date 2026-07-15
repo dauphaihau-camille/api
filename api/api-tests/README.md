@@ -11,6 +11,8 @@ This directory contains HTTP-level smoke tests for the API using [Hurl](https://
 
 - `health.hurl` checks the public health endpoint.
 - `auth/login.hurl` checks login with seeded default credentials.
+- `auth/register.hurl` checks registration returns tokens and cookies.
+- `workspace-document-smoke.hurl` covers workspace create/list/update plus document create/list/update/archive/publish/public-read.
 
 ## Run
 
@@ -28,6 +30,7 @@ For manual runs, use the same variables file:
 cd api/api-tests
 just run health.hurl
 just run auth/login.hurl
+just run workspace-document-smoke.hurl
 ```
 
 The `run` recipe also accepts paths prefixed with `api-tests/`, for example:
@@ -47,4 +50,5 @@ pnpm test:hurl
 
 - Public health is mounted at `/health`, outside the `/v1` prefix.
 - `auth/login.hurl` expects seeded auth data; the example variables default to `member@example.com` / `Password123!`.
+- The `just` recipes generate a temporary variables file with unique emails, slugs, and titles so registration and mutation flows are rerunnable.
 - Keep local values in `api-tests/hurl.variables`; the committed example is `api-tests/hurl.variables.example`.
