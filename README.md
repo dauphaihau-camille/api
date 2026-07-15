@@ -137,10 +137,12 @@ After startup, the main endpoints are:
 
 - API docs: `http://localhost:3000/docs`
 - OpenAPI JSON: `http://localhost:3000/docs/openapi.json`
-- Metrics: `http://localhost:3000/metrics`
+- Metrics: `http://localhost:3000/metrics` with `Authorization: Bearer local-dev-metrics-token`
 - Bull Board: `http://localhost:3000/ops/queues`
 - Health: `http://localhost:3000/health`
 - Readiness: `http://localhost:3000/health/ready`
+
+Prometheus is preconfigured to scrape `/metrics` with the same local development bearer token from `api/.env.example` and `api/.env.docker.example`.
 
 ## Useful Commands
 

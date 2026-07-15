@@ -29,6 +29,8 @@ What this gives you:
 - Metrics are scraped by Prometheus from the host-run API.
 - Logs are mirrored into `api/logs/*.log` and scraped by Promtail into Loki.
 
+The local metrics endpoint is protected with a shared development bearer token. The example env files and Prometheus config both use `local-dev-metrics-token`, so host-run and container-run scrapes work out of the box.
+
 Why this is the default:
 
 - faster save-and-retry loop

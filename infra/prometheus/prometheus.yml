@@ -4,10 +4,16 @@ global:
 scrape_configs:
   - job_name: "nest-template-api-host"
     metrics_path: /metrics
+    authorization:
+      type: Bearer
+      credentials: local-dev-metrics-token
     static_configs:
       - targets: ["host.docker.internal:3000"]
 
   - job_name: "nest-template-api-container"
     metrics_path: /metrics
+    authorization:
+      type: Bearer
+      credentials: local-dev-metrics-token
     static_configs:
       - targets: ["api:3000"]
