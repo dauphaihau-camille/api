@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { MikroORM } from '@mikro-orm/postgresql';
-import { buildDatabaseConfig } from '../src/config/database.config';
+import { buildDatabaseConfig } from '../src/platform/config/database.config';
 
 async function main() {
   const orm = await MikroORM.init(

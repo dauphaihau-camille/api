@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { createClient } from 'redis';
-import { RedisRateLimitStorage } from '~/modules/shared/rate-limit/infra/redis-rate-limit.storage';
+import { RedisRateLimitStorage } from '~/integrations/rate-limit/infra/redis-rate-limit.storage';
 
 type RedisIntegrationClient = ReturnType<typeof createClient>;
 

@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { Queue } from 'bullmq';
 import IORedis from 'ioredis';
-import { appJobName } from '~/common/jobs/job.types';
-import type { QueueConfig } from '~/config/queue.config';
-import { BullMqJobDispatcher } from '~/modules/shared/queue/infra/bullmq-job-dispatcher';
+import { appJobName } from '~/integrations/queue/app/app-job.types';
+import type { QueueConfig } from '~/platform/config/queue.config';
+import { BullMqJobDispatcher } from '~/integrations/queue/infra/bullmq-job-dispatcher';
 
 describe('BullMqJobDispatcher integration', () => {
   let connection: IORedis | undefined;

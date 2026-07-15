@@ -1,9 +1,9 @@
 import 'reflect-metadata';
 import { MikroORM } from '@mikro-orm/postgresql';
-import { buildDatabaseConfig } from '../src/config/database.config';
-import { PermissionEntity } from '../src/modules/domains/auth/infra/persistence/entities/permission.entity';
-import { RoleEntity } from '../src/modules/domains/auth/infra/persistence/entities/role.entity';
-import { RolePermissionEntity } from '../src/modules/domains/auth/infra/persistence/entities/role-permission.entity';
+import { buildDatabaseConfig } from '../src/platform/config/database.config';
+import { PermissionEntity } from '../src/domains/auth/infra/persistence/entities/permission.entity';
+import { RoleEntity } from '../src/domains/auth/infra/persistence/entities/role.entity';
+import { RolePermissionEntity } from '../src/domains/auth/infra/persistence/entities/role-permission.entity';
 import { seedAuthReferenceData } from './seeds/auth.seed';
 
 async function main() {

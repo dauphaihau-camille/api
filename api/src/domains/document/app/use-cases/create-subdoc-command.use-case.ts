@@ -1,0 +1,157 @@
+import { OptimisticLockError } from '@mikro-orm/core';
+import { Injectable } from '@nestjs/common';
+import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
+import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
+import { AuditService } from '~/integrations/audit/audit.service';
+import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
+import { DocumentCommandRepository } from '../ports/document-command.repository';
+import { DocumentNavigationQueryRepository } from '../ports/document-navigation-query.repository';
+import { DEFAULT_CONTENT_FORMAT } from '../constants/document.constants';
+import type { CreateSubdocCommandResult } from '../contracts/document.contract';
+import { toDocumentSummary } from '../mappers/document-summary.mapper';
+import { extractDocumentSearchText } from '../utils/document-search-text.util';
+import { normalizeContent } from '../utils/document-content.util';
+import { DocumentSubdocService } from '../services/document-subdoc.service';
+import { DocumentTreeService } from '../services/document-tree.service';
+import {
+  DocumentNotFoundError,
+  ParentDocumentWorkspaceMismatchError,
+  DocumentVersionConflictError,
+} from '../errors/document-app.error';
+import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
+
+@Injectable()
+export class CreateSubdocCommandUseCase {
+  constructor(
+    private readonly auditService: AuditService,
+    private readonly workspaceRepository: WorkspaceRepository,
+    private readonly documentCommandRepository: DocumentCommandRepository,
+    private readonly documentNavigationQueryRepository: DocumentNavigationQueryRepository,
+    private readonly documentSubdocService: DocumentSubdocService,
+    private readonly documentTreeService: DocumentTreeService,
+  ) {}
+
+  async execute(
+    currentUser: AuthenticatedUser,
+    parentDocumentId: string,
+    input: {
+      anchorBlockId?: string;
+      slashCommandText?: string;
+      version?: number;
+      content?: unknown[];
+    } = {},
+  ): Promise<CreateSubdocCommandResult> {
+    const parentDocument = await this.documentNavigationQueryRepository.findDocument(parentDocumentId);
+
+    if (!parentDocument) {
+      throw new DocumentNotFoundError(parentDocumentId);
+    }
+
+    const workspace = await resolveWorkspaceForUser(
+      this.workspaceRepository,
+      parentDocument.workspace.id,
+      currentUser,
+    );
+
+    if (parentDocument.workspace.id !== workspace.id) {
+      throw new ParentDocumentWorkspaceMismatchError();
+    }
+
+    const { childDocument, updatedParentDocument } =
+      await this.documentCommandRepository.withTransaction(async ({
+        commandRepository,
+        subdocReferenceRepository,
+      }) => {
+        const user = await commandRepository.findCurrentUser(currentUser.userId) as CurrentUserEntity;
+        const transactionalParentDocument = await commandRepository.findDocument(parentDocument.id);
+
+        if (!transactionalParentDocument) {
+          throw new DocumentNotFoundError(parentDocument.id);
+        }
+
+        if (input.version !== undefined) {
+          try {
+            await commandRepository.lockDocumentVersion(
+              transactionalParentDocument,
+              input.version,
+            );
+          }
+          catch (error) {
+            if (error instanceof OptimisticLockError) {
+              throw new DocumentVersionConflictError();
+            }
+
+            throw error;
+          }
+        }
+
+        const createdDocument = commandRepository.createDocument({
+          workspace: workspace.id,
+          teamspace: transactionalParentDocument.teamspace?.id,
+          parentDocument: transactionalParentDocument.id,
+          title: 'Untitled',
+          contentFormat: DEFAULT_CONTENT_FORMAT,
+          contentJson: normalizeContent(),
+          searchText: '',
+          sortKey: await this.documentTreeService.resolveSortKeyForCreate(
+            workspace.id,
+            transactionalParentDocument.id,
+            transactionalParentDocument.teamspace?.id,
+          ),
+          createdBy: user,
+          updatedBy: user,
+        });
+
+        const parentContent = input.content !== undefined
+          ? normalizeContent(input.content)
+          : transactionalParentDocument.contentJson;
+
+        transactionalParentDocument.contentJson = this.documentSubdocService.insertSubdocBlock(
+          parentContent,
+          createdDocument,
+          input.anchorBlockId,
+          input.slashCommandText,
+        );
+        transactionalParentDocument.searchText = extractDocumentSearchText(
+          transactionalParentDocument.contentJson,
+        );
+        transactionalParentDocument.updatedBy = user;
+
+        await commandRepository.saveDocuments([
+          createdDocument,
+          transactionalParentDocument,
+        ]);
+        await this.documentSubdocService.syncSubdocReferencesForDoc(
+          createdDocument,
+          subdocReferenceRepository,
+        );
+        await this.documentSubdocService.syncSubdocReferencesForDoc(
+          transactionalParentDocument,
+          subdocReferenceRepository,
+        );
+        await commandRepository.flush();
+
+        return {
+          childDocument: createdDocument,
+          updatedParentDocument: transactionalParentDocument,
+        };
+      });
+
+    await this.auditService.record({
+      action: 'document.created',
+      resourceType: 'document',
+      resourceId: childDocument.id,
+      metadata: {
+        workspaceId: workspace.id,
+        teamspaceId: updatedParentDocument.teamspace?.id,
+        parentDocumentId: updatedParentDocument.id,
+        command: 'create-subdoc',
+      },
+    });
+
+    return {
+      parentDocument: toDocumentSummary(updatedParentDocument),
+      childDocument: toDocumentSummary(childDocument),
+    };
+  }
+}

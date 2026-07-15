@@ -1,17 +1,17 @@
 import 'reflect-metadata';
 import { MikroORM } from '@mikro-orm/postgresql';
-import { buildDatabaseConfig } from '../src/config/database.config';
-import { CurrentUserCredentialEntity } from '../src/modules/domains/auth/infra/persistence/entities/current-user-credential.entity';
-import { CurrentUserEntity } from '../src/modules/domains/auth/infra/persistence/entities/current-user.entity';
-import { EmailVerificationTokenEntity } from '../src/modules/domains/auth/infra/persistence/entities/email-verification-token.entity';
-import { PermissionEntity } from '../src/modules/domains/auth/infra/persistence/entities/permission.entity';
-import { PasswordResetTokenEntity } from '../src/modules/domains/auth/infra/persistence/entities/password-reset-token.entity';
-import { RoleEntity } from '../src/modules/domains/auth/infra/persistence/entities/role.entity';
-import { RolePermissionEntity } from '../src/modules/domains/auth/infra/persistence/entities/role-permission.entity';
-import { UserRoleEntity } from '../src/modules/domains/auth/infra/persistence/entities/user-role.entity';
-import { UserSessionEntity } from '../src/modules/domains/auth/infra/persistence/entities/user-session.entity';
-import { WorkspaceEntity } from '../src/modules/domains/workspace/infra/persistence/entities/workspace.entity';
-import { WorkspaceMemberEntity } from '../src/modules/domains/workspace/infra/persistence/entities/workspace-member.entity';
+import { buildDatabaseConfig } from '../src/platform/config/database.config';
+import { CurrentUserCredentialEntity } from '../src/domains/auth/infra/persistence/entities/current-user-credential.entity';
+import { CurrentUserEntity } from '../src/domains/auth/infra/persistence/entities/current-user.entity';
+import { EmailVerificationTokenEntity } from '../src/domains/auth/infra/persistence/entities/email-verification-token.entity';
+import { PermissionEntity } from '../src/domains/auth/infra/persistence/entities/permission.entity';
+import { PasswordResetTokenEntity } from '../src/domains/auth/infra/persistence/entities/password-reset-token.entity';
+import { RoleEntity } from '../src/domains/auth/infra/persistence/entities/role.entity';
+import { RolePermissionEntity } from '../src/domains/auth/infra/persistence/entities/role-permission.entity';
+import { UserRoleEntity } from '../src/domains/auth/infra/persistence/entities/user-role.entity';
+import { UserSessionEntity } from '../src/domains/auth/infra/persistence/entities/user-session.entity';
+import { WorkspaceEntity } from '../src/domains/workspace/infra/persistence/entities/workspace.entity';
+import { WorkspaceMemberEntity } from '../src/domains/workspace/infra/persistence/entities/workspace-member.entity';
 import { seedAuth } from './seeds/auth.seed';
 
 function formatDuration(ms: number): string {

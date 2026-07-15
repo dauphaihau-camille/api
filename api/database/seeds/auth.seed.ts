@@ -1,14 +1,14 @@
 import type { EntityManager } from '@mikro-orm/postgresql';
 import * as path from 'node:path';
-import { buildAuthConfig } from '../../src/config/auth.config';
-import { UserStatus } from '../../src/modules/domains/auth/domain/enums/user-status.enum';
-import { CurrentUserCredentialEntity } from '../../src/modules/domains/auth/infra/persistence/entities/current-user-credential.entity';
-import { CurrentUserEntity } from '../../src/modules/domains/auth/infra/persistence/entities/current-user.entity';
-import { PermissionEntity } from '../../src/modules/domains/auth/infra/persistence/entities/permission.entity';
-import { RoleEntity } from '../../src/modules/domains/auth/infra/persistence/entities/role.entity';
-import { RolePermissionEntity } from '../../src/modules/domains/auth/infra/persistence/entities/role-permission.entity';
-import { UserRoleEntity } from '../../src/modules/domains/auth/infra/persistence/entities/user-role.entity';
-import { BcryptPasswordHasher } from '../../src/modules/domains/auth/infra/security/bcrypt-password-hasher';
+import { buildAuthConfig } from '../../src/platform/config/auth.config';
+import { UserStatus } from '../../src/domains/auth/domain/enums/user-status.enum';
+import { CurrentUserCredentialEntity } from '../../src/domains/auth/infra/persistence/entities/current-user-credential.entity';
+import { CurrentUserEntity } from '../../src/domains/auth/infra/persistence/entities/current-user.entity';
+import { PermissionEntity } from '../../src/domains/auth/infra/persistence/entities/permission.entity';
+import { RoleEntity } from '../../src/domains/auth/infra/persistence/entities/role.entity';
+import { RolePermissionEntity } from '../../src/domains/auth/infra/persistence/entities/role-permission.entity';
+import { UserRoleEntity } from '../../src/domains/auth/infra/persistence/entities/user-role.entity';
+import { BcryptPasswordHasher } from '../../src/domains/auth/infra/security/bcrypt-password-hasher';
 import { readOptionalTsvRows, readTsvRows } from './shared/read-tsv-rows';
 
 type UserSeed = {
@@ -226,10 +226,10 @@ export async function seedAuth(
   const existingUserRoles =
     userEmails.length > 0
       ? await em.find(
-          UserRoleEntity,
-          { user: { email: { $in: userEmails } } },
-          { populate: ['user', 'role'] },
-        )
+        UserRoleEntity,
+        { user: { email: { $in: userEmails } } },
+        { populate: ['user', 'role'] },
+      )
       : [];
   const existingUserRoleKeys = new Set(
     existingUserRoles.map((userRole) => `${userRole.user.email}::${userRole.role.key}`),
@@ -383,13 +383,13 @@ export async function seedAuthReferenceData(
   const existingRolePermissions =
     roleKeys.length > 0 && permissionKeys.length > 0
       ? await em.find(
-          RolePermissionEntity,
-          {
-            role: { key: { $in: roleKeys } },
-            permission: { key: { $in: permissionKeys } },
-          },
-          { populate: ['role', 'permission'] },
-        )
+        RolePermissionEntity,
+        {
+          role: { key: { $in: roleKeys } },
+          permission: { key: { $in: permissionKeys } },
+        },
+        { populate: ['role', 'permission'] },
+      )
       : [];
   const existingRolePermissionKeys = new Set(
     existingRolePermissions.map(

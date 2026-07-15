@@ -5,8 +5,8 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { randomUUID } from 'node:crypto';
-import type { MinioStorageConfig } from '~/config/storage.config';
-import { MinioStorageService } from '~/modules/shared/storage/infra/minio-storage.service';
+import type { MinioStorageConfig } from '~/platform/config/storage.config';
+import { MinioStorageService } from '~/integrations/storage/infra/minio-storage.service';
 
 function readMinioEnv() {
   return {
