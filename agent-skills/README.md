@@ -1,4 +1,4 @@
-# Agents Docs
+# Agent Skills Docs
 
 Focused instructions for coding agents. These files are meant to be read selectively, not all at once.
 

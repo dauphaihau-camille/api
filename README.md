@@ -11,7 +11,7 @@ The codebase follows a modular monolith structure with clear domain and shared-m
 Top-level structure:
 
 - `api/` - NestJS application source, config, migrations, scripts, and tests
-- `agents/` - repository guidance and agent-facing notes
+- `agent-skills/` - repository guidance and agent-facing notes
 - `docs/` - architecture and local-runtime documentation
 - `infra/` - Docker Compose services for app dependencies and observability
 - `scripts/` - workspace-level helper scripts

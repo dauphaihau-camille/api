@@ -8,7 +8,7 @@ The current reference implementation lives in [apps/api](/Volumes/Local/dev/pj-p
 
 ```text
 apps/api/
-├── agents/         # agent guidance and repository conventions
+├── agent-skills/   # agent guidance and repository conventions
 ├── api/            # Nest application source
 ├── cloudflare/     # edge or scheduled workers when needed
 ├── docs/           # project and architecture documentation
