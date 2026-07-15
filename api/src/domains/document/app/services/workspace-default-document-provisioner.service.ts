@@ -1,4 +1,4 @@
-import type { EntityManager } from '@mikro-orm/postgresql';
+import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
 import { WorkspaceEntity } from '~/domains/workspace/infra/persistence/entities/workspace.entity';
@@ -21,12 +21,16 @@ const DEFAULT_WORKSPACE_DOCUMENT = {
 @Injectable()
 export class WorkspaceDefaultDocumentProvisionerService
 implements WorkspaceDefaultDocumentProvisioner {
-  constructor(private readonly auditService: AuditService) {}
+  constructor(
+    private readonly entityManager: EntityManager,
+    private readonly auditService: AuditService,
+  ) {}
 
   async provisionDefaultDocument(
     input: ProvisionDefaultWorkspaceDocumentInput,
   ): Promise<{ documentId: string }> {
-    const { entityManager, ownerUserId, workspaceId } = input;
+    const entityManager = this.entityManager.fork();
+    const { ownerUserId, workspaceId } = input;
     const document = this.createDefaultDocument(entityManager, workspaceId, ownerUserId);
 
     await entityManager.persist(document).flush();

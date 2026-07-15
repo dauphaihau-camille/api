@@ -5,6 +5,18 @@ export interface PublishedDocumentSummary {
   publicPath?: string;
 }
 
+export interface PublishableDocument {
+  id: string;
+  workspaceId: string;
+}
+
+export interface PublishedDocumentRecord {
+  id: string;
+  documentId: string;
+  archivedAt?: Date | null;
+  createdAt: Date;
+}
+
 export interface PublicBreadcrumbItem {
   id: string;
   title: string;

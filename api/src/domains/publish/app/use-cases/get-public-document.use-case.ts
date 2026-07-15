@@ -21,10 +21,10 @@ export class GetPublicDocumentUseCase {
       throw new PublishedDocumentNotFoundError(publishedDocumentId);
     }
 
-    if (publishedDocument.document.archivedAt) {
+    if (publishedDocument.archivedAt) {
       throw new ArchivedDocumentPublicAccessDeniedError();
     }
 
-    return this.publishRepository.buildPublicDocumentSummary(publishedDocument);
+    return this.publishRepository.buildPublicDocumentSummary(publishedDocument.id);
   }
 }

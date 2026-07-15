@@ -53,3 +53,10 @@ export interface DispatchJobOptions {
   deduplicationKey?: string;
   delayMs?: number;
 }
+
+export interface AppJobHandler<
+  TName extends AppJobName = AppJobName,
+> {
+  readonly jobName: TName;
+  run(payload: AppJobPayloadMap[TName]): Promise<void>;
+}

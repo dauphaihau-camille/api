@@ -1,5 +1,4 @@
-import type { HttpException } from '@nestjs/common';
-import { UnauthorizedException } from '@nestjs/common';
+import { HttpException, UnauthorizedException } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 import { MetricsController } from './metrics.controller';
@@ -59,10 +58,13 @@ describe('MetricsController', () => {
       createConfigService(undefined),
     );
 
-    await expect(
-      controller.getMetrics('Bearer any-token', createResponse()),
-    ).rejects.toMatchObject<HttpException>({
-      status: 503,
-    });
+    try {
+      await controller.getMetrics('Bearer any-token', createResponse());
+      throw new Error('Expected metrics controller to reject');
+    }
+    catch (error) {
+      expect(error).toBeInstanceOf(HttpException);
+      expect((error as HttpException).getStatus()).toBe(503);
+    }
   });
 });

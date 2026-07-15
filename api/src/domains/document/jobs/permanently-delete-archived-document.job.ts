@@ -1,13 +1,15 @@
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable, Logger } from '@nestjs/common';
-import type { AppJobPayloadMap } from '~/integrations/queue/app/app-job.types';
+import { appJobName, type AppJobHandler, type AppJobPayloadMap } from '~/integrations/queue/app/app-job.types';
 import { DocumentEntity } from '../infra/persistence/entities/document.entity';
 
 type PermanentlyDeleteArchivedDocumentPayload =
   AppJobPayloadMap['document.permanently-delete-archived'];
 
 @Injectable()
-export class PermanentlyDeleteArchivedDocumentJob {
+export class PermanentlyDeleteArchivedDocumentJob
+implements AppJobHandler<typeof appJobName.permanentlyDeleteArchivedDocument> {
+  readonly jobName = appJobName.permanentlyDeleteArchivedDocument;
   private readonly logger = new Logger(PermanentlyDeleteArchivedDocumentJob.name);
 
   constructor(private readonly entityManager: EntityManager) {}

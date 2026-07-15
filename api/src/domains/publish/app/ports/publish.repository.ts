@@ -1,18 +1,21 @@
-import type { DocumentEntity } from '../../../document/infra/persistence/entities/document.entity';
-import type { PublishedDocumentEntity } from '../../infra/persistence/entities/published-document.entity';
-import type { PublicBreadcrumbItem, PublicDocumentSummary } from '../publish.types';
+import type {
+  PublicBreadcrumbItem,
+  PublicDocumentSummary,
+  PublishableDocument,
+  PublishedDocumentRecord,
+} from '../publish.types';
 
 export abstract class PublishRepository {
-  abstract findDocument(documentId: string): Promise<DocumentEntity | null>;
-  abstract findPublishedDocumentByDocumentId(documentId: string): Promise<PublishedDocumentEntity | null>;
-  abstract findPublishedDocumentById(publishedDocumentId: string): Promise<PublishedDocumentEntity | null>;
+  abstract findDocument(documentId: string): Promise<PublishableDocument | null>;
+  abstract findPublishedDocumentByDocumentId(documentId: string): Promise<PublishedDocumentRecord | null>;
+  abstract findPublishedDocumentById(publishedDocumentId: string): Promise<PublishedDocumentRecord | null>;
   abstract publishDocument(
-    document: DocumentEntity,
+    documentId: string,
     userId: string,
-  ): Promise<{ publishedDocument: PublishedDocumentEntity; created: boolean }>;
-  abstract unpublishDocument(documentId: string): Promise<PublishedDocumentEntity | null>;
+  ): Promise<{ publishedDocument: PublishedDocumentRecord; created: boolean }>;
+  abstract unpublishDocument(documentId: string): Promise<PublishedDocumentRecord | null>;
   abstract buildPublicDocumentSummary(
-    publishedDocument: PublishedDocumentEntity,
+    publishedDocumentId: string,
   ): Promise<PublicDocumentSummary>;
   abstract findPublicBreadcrumb(
     documentId: string,

@@ -5,6 +5,8 @@ import { DocumentEntity } from '../../document/infra/persistence/entities/docume
 import type {
   PublicBreadcrumbItem,
   PublicDocumentSummary,
+  PublishableDocument,
+  PublishedDocumentRecord,
 } from '../app/publish.types';
 import { PublishRepository } from '../app/ports/publish.repository';
 import { collectReferencedSubdocIds, withPublishedSubdocTargets } from '../app/utils/public-document-content.util';
@@ -15,46 +17,61 @@ import { PublishedDocumentEntity } from './persistence/entities/published-docume
 export class MikroOrmPublishRepository implements PublishRepository {
   constructor(private readonly entityManager: EntityManager) {}
 
-  async findDocument(documentId: string): Promise<DocumentEntity | null> {
-    return this.entityManager.fork().findOne(DocumentEntity, { id: documentId }, {
+  async findDocument(documentId: string): Promise<PublishableDocument | null> {
+    const document = await this.entityManager.fork().findOne(DocumentEntity, { id: documentId }, {
       populate: ['workspace', 'parentDocument'],
     });
+
+    return document ? this.toPublishableDocument(document) : null;
   }
 
   async findPublishedDocumentByDocumentId(
     documentId: string,
-  ): Promise<PublishedDocumentEntity | null> {
-    return this.entityManager.fork().findOne(PublishedDocumentEntity, {
+  ): Promise<PublishedDocumentRecord | null> {
+    const publishedDocument = await this.entityManager.fork().findOne(PublishedDocumentEntity, {
       document: documentId,
     });
+
+    return publishedDocument ? this.toPublishedDocumentRecord(publishedDocument) : null;
   }
 
   async findPublishedDocumentById(
     publishedDocumentId: string,
-  ): Promise<PublishedDocumentEntity | null> {
-    return this.entityManager.fork().findOne(PublishedDocumentEntity, {
+  ): Promise<PublishedDocumentRecord | null> {
+    const publishedDocument = await this.entityManager.fork().findOne(PublishedDocumentEntity, {
       id: publishedDocumentId,
     }, {
       populate: ['document'],
     });
+
+    return publishedDocument ? this.toPublishedDocumentRecord(publishedDocument) : null;
   }
 
   async publishDocument(
-    document: DocumentEntity,
+    documentId: string,
     userId: string,
-  ): Promise<{ publishedDocument: PublishedDocumentEntity; created: boolean }> {
+  ): Promise<{ publishedDocument: PublishedDocumentRecord; created: boolean }> {
     const entityManager = this.entityManager.fork();
-    const subtree = await this.findSubtreeDocuments(entityManager, document.workspace.id, document.id, {
+
+    const rootDocument = await entityManager.findOne(DocumentEntity, { id: documentId }, {
+      populate: ['workspace', 'parentDocument'],
+    });
+
+    if (!rootDocument) {
+      throw new Error(`Cannot publish missing document ${documentId}.`);
+    }
+
+    const subtree = await this.findSubtreeDocuments(entityManager, rootDocument.workspace.id, rootDocument.id, {
       activeOnly: true,
     });
     const actor = await entityManager.findOneOrFail(CurrentUserEntity, { id: userId });
-    const rootDocument = subtree[0];
+    const resolvedRootDocument = subtree[0];
 
-    if (!rootDocument) {
-      throw new Error(`Cannot publish missing document subtree for ${document.id}.`);
+    if (!resolvedRootDocument) {
+      throw new Error(`Cannot publish missing document subtree for ${documentId}.`);
     }
 
-    rootDocument.publicAccessOverride = undefined;
+    resolvedRootDocument.publicAccessOverride = undefined;
 
     const publishableDocuments = filterCascadePublishedDocuments(subtree);
     const existingPublishedDocuments = await entityManager.find(PublishedDocumentEntity, {
@@ -63,7 +80,7 @@ export class MikroOrmPublishRepository implements PublishRepository {
     const existingPublishedDocumentByDocumentId = new Map(
       existingPublishedDocuments.map((item) => [item.document.id, item]),
     );
-    let rootPublishedDocument = existingPublishedDocumentByDocumentId.get(rootDocument.id) ?? null;
+    let rootPublishedDocument = existingPublishedDocumentByDocumentId.get(resolvedRootDocument.id) ?? null;
     let rootCreated = false;
 
     for (const subtreeDocument of publishableDocuments) {
@@ -71,7 +88,7 @@ export class MikroOrmPublishRepository implements PublishRepository {
         existingPublishedDocumentByDocumentId.get(subtreeDocument.id);
 
       if (existingPublishedDocument) {
-        if (subtreeDocument.id === rootDocument.id) {
+        if (subtreeDocument.id === resolvedRootDocument.id) {
           rootPublishedDocument = existingPublishedDocument;
         }
         continue;
@@ -84,7 +101,7 @@ export class MikroOrmPublishRepository implements PublishRepository {
       });
       entityManager.persist(publishedDocument);
 
-      if (subtreeDocument.id === rootDocument.id) {
+      if (subtreeDocument.id === resolvedRootDocument.id) {
         rootPublishedDocument = publishedDocument;
         rootCreated = true;
       }
@@ -93,16 +110,16 @@ export class MikroOrmPublishRepository implements PublishRepository {
     await entityManager.flush();
 
     if (!rootPublishedDocument) {
-      throw new Error(`Failed to resolve published document for ${document.id}.`);
+      throw new Error(`Failed to resolve published document for ${documentId}.`);
     }
 
     return {
-      publishedDocument: rootPublishedDocument,
+      publishedDocument: this.toPublishedDocumentRecord(rootPublishedDocument),
       created: rootCreated,
     };
   }
 
-  async unpublishDocument(documentId: string): Promise<PublishedDocumentEntity | null> {
+  async unpublishDocument(documentId: string): Promise<PublishedDocumentRecord | null> {
     const entityManager = this.entityManager.fork();
     const rootDocument = await entityManager.findOne(DocumentEntity, {
       id: documentId,
@@ -131,13 +148,18 @@ export class MikroOrmPublishRepository implements PublishRepository {
 
     await entityManager.flush();
 
-    return rootPublishedDocument;
+    return rootPublishedDocument ? this.toPublishedDocumentRecord(rootPublishedDocument) : null;
   }
 
   async buildPublicDocumentSummary(
-    publishedDocument: PublishedDocumentEntity,
+    publishedDocumentId: string,
   ): Promise<PublicDocumentSummary> {
     const entityManager = this.entityManager.fork();
+    const publishedDocument = await entityManager.findOneOrFail(PublishedDocumentEntity, {
+      id: publishedDocumentId,
+    }, {
+      populate: ['document'],
+    });
     const document = await entityManager.findOneOrFail(DocumentEntity, {
       id: publishedDocument.document.id,
     }, {
@@ -257,5 +279,23 @@ export class MikroOrmPublishRepository implements PublishRepository {
     }
 
     return subtree;
+  }
+
+  private toPublishableDocument(document: DocumentEntity): PublishableDocument {
+    return {
+      id: document.id,
+      workspaceId: document.workspace.id,
+    };
+  }
+
+  private toPublishedDocumentRecord(
+    publishedDocument: PublishedDocumentEntity,
+  ): PublishedDocumentRecord {
+    return {
+      id: publishedDocument.id,
+      documentId: publishedDocument.document.id,
+      archivedAt: publishedDocument.document.archivedAt,
+      createdAt: publishedDocument.createdAt,
+    };
   }
 }

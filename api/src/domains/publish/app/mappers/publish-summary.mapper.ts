@@ -1,11 +1,11 @@
 import type {
+  PublishedDocumentRecord,
   PublishedDocumentSummary,
 } from '../publish.types';
-import type { PublishedDocumentEntity } from '../../infra/persistence/entities/published-document.entity';
 
 export function toPublishedDocumentSummary(
   documentId: string,
-  publishedDocument?: PublishedDocumentEntity | null,
+  publishedDocument?: PublishedDocumentRecord | null,
 ): PublishedDocumentSummary {
   return {
     documentId,

@@ -1,12 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { MailSender } from '~/integrations/mail/app/ports/mail-sender';
-import type { AppJobPayloadMap } from '~/integrations/queue/app/app-job.types';
+import { appJobName, type AppJobHandler, type AppJobPayloadMap } from '~/integrations/queue/app/app-job.types';
 
 type SendWelcomeEmailPayload =
   AppJobPayloadMap['user.send-welcome-email'];
 
 @Injectable()
-export class SendWelcomeEmailJob {
+export class SendWelcomeEmailJob implements AppJobHandler<typeof appJobName.sendWelcomeEmail> {
+  readonly jobName = appJobName.sendWelcomeEmail;
   private readonly logger = new Logger(SendWelcomeEmailJob.name);
 
   constructor(private readonly mailSender: MailSender) {}

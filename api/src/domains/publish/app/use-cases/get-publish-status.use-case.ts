@@ -26,7 +26,7 @@ export class GetPublishStatusUseCase {
 
     await resolveWorkspaceForUser(
       this.workspaceRepository,
-      document.workspace.id,
+      document.workspaceId,
       currentUser,
     );
 

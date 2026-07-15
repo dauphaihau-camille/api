@@ -32,7 +32,7 @@ export class PublishDocumentUseCase {
 
     const workspace = await resolveWorkspaceForUser(
       this.workspaceRepository,
-      document.workspace.id,
+      document.workspaceId,
       currentUser,
     );
 
@@ -41,7 +41,7 @@ export class PublishDocumentUseCase {
     }
 
     const { publishedDocument, created } = await this.publishRepository.publishDocument(
-      document,
+      document.id,
       currentUser.userId,
     );
 
@@ -51,7 +51,7 @@ export class PublishDocumentUseCase {
         resourceType: 'document',
         resourceId: document.id,
         metadata: {
-          workspaceId: document.workspace.id,
+          workspaceId: document.workspaceId,
           publishedDocumentId: publishedDocument.id,
         },
       });

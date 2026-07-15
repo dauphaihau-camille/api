@@ -62,10 +62,11 @@ describe('Publish use cases', () => {
     const auditService = createAuditService();
     const document = {
       id: 'document-1',
-      workspace: { id: 'workspace-1' },
+      workspaceId: 'workspace-1',
     };
     const publishedDocument = {
       id: 'published-1',
+      documentId: 'document-1',
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
     };
 
@@ -102,7 +103,7 @@ describe('Publish use cases', () => {
 
     publishRepository.findDocument.mockResolvedValue({
       id: 'document-1',
-      workspace: { id: 'workspace-1' },
+      workspaceId: 'workspace-1',
     } as never);
 
     const useCase = new PublishDocumentUseCase(
@@ -121,15 +122,9 @@ describe('Publish use cases', () => {
 
     publishRepository.findPublishedDocumentById.mockResolvedValue({
       id: 'published-1',
+      documentId: 'document-1',
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
-      document: {
-        id: 'document-1',
-        title: 'Archived',
-        contentFormat: 'blocknote_v1',
-        contentJson: [],
-        archivedAt: new Date('2026-01-02T00:00:00.000Z'),
-        updatedAt: new Date('2026-01-03T00:00:00.000Z'),
-      },
+      archivedAt: new Date('2026-01-02T00:00:00.000Z'),
     } as never);
     publishRepository.buildPublicDocumentSummary.mockResolvedValue({
       id: 'document-1',

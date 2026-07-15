@@ -1,14 +1,12 @@
 import { Module } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MikroOrmModule } from '@mikro-orm/nestjs';
 import {
   QueueConfig,
   QUEUE_CONFIG,
   buildQueueConfig,
 } from '~/platform/config/queue.config';
 import { PermanentlyDeleteArchivedDocumentJob } from '~/domains/document/jobs/permanently-delete-archived-document.job';
-import { DocumentEntity } from '../../domains/document/infra/persistence/entities/document.entity';
 import { SendWelcomeEmailJob } from '~/domains/user/jobs/send-welcome-email.job';
 import { SendNotificationEmailJob } from '../notification/jobs/send-notification-email.job';
 import { MailModule } from '../mail/mail.module';
@@ -27,7 +25,6 @@ import { BULLMQ_CONNECTION, BULLMQ_QUEUE } from './infra/queue.constants';
     ConfigModule,
     MailModule,
     ObservabilityModule,
-    MikroOrmModule.forFeature([DocumentEntity]),
   ],
   providers: [
     {
