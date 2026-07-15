@@ -3718,13 +3718,179 @@
         }
       ],
       "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {},
+      "comment": null
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": true,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "expanded_document_ids": {
+          "name": "expanded_document_ids",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "json"
+        },
+        "last_active_at": {
+          "name": "last_active_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "workspace_user_preferences",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "workspace_user_preferences_pkey",
+          "unique": true,
+          "primary": true
+        },
+        {
+          "columnNames": [
+            "user_id",
+            "last_active_at"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "workspace_user_preferences_user_id_last_active_at_index",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "user_id",
+            "workspace_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "workspace_user_preferences_user_id_workspace_id_unique",
+          "unique": true,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "workspace_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "workspace_user_preferences_workspace_id_index",
+          "unique": false,
+          "primary": false
+        }
+      ],
+      "checks": [],
       "foreignKeys": {
-        "workspace_sidebar_preferences_user_id_foreign": {
+        "workspace_user_preferences_user_id_foreign": {
           "columnNames": [
             "user_id"
           ],
-          "constraintName": "workspace_sidebar_preferences_user_id_foreign",
-          "localTableName": "public.workspace_sidebar_preferences",
+          "constraintName": "workspace_user_preferences_user_id_foreign",
+          "localTableName": "public.workspace_user_preferences",
           "referencedTableName": "public.users",
           "referencedColumnNames": [
             "id"
@@ -3732,12 +3898,12 @@
           "updateRule": "cascade",
           "deleteRule": "cascade"
         },
-        "workspace_sidebar_preferences_workspace_id_foreign": {
+        "workspace_user_preferences_workspace_id_foreign": {
           "columnNames": [
             "workspace_id"
           ],
-          "constraintName": "workspace_sidebar_preferences_workspace_id_foreign",
-          "localTableName": "public.workspace_sidebar_preferences",
+          "constraintName": "workspace_user_preferences_workspace_id_foreign",
+          "localTableName": "public.workspace_user_preferences",
           "referencedTableName": "public.workspaces",
           "referencedColumnNames": [
             "id"

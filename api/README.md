@@ -400,7 +400,7 @@ Large synthetic data created by `pnpm run db:seed:huge`:
 - workspaces, workspace members, and teamspaces
 - private and teamspace document trees
 - document favorites, visits, published documents, subdoc references
-- workspace sidebar preferences
+- workspace user preferences
 
 Tune the large seed size with `SEED_HUGE_*` environment variables documented in [seed-data/README.md](/Volumes/Local/dev/pj-personal/apps/camille/camille-v2/apps/api/seed-data/README.md).
 
@@ -409,7 +409,7 @@ Scenario-based data created by `pnpm run db:seed:realistic`:
 - product-style workspaces with named collaborators
 - engineering, product, success, and delivery teamspaces
 - nested BlockNote documents with real `subdoc` blocks
-- realistic favorites, visits, published docs, and sidebar preferences
+- realistic favorites, visits, published docs, and workspace user preferences
 
 Tune that dataset with `SEED_REALISTIC_*` environment variables documented in [seed-data/README.md](/Volumes/Local/dev/pj-personal/apps/camille/camille-v2/apps/api/seed-data/README.md).
 
