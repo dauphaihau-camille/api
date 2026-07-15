@@ -57,6 +57,7 @@ import { UserSessionEntity } from './infra/persistence/entities/user-session.ent
 import { UserRoleEntity } from './infra/persistence/entities/user-role.entity';
 import { IdempotencyModule } from '../../shared/idempotency/idempotency.module';
 import { NotificationModule } from '../../shared/notification/notification.module';
+import { isOAuthProviderEnabled } from './infra/oauth-provider-config';
 
 const authEntities = [
   CurrentUserEntity,
@@ -149,8 +150,22 @@ const authEntities = [
     IssueSessionUseCase,
     AuthCookieService,
     AuthHttpExceptionFilter,
-    GoogleStrategy,
-    GithubStrategy,
+    {
+      provide: GoogleStrategy,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) =>
+        isOAuthProviderEnabled(configService, 'google')
+          ? new GoogleStrategy(configService)
+          : null,
+    },
+    {
+      provide: GithubStrategy,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) =>
+        isOAuthProviderEnabled(configService, 'github')
+          ? new GithubStrategy(configService)
+          : null,
+    },
     GoogleOAuthGuard,
     GithubOAuthGuard,
     JwtStrategy,
