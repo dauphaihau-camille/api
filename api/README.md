@@ -121,28 +121,7 @@ pnpm test:int
 pnpm test:hurl
 ```
 
-E2E specs live under `test/e2e/`, shared test helpers live under `test/support/`, and the e2e Jest config stays in `test/jest-e2e.json`.
-
-`pnpm test:e2e` disables Watchman explicitly so Jest can run in restricted or sandboxed environments where the Watchman socket is not accessible.
-
-The e2e bootstrap loads `api/.env` before each suite file runs, then creates a real temporary PostgreSQL database per suite. Make sure local Postgres is reachable before running e2e, typically through the workspace Docker stack on `127.0.0.1:55433`, or override `DB_HOST`, `DB_PORT`, `DB_USER`, and `DB_PASSWORD` in the shell to point at another local instance.
-
-The template also includes a lightweight k6 load-test example for the login flow:
-
-```bash
-BASE_URL=http://127.0.0.1:3000/v1 \
-LOGIN_EMAIL=member@example.com \
-LOGIN_PASSWORD=Password123! \
-k6 run ./test/performance/k6/login.load.js
-```
-
-Optional environment variables:
-
-- `SCENARIO=normal-traffic.json`
-- `K6_VUS=5`
-- `K6_DURATION=30s`
-
-The default scenario file is [test/performance/scenarios/normal-traffic.json](/Volumes/Local/dev/pj-personal/templates/api/nest-template/api/test/performance/scenarios/normal-traffic.json).
+Detailed test documentation lives in [test/README.md](/Volumes/Local/dev/pj-personal/apps/camille/camille-v2/apps/api/api/test/README.md).
 
 ## Environment Variables
 

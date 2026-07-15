@@ -44,7 +44,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json --watchman=false",
     "test:hurl": "hurl --test --glob \"api-tests/**/*.hurl\" --variables-file api-tests/hurl.variables",
     "test:chaos": "bash ./test/chaos/run-chaos-smoke.sh",
-    "test:k6:login": "k6 run ./test/performance/k6/login.load.js"
+    "test:perf": "node ./test/performance/run-k6.mjs"
   },
   "lint-staged": {
     "*.{ts,js}": [

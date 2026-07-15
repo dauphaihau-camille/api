@@ -1,0 +1,13 @@
+{
+  "description": "Steady-state 1-hour document traffic soak profile. Keep the host awake and the API rate limit high enough for the full run.",
+  "requiresRateLimitLimit": 100000,
+  "vus": 6,
+  "duration": "1h",
+  "sleepSeconds": 1,
+  "listLimit": 20,
+  "thresholds": {
+    "http_req_failed": ["rate<0.01"],
+    "http_req_duration": ["p(95)<1000"],
+    "checks": ["rate>0.99"]
+  }
+}
