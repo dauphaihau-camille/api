@@ -6,6 +6,12 @@ export interface DocumentBreadcrumbItem {
   title: string;
 }
 
+export interface DocumentTeamspaceRef {
+  id: string;
+  name: string;
+  description?: string;
+}
+
 export interface DocumentSummary {
   id: string;
   publicId: string;

@@ -1,11 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
 import { AuditService } from '~/integrations/audit/audit.service';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import { DocumentCommandRepository } from '../ports/document-command.repository';
 import { DocumentNavigationQueryRepository } from '../ports/document-navigation-query.repository';
-import { DocumentEntity } from '../../infra/persistence/entities/document.entity';
 import { DEFAULT_CONTENT_FORMAT } from '../constants/document.constants';
 import type { DocumentSummary } from '../contracts/document.contract';
 import type { CreateDocumentInput } from '../contracts/document.input';
@@ -49,7 +47,7 @@ export class CreateDocumentUseCase {
 
     const teamspaceId = parentDocument?.teamspace?.id ?? input.teamspaceId;
     const teamspace = teamspaceId
-      ? await this.documentCommandRepository.findTeamspaceByIdInWorkspace(teamspaceId, workspace.id) as DocumentEntity['teamspace'] | null
+      ? await this.documentCommandRepository.findTeamspaceByIdInWorkspace(teamspaceId, workspace.id)
       : undefined;
 
     if (teamspaceId && !teamspace) {
@@ -66,16 +64,14 @@ export class CreateDocumentUseCase {
       commandRepository,
       subdocReferenceRepository,
     }) => {
-      const user = await commandRepository.findCurrentUser(currentUser.userId) as CurrentUserEntity;
-
       const transactionalParentDocument = parentDocument?.id
         ? await commandRepository.findDocument(parentDocument.id)
         : null;
 
       const createdDocument = commandRepository.createDocument({
-        workspace: workspace.id,
-        teamspace: teamspace?.id,
-        parentDocument: transactionalParentDocument?.id,
+        workspaceId: workspace.id,
+        teamspaceId: teamspace?.id,
+        parentDocumentId: transactionalParentDocument?.id ?? undefined,
         title: normalizeTitle(input.title),
         contentFormat: input.contentFormat ?? DEFAULT_CONTENT_FORMAT,
         contentJson: normalizedContent,
@@ -85,8 +81,8 @@ export class CreateDocumentUseCase {
           parentDocument?.id,
           teamspace?.id,
         ),
-        createdBy: user,
-        updatedBy: user,
+        createdByUserId: currentUser.userId,
+        updatedByUserId: currentUser.userId,
       });
 
       await commandRepository.saveDocument(createdDocument);

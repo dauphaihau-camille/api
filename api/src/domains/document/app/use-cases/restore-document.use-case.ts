@@ -1,7 +1,6 @@
 import { OptimisticLockError } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
 import { AuditService } from '~/integrations/audit/audit.service';
 import { canEditWorkspace } from '../../../workspace/app/workspace-permissions';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
@@ -51,11 +50,9 @@ export class RestoreDocumentUseCase {
     }
 
     const descendants = await this.documentTreeService.findDescendants(document.id, document.workspace.id);
-    const actor = await this.documentCommandRepository.findCurrentUser(currentUser.userId) as CurrentUserEntity;
-
     for (const item of [document, ...descendants]) {
       item.archivedAt = undefined;
-      item.updatedBy = actor;
+      this.documentCommandRepository.assignUpdatedByUser(item, currentUser.userId);
     }
 
     await this.documentCommandRepository.saveDocuments([document, ...descendants]);

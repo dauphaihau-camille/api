@@ -3,14 +3,15 @@ import { Injectable } from '@nestjs/common';
 import { CurrentUserEntity } from '../../auth/infra/persistence/entities/current-user.entity';
 import { DocumentVisitRepository } from '../app/ports/document-visit.repository';
 import { DocumentEntity } from './persistence/entities/document.entity';
+import { WorkspaceEntity } from '../../workspace/infra/persistence/entities/workspace.entity';
 import { DocumentVisitEntity } from './persistence/entities/document-visit.entity';
 
 @Injectable()
 export class MikroOrmDocumentVisitRepository implements DocumentVisitRepository {
   constructor(private readonly entityManager: EntityManager) {}
 
-  async findRecentVisit(input: { workspaceId: string; userId: string }): Promise<{ document: DocumentEntity } | null> {
-    return this.entityManager.fork().findOne(DocumentVisitEntity, {
+  async findRecentVisit(input: { workspaceId: string; userId: string }): Promise<{ documentId: string } | null> {
+    const visit = await this.entityManager.fork().findOne(DocumentVisitEntity, {
       workspace: input.workspaceId,
       user: input.userId,
       document: { archivedAt: null },
@@ -18,26 +19,34 @@ export class MikroOrmDocumentVisitRepository implements DocumentVisitRepository 
       populate: ['document'],
       orderBy: { lastVisitedAt: 'desc' },
     });
+
+    return visit ? { documentId: visit.document.id } : null;
   }
 
-  async recordVisit(document: DocumentEntity, userId: string): Promise<void> {
+  async recordVisit(input: {
+    documentId: string;
+    workspaceId: string;
+    userId: string;
+  }): Promise<void> {
     const entityManager = this.entityManager.fork();
     const [user, existingVisit] = await Promise.all([
-      entityManager.findOneOrFail(CurrentUserEntity, { id: userId }),
+      entityManager.findOneOrFail(CurrentUserEntity, { id: input.userId }),
       entityManager.findOne(DocumentVisitEntity, {
-        user: userId,
-        document: document.id,
+        user: input.userId,
+        document: input.documentId,
       }),
     ]);
+    const document = entityManager.getReference(DocumentEntity, input.documentId);
+    const workspace = entityManager.getReference(WorkspaceEntity, input.workspaceId);
 
     const visit = existingVisit ?? entityManager.create(DocumentVisitEntity, {
-      workspace: document.workspace,
+      workspace,
       document,
       user,
       lastVisitedAt: new Date(),
     });
 
-    visit.workspace = document.workspace;
+    visit.workspace = workspace;
     visit.document = document;
     visit.user = user;
     visit.lastVisitedAt = new Date();

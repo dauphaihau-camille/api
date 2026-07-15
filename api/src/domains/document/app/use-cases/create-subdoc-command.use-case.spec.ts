@@ -103,7 +103,6 @@ describe('CreateSubdocCommandUseCase', () => {
         children: [],
       },
     ];
-    const actor = { id: 'user-1' };
     const childDocument = {
       id: 'child-1',
       publicId: 'public-child-1',
@@ -116,8 +115,8 @@ describe('CreateSubdocCommandUseCase', () => {
       contentJson: DEFAULT_DOCUMENT_CONTENT,
       searchText: '',
       sortKey: 17,
-      createdBy: actor,
-      updatedBy: actor,
+      createdBy: { id: 'user-1' },
+      updatedBy: { id: 'user-1' },
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
       updatedAt: new Date('2026-01-01T00:00:00.000Z'),
     };
@@ -138,10 +137,12 @@ describe('CreateSubdocCommandUseCase', () => {
     commandRepository.withTransaction.mockImplementation(async (callback) =>
       callback({
         commandRepository: {
-          findCurrentUser: jest.fn().mockResolvedValue(actor),
           findDocument: jest.fn().mockResolvedValue(parentDocument),
           lockDocumentVersion: jest.fn(),
           createDocument: jest.fn().mockReturnValue(childDocument),
+          assignUpdatedByUser: jest.fn((document) => {
+            document.updatedBy = { id: currentUser.userId };
+          }),
           saveDocuments: jest.fn(),
           flush: jest.fn(),
         },
@@ -171,7 +172,7 @@ describe('CreateSubdocCommandUseCase', () => {
       '/doc',
     );
     expect(parentDocument.contentJson).toEqual(nextParentContent);
-    expect(parentDocument.updatedBy).toBe(actor);
+    expect(parentDocument.updatedBy).toEqual({ id: currentUser.userId });
     expect(subdocService.syncSubdocReferencesForDoc).toHaveBeenNthCalledWith(
       1,
       childDocument,

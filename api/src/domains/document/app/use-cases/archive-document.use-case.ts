@@ -1,7 +1,6 @@
 import { OptimisticLockError } from '@mikro-orm/core';
 import { Injectable, Logger } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
 import { AuditService } from '~/integrations/audit/audit.service';
 import { JobDispatcher } from '~/integrations/queue/app/ports/job-dispatcher';
 import { appJobName } from '~/integrations/queue/app/app-job.types';
@@ -90,11 +89,10 @@ export class ArchiveDocumentUseCase {
       );
 
       const archivedAt = new Date();
-      const actor = await commandRepository.findCurrentUser(currentUser.userId) as CurrentUserEntity;
 
       for (const item of [document, ...descendants]) {
         item.archivedAt = archivedAt;
-        item.updatedBy = actor;
+        commandRepository.assignUpdatedByUser(item, currentUser.userId);
       }
 
       await this.documentSubdocService.removeArchivedSubdocReferences(

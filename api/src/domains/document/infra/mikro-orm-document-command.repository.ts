@@ -5,10 +5,12 @@ import { CurrentUserEntity } from '../../auth/infra/persistence/entities/current
 import { TeamspaceEntity } from '../../teamspace/infra/persistence/entities/teamspace.entity';
 import {
   DocumentCommandRepository,
+  type CreateDocumentRecordInput,
   type DocumentCommandTransaction,
 } from '../app/ports/document-command.repository';
 import { MikroOrmDocumentSubdocReferenceRepository } from './mikro-orm-document-subdoc-reference.repository';
 import { DocumentEntity } from './persistence/entities/document.entity';
+import { WorkspaceEntity } from '../../workspace/infra/persistence/entities/workspace.entity';
 
 @Injectable({ scope: Scope.REQUEST })
 export class MikroOrmDocumentCommandRepository implements DocumentCommandRepository {
@@ -26,19 +28,44 @@ export class MikroOrmDocumentCommandRepository implements DocumentCommandReposit
     });
   }
 
-  async findCurrentUser(userId: string): Promise<CurrentUserEntity> {
-    return this.scopedEntityManager.findOneOrFail(CurrentUserEntity, { id: userId });
-  }
-
-  async findTeamspaceByIdInWorkspace(teamspaceId: string, workspaceId: string): Promise<TeamspaceEntity | null> {
-    return this.scopedEntityManager.findOne(TeamspaceEntity, {
+  async findTeamspaceByIdInWorkspace(teamspaceId: string, workspaceId: string) {
+    const teamspace = await this.scopedEntityManager.findOne(TeamspaceEntity, {
       id: teamspaceId,
       workspace: workspaceId,
     });
+
+    if (!teamspace) {
+      return null;
+    }
+
+    return {
+      id: teamspace.id,
+      name: teamspace.name,
+      description: teamspace.description,
+    };
   }
 
-  createDocument(payload: Record<string, unknown>): DocumentEntity {
-    return this.scopedEntityManager.create(DocumentEntity, payload as never);
+  createDocument(input: CreateDocumentRecordInput): DocumentEntity {
+    return this.scopedEntityManager.create(DocumentEntity, {
+      workspace: this.scopedEntityManager.getReference(WorkspaceEntity, input.workspaceId),
+      teamspace: input.teamspaceId
+        ? this.scopedEntityManager.getReference(TeamspaceEntity, input.teamspaceId)
+        : undefined,
+      parentDocument: input.parentDocumentId
+        ? this.scopedEntityManager.getReference(DocumentEntity, input.parentDocumentId)
+        : undefined,
+      title: input.title,
+      contentFormat: input.contentFormat,
+      contentJson: input.contentJson,
+      searchText: input.searchText,
+      sortKey: input.sortKey,
+      createdBy: this.scopedEntityManager.getReference(CurrentUserEntity, input.createdByUserId),
+      updatedBy: this.scopedEntityManager.getReference(CurrentUserEntity, input.updatedByUserId),
+    });
+  }
+
+  assignUpdatedByUser(document: DocumentEntity, userId: string): void {
+    document.updatedBy = this.scopedEntityManager.getReference(CurrentUserEntity, userId);
   }
 
   async saveDocument(document: DocumentEntity): Promise<void> {

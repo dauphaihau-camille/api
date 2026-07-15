@@ -1,7 +1,6 @@
 import { OptimisticLockError } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
 import { AuditService } from '~/integrations/audit/audit.service';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import { DocumentCommandRepository } from '../ports/document-command.repository';
@@ -62,7 +61,6 @@ export class CreateSubdocCommandUseCase {
         commandRepository,
         subdocReferenceRepository,
       }) => {
-        const user = await commandRepository.findCurrentUser(currentUser.userId) as CurrentUserEntity;
         const transactionalParentDocument = await commandRepository.findDocument(parentDocument.id);
 
         if (!transactionalParentDocument) {
@@ -86,9 +84,9 @@ export class CreateSubdocCommandUseCase {
         }
 
         const createdDocument = commandRepository.createDocument({
-          workspace: workspace.id,
-          teamspace: transactionalParentDocument.teamspace?.id,
-          parentDocument: transactionalParentDocument.id,
+          workspaceId: workspace.id,
+          teamspaceId: transactionalParentDocument.teamspace?.id,
+          parentDocumentId: transactionalParentDocument.id,
           title: 'Untitled',
           contentFormat: DEFAULT_CONTENT_FORMAT,
           contentJson: normalizeContent(),
@@ -98,8 +96,8 @@ export class CreateSubdocCommandUseCase {
             transactionalParentDocument.id,
             transactionalParentDocument.teamspace?.id,
           ),
-          createdBy: user,
-          updatedBy: user,
+          createdByUserId: currentUser.userId,
+          updatedByUserId: currentUser.userId,
         });
 
         const parentContent = input.content !== undefined
@@ -115,7 +113,10 @@ export class CreateSubdocCommandUseCase {
         transactionalParentDocument.searchText = extractDocumentSearchText(
           transactionalParentDocument.contentJson,
         );
-        transactionalParentDocument.updatedBy = user;
+        commandRepository.assignUpdatedByUser(
+          transactionalParentDocument,
+          currentUser.userId,
+        );
 
         await commandRepository.saveDocuments([
           createdDocument,

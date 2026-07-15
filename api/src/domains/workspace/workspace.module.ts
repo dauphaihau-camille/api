@@ -1,10 +1,9 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs';
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { AuditModule } from '../../integrations/audit/audit.module';
 import { StorageModule } from '../../integrations/storage/storage.module';
-import { DocumentEntity } from '../document/infra/persistence/entities/document.entity';
-import { TeamspaceEntity } from '../teamspace/infra/persistence/entities/teamspace.entity';
 import { CurrentUserEntity } from '../auth/infra/persistence/entities/current-user.entity';
+import { DocumentModule } from '../document/document.module';
 import { MikroOrmWorkspaceRepository } from './infra/mikro-orm-workspace.repository';
 import { WorkspaceRepository } from './app/ports/workspace.repository';
 import { WorkspaceProvisioningService } from './app/services/workspace-provisioning.service';
@@ -20,10 +19,9 @@ import { WorkspaceMemberEntity } from './infra/persistence/entities/workspace-me
   imports: [
     AuditModule,
     StorageModule,
+    forwardRef(() => DocumentModule),
     MikroOrmModule.forFeature([
       CurrentUserEntity,
-      DocumentEntity,
-      TeamspaceEntity,
       WorkspaceEntity,
       WorkspaceMemberEntity,
     ]),

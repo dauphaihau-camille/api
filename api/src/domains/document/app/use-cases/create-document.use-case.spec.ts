@@ -79,7 +79,6 @@ describe('CreateDocumentUseCase', () => {
       }],
       updatedBy: { id: 'user-0' },
     };
-    const actor = { id: 'user-1' };
     const childDocument = {
       id: 'child-1',
       publicId: 'public-child-1',
@@ -92,8 +91,8 @@ describe('CreateDocumentUseCase', () => {
       contentJson: [],
       searchText: '',
       sortKey: 17,
-      createdBy: actor,
-      updatedBy: actor,
+      createdBy: { id: 'user-1' },
+      updatedBy: { id: 'user-1' },
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
       updatedAt: new Date('2026-01-01T00:00:00.000Z'),
     };
@@ -102,7 +101,6 @@ describe('CreateDocumentUseCase', () => {
     commandRepository.withTransaction.mockImplementation(async (callback) =>
       callback({
         commandRepository: {
-          findCurrentUser: jest.fn().mockResolvedValue(actor),
           findDocument: jest.fn().mockResolvedValue(parentDocument),
           createDocument: jest.fn().mockReturnValue(childDocument),
           saveDocument: jest.fn(),

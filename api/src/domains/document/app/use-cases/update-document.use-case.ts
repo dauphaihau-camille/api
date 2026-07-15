@@ -1,7 +1,6 @@
 import { OptimisticLockError } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
 import { AuditService } from '~/integrations/audit/audit.service';
 import { canEditWorkspace } from '../../../workspace/app/workspace-permissions';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
@@ -67,7 +66,7 @@ export class UpdateDocumentUseCase {
       document.searchText = extractDocumentSearchText(document.contentJson);
     }
 
-    document.updatedBy = await this.documentCommandRepository.findCurrentUser(currentUser.userId) as CurrentUserEntity;
+    this.documentCommandRepository.assignUpdatedByUser(document, currentUser.userId);
 
     if (input.content !== undefined) {
       await this.documentSubdocService.syncSubdocReferencesForDoc(document);

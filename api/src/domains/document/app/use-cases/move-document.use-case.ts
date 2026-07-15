@@ -1,7 +1,6 @@
 import { OptimisticLockError } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
 import { AuditService } from '~/integrations/audit/audit.service';
 import { canEditWorkspace } from '../../../workspace/app/workspace-permissions';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
@@ -9,7 +8,6 @@ import type { DocumentSummary } from '../contracts/document.contract';
 import type { MoveDocumentInput } from '../contracts/document.input';
 import { DocumentCommandRepository } from '../ports/document-command.repository';
 import { DocumentNavigationQueryRepository } from '../ports/document-navigation-query.repository';
-import { DocumentEntity } from '../../infra/persistence/entities/document.entity';
 import {
   DocumentDescendantMoveError,
   DocumentNotFoundError,
@@ -76,7 +74,7 @@ export class MoveDocumentUseCase {
     const nextTeamspaceId = nextParent?.teamspace?.id ??
       (input.teamspaceId === undefined ? document.teamspace?.id : input.teamspaceId ?? undefined);
     const nextTeamspace = nextTeamspaceId
-      ? await this.documentCommandRepository.findTeamspaceByIdInWorkspace(nextTeamspaceId, workspace.id) as DocumentEntity['teamspace'] | null
+      ? await this.documentCommandRepository.findTeamspaceByIdInWorkspace(nextTeamspaceId, workspace.id)
       : undefined;
 
     if (nextTeamspaceId && !nextTeamspace) {
@@ -84,7 +82,7 @@ export class MoveDocumentUseCase {
     }
 
     document.parentDocument = nextParent ?? undefined;
-    document.teamspace = nextTeamspace ?? undefined;
+    document.teamspace = nextTeamspaceId ? { id: nextTeamspaceId } as typeof document.teamspace : undefined;
     document.sortKey = await this.documentTreeService.resolveSortKeyForMove(
       document.id,
       workspace.id,
@@ -92,7 +90,7 @@ export class MoveDocumentUseCase {
       nextTeamspace?.id,
       input.index,
     );
-    document.updatedBy = await this.documentCommandRepository.findCurrentUser(currentUser.userId) as CurrentUserEntity;
+    this.documentCommandRepository.assignUpdatedByUser(document, currentUser.userId);
 
     await this.documentCommandRepository.saveDocument(document);
 

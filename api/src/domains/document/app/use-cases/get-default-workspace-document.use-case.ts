@@ -39,8 +39,8 @@ export class GetDefaultWorkspaceDocumentUseCase {
       userId: currentUser.userId,
     });
 
-    if (recentVisit?.document) {
-      return { documentId: recentVisit.document.id };
+    if (recentVisit?.documentId) {
+      return { documentId: recentVisit.documentId };
     }
 
     const firstPrivateRoot = await this.documentTreeQueryRepository.findFirstSibling({

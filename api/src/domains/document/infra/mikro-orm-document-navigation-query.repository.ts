@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { DocumentFavoriteEntity } from '../../favorite/infra/persistence/entities/document-favorite.entity';
 import { TeamspaceEntity } from '../../teamspace/infra/persistence/entities/teamspace.entity';
-import type { DocumentBreadcrumbItem } from '../app/contracts/document.contract';
+import type {
+  DocumentBreadcrumbItem,
+  DocumentTeamspaceRef,
+} from '../app/contracts/document.contract';
 import { DocumentNavigationQueryRepository } from '../app/ports/document-navigation-query.repository';
 import { DocumentEntity } from './persistence/entities/document.entity';
 
@@ -30,10 +33,16 @@ export class MikroOrmDocumentNavigationQueryRepository implements DocumentNaviga
     });
   }
 
-  async findTeamspaces(workspaceId: string): Promise<TeamspaceEntity[]> {
-    return this.entityManager.fork().find(TeamspaceEntity, { workspace: workspaceId }, {
+  async findTeamspaces(workspaceId: string): Promise<DocumentTeamspaceRef[]> {
+    const teamspaces = await this.entityManager.fork().find(TeamspaceEntity, { workspace: workspaceId }, {
       orderBy: { name: 'asc' },
     });
+
+    return teamspaces.map((teamspace) => ({
+      id: teamspace.id,
+      name: teamspace.name,
+      description: teamspace.description,
+    }));
   }
 
   async findRootDocuments(input: {

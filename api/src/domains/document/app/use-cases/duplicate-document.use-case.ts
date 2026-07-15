@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
 import { AuditService } from '~/integrations/audit/audit.service';
 import { canEditWorkspace } from '../../../workspace/app/workspace-permissions';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
@@ -62,7 +61,6 @@ export class DuplicateDocumentUseCase {
       commandRepository,
       subdocReferenceRepository,
     }) => {
-      const actor = await commandRepository.findCurrentUser(currentUser.userId) as CurrentUserEntity;
       const duplicatedDocumentByOriginalId = new Map<string, DocumentEntity>();
       const duplicatedDocumentEntities: DocumentEntity[] = [];
 
@@ -72,9 +70,9 @@ export class DuplicateDocumentUseCase {
           : duplicatedDocumentByOriginalId.get(originalDocument.parentDocument?.id ?? '');
 
         const duplicatedDocument = commandRepository.createDocument({
-          workspace: originalDocument.workspace,
-          teamspace: originalDocument.teamspace,
-          parentDocument: duplicatedParentDocument,
+          workspaceId: originalDocument.workspace.id,
+          teamspaceId: originalDocument.teamspace?.id,
+          parentDocumentId: duplicatedParentDocument?.id,
           title: this.documentTreeService.buildDuplicateTitle(originalDocument.title),
           contentFormat: originalDocument.contentFormat,
           contentJson: originalDocument.contentJson,
@@ -86,8 +84,8 @@ export class DuplicateDocumentUseCase {
               sourceRootDocument.teamspace?.id,
             )
             : originalDocument.sortKey,
-          createdBy: actor,
-          updatedBy: actor,
+          createdByUserId: currentUser.userId,
+          updatedByUserId: currentUser.userId,
         });
 
         duplicatedDocumentByOriginalId.set(originalDocument.id, duplicatedDocument);
@@ -106,7 +104,7 @@ export class DuplicateDocumentUseCase {
           duplicatedDocumentEntities,
         );
         duplicatedDocument.searchText = extractDocumentSearchText(duplicatedDocument.contentJson);
-        duplicatedDocument.updatedBy = actor;
+        commandRepository.assignUpdatedByUser(duplicatedDocument, currentUser.userId);
       }
 
       const duplicatedRootDocumentEntity = duplicatedDocumentByOriginalId.get(sourceDocument.id)!;
@@ -120,7 +118,7 @@ export class DuplicateDocumentUseCase {
           duplicatedRootDocumentEntity,
         );
         parentDocument.searchText = extractDocumentSearchText(parentDocument.contentJson);
-        parentDocument.updatedBy = actor;
+        commandRepository.assignUpdatedByUser(parentDocument, currentUser.userId);
       }
 
       await commandRepository.saveDocuments(

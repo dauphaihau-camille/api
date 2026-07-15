@@ -1,7 +1,6 @@
 import { OptimisticLockError } from '@mikro-orm/core';
 import { Injectable, Logger } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
 import { AuditService } from '~/integrations/audit/audit.service';
 import { JobDispatcher } from '~/integrations/queue/app/ports/job-dispatcher';
 import { appJobName } from '~/integrations/queue/app/app-job.types';
@@ -97,9 +96,6 @@ export class ArchiveSubdocCommandUseCase {
         commandRepository,
         subdocReferenceRepository,
       }) => {
-        const actor = await commandRepository.findCurrentUser(
-          currentUser.userId,
-        ) as CurrentUserEntity;
         const transactionalParentDocument = await commandRepository.findDocument(
           existingParentDocument.id,
         );
@@ -144,7 +140,7 @@ export class ArchiveSubdocCommandUseCase {
 
         for (const document of archivedDocuments) {
           document.archivedAt = archivedAt;
-          document.updatedBy = actor;
+          commandRepository.assignUpdatedByUser(document, currentUser.userId);
         }
 
         const parentContent = input.content !== undefined
@@ -157,7 +153,10 @@ export class ArchiveSubdocCommandUseCase {
         transactionalParentDocument.searchText = extractDocumentSearchText(
           normalizedParentContent,
         );
-        transactionalParentDocument.updatedBy = actor;
+        commandRepository.assignUpdatedByUser(
+          transactionalParentDocument,
+          currentUser.userId,
+        );
 
         await this.documentSubdocService.removeArchivedSubdocReferences(
           archivedDocuments,

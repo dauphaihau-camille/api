@@ -50,7 +50,11 @@ export class GetDocumentUseCase {
     this.documentObservabilityService.recordDocumentReadDuration('related_queries', relatedDataDurationMs);
 
     const visitRecordingStartedAt = Date.now();
-    void this.documentVisitRepository.recordVisit(document, currentUser.userId)
+    void this.documentVisitRepository.recordVisit({
+      documentId: document.id,
+      workspaceId: document.workspace.id,
+      userId: currentUser.userId,
+    })
       .then(() => {
         this.documentObservabilityService.recordDocumentVisitRecording(
           'ok',

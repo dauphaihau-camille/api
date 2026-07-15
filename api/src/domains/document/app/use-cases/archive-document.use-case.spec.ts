@@ -38,7 +38,7 @@ describe('ArchiveDocumentUseCase', () => {
   function createCommandRepository() {
     return {
       findDocument: jest.fn(),
-      findCurrentUser: jest.fn(),
+      assignUpdatedByUser: jest.fn(),
       saveDocuments: jest.fn(),
       lockDocumentVersion: jest.fn(),
       withTransaction: jest.fn(),
@@ -86,8 +86,6 @@ describe('ArchiveDocumentUseCase', () => {
       title: 'Child',
       workspace: { id: 'workspace-1' },
     };
-    const actor = { id: 'user-1' };
-
     commandRepository.findDocument.mockResolvedValue(document as never);
     treeService.findDescendants.mockResolvedValue([descendant] as never);
     commandRepository.withTransaction.mockImplementation(async (callback) =>
@@ -97,7 +95,9 @@ describe('ArchiveDocumentUseCase', () => {
             .fn()
             .mockResolvedValueOnce(document)
             .mockResolvedValueOnce(descendant),
-          findCurrentUser: jest.fn().mockResolvedValue(actor),
+          assignUpdatedByUser: jest.fn((item) => {
+            item.updatedBy = { id: currentUser.userId };
+          }),
           saveDocuments: commandRepository.saveDocuments,
           lockDocumentVersion: jest.fn(),
         },

@@ -197,7 +197,11 @@ describe('Document read use cases', () => {
       publicPath: undefined,
       breadcrumb: [],
     });
-    expect(visitRepository.recordVisit).toHaveBeenCalledWith(document, currentUser.userId);
+    expect(visitRepository.recordVisit).toHaveBeenCalledWith({
+      documentId: document.id,
+      workspaceId: document.workspace.id,
+      userId: currentUser.userId,
+    });
     expect(observabilityService.recordDocumentReadDuration).toHaveBeenCalledWith(
       'workspace_access',
       expect.any(Number),

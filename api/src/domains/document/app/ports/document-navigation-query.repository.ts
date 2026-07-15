@@ -1,6 +1,8 @@
-import type { TeamspaceEntity } from '../../../teamspace/infra/persistence/entities/teamspace.entity';
 import type { DocumentEntity } from '../../infra/persistence/entities/document.entity';
-import type { DocumentBreadcrumbItem } from '../contracts/document.contract';
+import type {
+  DocumentBreadcrumbItem,
+  DocumentTeamspaceRef,
+} from '../contracts/document.contract';
 
 export abstract class DocumentNavigationQueryRepository {
   abstract findDocument(
@@ -11,7 +13,7 @@ export abstract class DocumentNavigationQueryRepository {
     workspaceId: string;
     archivedAt?: null;
   }): Promise<DocumentEntity | null>;
-  abstract findTeamspaces(workspaceId: string): Promise<TeamspaceEntity[]>;
+  abstract findTeamspaces(workspaceId: string): Promise<DocumentTeamspaceRef[]>;
   abstract findRootDocuments(input: {
     workspaceId: string;
     teamspaceId?: string | null;

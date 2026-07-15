@@ -38,7 +38,7 @@ describe('ArchiveSubdocCommandUseCase', () => {
   function createCommandRepository() {
     return {
       findDocument: jest.fn(),
-      findCurrentUser: jest.fn(),
+      assignUpdatedByUser: jest.fn(),
       saveDocuments: jest.fn(),
       lockDocumentVersion: jest.fn(),
       flush: jest.fn(),
@@ -122,7 +122,6 @@ describe('ArchiveSubdocCommandUseCase', () => {
       parentDocument: { id: 'child-1' },
       updatedBy: { id: 'user-0' },
     };
-    const actor = { id: 'user-1' };
     const nextParentContent = [{
       id: 'remaining-block',
       type: 'paragraph',
@@ -142,12 +141,14 @@ describe('ArchiveSubdocCommandUseCase', () => {
     commandRepository.withTransaction.mockImplementation(async (callback) =>
       callback({
         commandRepository: {
-          findCurrentUser: jest.fn().mockResolvedValue(actor),
           findDocument: jest
             .fn()
             .mockResolvedValueOnce(parentDocument)
             .mockResolvedValueOnce(childDocument)
             .mockResolvedValueOnce(descendant),
+          assignUpdatedByUser: jest.fn((document) => {
+            document.updatedBy = { id: currentUser.userId };
+          }),
           lockDocumentVersion: jest.fn(),
           saveDocuments: commandRepository.saveDocuments,
           flush: commandRepository.flush,
@@ -175,7 +176,7 @@ describe('ArchiveSubdocCommandUseCase', () => {
       new Set(['child-1', 'child-2']),
     );
     expect(parentDocument.contentJson).toEqual(nextParentContent);
-    expect(parentDocument.updatedBy).toBe(actor);
+    expect(parentDocument.updatedBy).toEqual({ id: currentUser.userId });
     expect(subdocService.removeArchivedSubdocReferences).toHaveBeenCalledWith(
       [childDocument, descendant],
       { id: 'subdoc-repo' },

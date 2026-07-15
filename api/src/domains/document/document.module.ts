@@ -1,5 +1,5 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs';
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { CurrentUserEntity } from '../auth/infra/persistence/entities/current-user.entity';
 import { AuditModule } from '../../integrations/audit/audit.module';
 import { ObservabilityModule } from '../../platform/observability/observability.module';
@@ -7,6 +7,7 @@ import { QueueModule } from '../../integrations/queue/queue.module';
 import { PublishRepository } from '../publish/app/ports/publish.repository';
 import { MikroOrmPublishRepository } from '../publish/infra/mikro-orm-publish.repository';
 import { PublishedDocumentEntity } from '../publish/infra/persistence/entities/published-document.entity';
+import { WorkspaceDefaultDocumentProvisioner } from '../workspace/app/ports/workspace-default-document-provisioner';
 import { WorkspaceModule } from '../workspace/workspace.module';
 import { TeamspaceEntity } from '../teamspace/infra/persistence/entities/teamspace.entity';
 import { WorkspaceEntity } from '../workspace/infra/persistence/entities/workspace.entity';
@@ -37,6 +38,7 @@ import { MikroOrmDocumentNavigationQueryRepository } from './infra/mikro-orm-doc
 import { MikroOrmDocumentSubdocReferenceRepository } from './infra/mikro-orm-document-subdoc-reference.repository';
 import { MikroOrmDocumentTreeQueryRepository } from './infra/mikro-orm-document-tree-query.repository';
 import { MikroOrmDocumentVisitRepository } from './infra/mikro-orm-document-visit.repository';
+import { WorkspaceDefaultDocumentProvisionerService } from './app/services/workspace-default-document-provisioner.service';
 import { DocumentObservabilityService } from './observability/document-observability.service';
 import { DocumentEntity } from './infra/persistence/entities/document.entity';
 import { DocumentSubdocReferenceEntity } from './infra/persistence/entities/document-subdoc-reference.entity';
@@ -48,7 +50,7 @@ import { DocumentFavoriteEntity } from '../favorite/infra/persistence/entities/d
     AuditModule,
     ObservabilityModule,
     QueueModule,
-    WorkspaceModule,
+    forwardRef(() => WorkspaceModule),
     MikroOrmModule.forFeature([
       CurrentUserEntity,
       WorkspaceEntity,
@@ -86,6 +88,10 @@ import { DocumentFavoriteEntity } from '../favorite/infra/persistence/entities/d
       provide: PublishRepository,
       useClass: MikroOrmPublishRepository,
     },
+    {
+      provide: WorkspaceDefaultDocumentProvisioner,
+      useClass: WorkspaceDefaultDocumentProvisionerService,
+    },
     DocumentTreeService,
     DocumentSubdocService,
     DocumentObservabilityService,
@@ -104,5 +110,6 @@ import { DocumentFavoriteEntity } from '../favorite/infra/persistence/entities/d
     RestoreDocumentUseCase,
     PermanentlyDeleteDocumentUseCase,
   ],
+  exports: [WorkspaceDefaultDocumentProvisioner],
 })
 export class DocumentModule {}
