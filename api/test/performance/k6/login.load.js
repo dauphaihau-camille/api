@@ -1,5 +1,6 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
+import { forwardedIp } from './helpers.js';
 
 const BASE_URL = __ENV.BASE_URL ?? 'http://127.0.0.1:3000/v1';
 const LOGIN_EMAIL = __ENV.LOGIN_EMAIL ?? 'member@example.com';
@@ -16,10 +17,6 @@ export const options = {
     checks: ['rate>0.99'],
   },
 };
-
-function forwardedIp() {
-  return `203.0.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
-}
 
 export default function authLogin() {
   const response = http.post(

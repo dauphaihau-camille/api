@@ -46,3 +46,127 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  e2e:
+    needs: validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d postgres"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.3.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.0.0
+          cache: pnpm
+          cache-dependency-path: api/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Run e2e
+        env:
+          NODE_ENV: test
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+        run: pnpm test:e2e -- --runInBand
+
+  integration:
+    needs: validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.3.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.0.0
+          cache: pnpm
+          cache-dependency-path: api/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Start MinIO
+        run: |
+          docker run -d \
+            --name minio \
+            -p 9000:9000 \
+            -e MINIO_ROOT_USER=minio \
+            -e MINIO_ROOT_PASSWORD=minio123 \
+            minio/minio:latest server /data
+
+      - name: Wait for MinIO
+        run: |
+          for attempt in {1..30}; do
+            if curl -fsS http://127.0.0.1:9000/minio/health/live >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs minio
+          exit 1
+
+      - name: Run integration tests
+        env:
+          REDIS_URL: redis://127.0.0.1:6379
+          REDIS_RATE_LIMIT_INT_TEST_URL: redis://127.0.0.1:6379
+          BULLMQ_INT_TEST_REDIS_URL: redis://127.0.0.1:6379
+          STORAGE_MINIO_ENDPOINT: http://127.0.0.1:9000
+          STORAGE_MINIO_REGION: us-east-1
+          STORAGE_MINIO_BUCKET: app-files
+          STORAGE_MINIO_ACCESS_KEY: minio
+          STORAGE_MINIO_SECRET_KEY: minio123
+          STORAGE_MINIO_FORCE_PATH_STYLE: "true"
+        run: pnpm test:int
+
+      - name: Show MinIO logs on failure
+        if: failure()
+        run: docker logs minio
+
+      - name: Stop MinIO
+        if: always()
+        run: docker rm -f minio

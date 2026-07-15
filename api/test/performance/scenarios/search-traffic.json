@@ -1,0 +1,13 @@
+{
+  "description": "Search-heavy load profile. Start the API with a raised RATE_LIMIT_LIMIT before running this scenario.",
+  "requiresRateLimitLimit": 100000,
+  "vus": 10,
+  "duration": "1m",
+  "sleepSeconds": 0.5,
+  "listLimit": 50,
+  "thresholds": {
+    "http_req_failed": ["rate<0.01"],
+    "http_req_duration": ["p(95)<750"],
+    "checks": ["rate>0.99"]
+  }
+}

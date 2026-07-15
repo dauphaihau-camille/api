@@ -1,6 +1,7 @@
 {
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": ".",
+  "setupFiles": ["<rootDir>/test/support/load-test-env.ts"],
   "testEnvironment": "node",
   "testRegex": ".int-spec.ts$",
   "moduleNameMapper": {

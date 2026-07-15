@@ -1,0 +1,13 @@
+{
+  "description": "Load profile. Start the API with a raised RATE_LIMIT_LIMIT before running this scenario.",
+  "requiresRateLimitLimit": 100000,
+  "vus": 8,
+  "duration": "2m",
+  "sleepSeconds": 1,
+  "listLimit": 30,
+  "thresholds": {
+    "http_req_failed": ["rate<0.02"],
+    "http_req_duration": ["p(95)<1200"],
+    "checks": ["rate>0.98"]
+  }
+}
