@@ -14,18 +14,25 @@ export class SendWelcomeEmailOnUserCreatedListener {
 
   @OnEvent('user.created', { async: true, suppressErrors: true })
   async handle(event: UserCreatedEvent): Promise<void> {
-    await this.jobDispatcher.dispatch(
-      appJobName.sendWelcomeEmail,
-      {
-        userId: event.userId,
-        email: event.email,
-        displayName: event.displayName,
-      },
-      {
-        deduplicationKey: `${appJobName.sendWelcomeEmail}:${event.userId}`,
-      },
-    );
+    try {
+      await this.jobDispatcher.dispatch(
+        appJobName.sendWelcomeEmail,
+        {
+          userId: event.userId,
+          email: event.email,
+          displayName: event.displayName,
+        },
+        {
+          deduplicationKey: `${appJobName.sendWelcomeEmail}:${event.userId}`,
+        },
+      );
 
-    this.logger.log(`Queued welcome email for ${event.email}`);
+      this.logger.log(`Queued welcome email for ${event.email}`);
+    }
+    catch (error) {
+      this.logger.warn(
+        `Welcome email enqueue failed for ${event.email}, continuing: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
   }
 }

@@ -133,7 +133,7 @@ export class MinioStorageService implements StorageService {
   }
 
   async ping(): Promise<void> {
-    await this.ensureBucket();
+    await this.ensureBucketInternal();
   }
 
   private async ensureBucket(): Promise<void> {

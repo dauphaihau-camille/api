@@ -32,4 +32,43 @@ describe('RedisRateLimitStorage', () => {
       ],
     });
   });
+
+  it('falls back to in-memory storage when redis increment fails', async () => {
+    const fallbackStorage = {
+      increment: jest.fn().mockResolvedValue({
+        totalHits: 1,
+        timeToExpire: 60,
+        isBlocked: false,
+        timeToBlockExpire: 0,
+      }),
+    };
+    const onError = jest.fn();
+    const storage = new RedisRateLimitStorage(
+      {
+        eval: jest.fn().mockRejectedValue(new Error('redis unavailable')),
+        isOpen: true,
+        quit: jest.fn(),
+      },
+      fallbackStorage as never,
+      onError,
+    );
+
+    await expect(
+      storage.increment('request-key', 60_000, 20, 60_000, 'default'),
+    ).resolves.toEqual({
+      totalHits: 1,
+      timeToExpire: 60,
+      isBlocked: false,
+      timeToBlockExpire: 0,
+    });
+
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(fallbackStorage.increment).toHaveBeenCalledWith(
+      'request-key',
+      60_000,
+      20,
+      60_000,
+      'default',
+    );
+  });
 });

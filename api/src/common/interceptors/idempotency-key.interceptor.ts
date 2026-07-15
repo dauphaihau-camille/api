@@ -5,6 +5,7 @@ import {
   ExecutionContext,
   Inject,
   Injectable,
+  Logger,
   NestInterceptor,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -34,7 +35,9 @@ type IdempotencyRedisClient = Pick<RedisClientType, 'set' | 'del'>;
 
 @Injectable()
 export class IdempotencyKeyInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(IdempotencyKeyInterceptor.name);
   private readonly pendingRequests = new Map<string, string>();
+  private readonly fallbackResponseCache = new Map<string, CachedIdempotencyResponse>();
 
   constructor(
     private readonly reflector: Reflector,
@@ -82,8 +85,7 @@ export class IdempotencyKeyInterceptor implements NestInterceptor {
     const cacheKey = this.buildResponseCacheKey(options.scope, idempotencyKey);
     const lockKey = this.buildLockKey(options.scope, idempotencyKey);
     const fingerprint = this.buildFingerprint(request.body);
-    const cachedResponse =
-      await this.cacheManager.get<CachedIdempotencyResponse>(cacheKey);
+    const cachedResponse = await this.getCachedResponse(cacheKey);
 
     if (cachedResponse) {
       this.assertMatchingFingerprint(cachedResponse.fingerprint, fingerprint);
@@ -111,7 +113,7 @@ export class IdempotencyKeyInterceptor implements NestInterceptor {
         statusCode: response.statusCode,
       };
 
-      await this.cacheManager.set(
+      await this.cacheResponse(
         cacheKey,
         cachedRecord,
         options.responseTtlMs ?? DEFAULT_RESPONSE_TTL_MS,
@@ -131,12 +133,19 @@ export class IdempotencyKeyInterceptor implements NestInterceptor {
     lockTtlMs: number,
   ): Promise<boolean> {
     if (this.redisClient) {
-      const claimed = await this.redisClient.set(lockKey, fingerprint, {
-        PX: lockTtlMs,
-        NX: true,
-      });
+      try {
+        const claimed = await this.redisClient.set(lockKey, fingerprint, {
+          PX: lockTtlMs,
+          NX: true,
+        });
 
-      return claimed === 'OK';
+        return claimed === 'OK';
+      }
+      catch (error) {
+        this.logger.warn(
+          `Redis idempotency lock unavailable, falling back to in-memory coordination: ${this.toErrorMessage(error)}`,
+        );
+      }
     }
 
     const pendingFingerprint = this.pendingRequests.get(lockKey);
@@ -153,11 +162,50 @@ export class IdempotencyKeyInterceptor implements NestInterceptor {
 
   private async releaseLock(lockKey: string): Promise<void> {
     if (this.redisClient) {
-      await this.redisClient.del(lockKey);
-      return;
+      try {
+        await this.redisClient.del(lockKey);
+        return;
+      }
+      catch (error) {
+        this.logger.warn(
+          `Redis idempotency unlock failed, falling back to in-memory cleanup: ${this.toErrorMessage(error)}`,
+        );
+      }
     }
 
     this.pendingRequests.delete(lockKey);
+  }
+
+  private async getCachedResponse(
+    cacheKey: string,
+  ): Promise<CachedIdempotencyResponse | undefined> {
+    try {
+      return await this.cacheManager.get<CachedIdempotencyResponse>(cacheKey);
+    }
+    catch (error) {
+      this.logger.warn(
+        `Idempotency response cache unavailable, using in-memory fallback: ${this.toErrorMessage(error)}`,
+      );
+
+      return this.fallbackResponseCache.get(cacheKey);
+    }
+  }
+
+  private async cacheResponse(
+    cacheKey: string,
+    cachedRecord: CachedIdempotencyResponse,
+    ttlMs: number,
+  ): Promise<void> {
+    try {
+      await this.cacheManager.set(cacheKey, cachedRecord, ttlMs);
+      this.fallbackResponseCache.delete(cacheKey);
+    }
+    catch (error) {
+      this.logger.warn(
+        `Idempotency response cache write failed, storing in-memory fallback: ${this.toErrorMessage(error)}`,
+      );
+      this.fallbackResponseCache.set(cacheKey, cachedRecord);
+    }
   }
 
   private buildReplayResponse(
@@ -214,5 +262,9 @@ export class IdempotencyKeyInterceptor implements NestInterceptor {
     }
 
     return JSON.stringify(value);
+  }
+
+  private toErrorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : 'Unknown error';
   }
 }

@@ -244,4 +244,33 @@ describe('IdempotencyKeyInterceptor', () => {
       ),
     ).rejects.toBeInstanceOf(ConflictException);
   });
+
+  it('falls back to in-memory locking and response caching when redis-backed storage fails', async () => {
+    const cacheManager: Pick<jest.Mocked<Cache>, 'get' | 'set'> = {
+      get: jest.fn().mockRejectedValue(new Error('cache unavailable')),
+      set: jest.fn().mockRejectedValue(new Error('cache unavailable')),
+    };
+    const redisClient: RedisClientMock = {
+      set: jest.fn().mockRejectedValue(new Error('redis unavailable')),
+      del: jest.fn().mockRejectedValue(new Error('redis unavailable')),
+    };
+    const interceptor = new IdempotencyKeyInterceptor(
+      createReflector() as Reflector,
+      cacheManager as unknown as Cache,
+      redisClient as never,
+    );
+    const { context } = createHttpContext('register-1');
+    const next: CallHandler = {
+      handle: jest.fn(() => of({ accessToken: 'fresh-token' })),
+    };
+
+    const firstResult = await lastValueFrom(interceptor.intercept(context, next));
+    const secondResult = await lastValueFrom(interceptor.intercept(context, {
+      handle: jest.fn(() => of({ accessToken: 'second-token' })),
+    }));
+
+    expect(firstResult).toEqual({ accessToken: 'fresh-token' });
+    expect(secondResult).toEqual({ accessToken: 'fresh-token' });
+    expect(next.handle).toHaveBeenCalledTimes(1);
+  });
 });

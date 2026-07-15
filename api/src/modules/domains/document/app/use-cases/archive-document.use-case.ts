@@ -1,5 +1,5 @@
 import { OptimisticLockError } from '@mikro-orm/core';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { appJobName } from '~/common/jobs/job.types';
 import type { AuthenticatedUser } from '~/modules/domains/auth/app/auth.types';
 import { CurrentUserEntity } from '~/modules/domains/auth/infra/persistence/entities/current-user.entity';
@@ -23,6 +23,7 @@ import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user'
 @Injectable()
 export class ArchiveDocumentUseCase {
   private static readonly TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+  private readonly logger = new Logger(ArchiveDocumentUseCase.name);
 
   constructor(
     private readonly auditService: AuditService,
@@ -117,17 +118,24 @@ export class ArchiveDocumentUseCase {
     });
 
     if (archivedDocument.archivedAt) {
-      await this.jobDispatcher.dispatch(
-        appJobName.permanentlyDeleteArchivedDocument,
-        {
-          documentId: archivedDocument.id,
-          archivedAt: archivedDocument.archivedAt.toISOString(),
-        },
-        {
-          deduplicationKey: `${appJobName.permanentlyDeleteArchivedDocument}:${archivedDocument.id}:${archivedDocument.archivedAt.toISOString()}`,
-          delayMs: ArchiveDocumentUseCase.TRASH_RETENTION_MS,
-        },
-      );
+      try {
+        await this.jobDispatcher.dispatch(
+          appJobName.permanentlyDeleteArchivedDocument,
+          {
+            documentId: archivedDocument.id,
+            archivedAt: archivedDocument.archivedAt.toISOString(),
+          },
+          {
+            deduplicationKey: `${appJobName.permanentlyDeleteArchivedDocument}:${archivedDocument.id}:${archivedDocument.archivedAt.toISOString()}`,
+            delayMs: ArchiveDocumentUseCase.TRASH_RETENTION_MS,
+          },
+        );
+      }
+      catch (error) {
+        this.logger.warn(
+          `Archive cleanup enqueue failed for document ${archivedDocument.id}, continuing: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
+      }
     }
 
     return toDocumentSummary(archivedDocument);

@@ -1,5 +1,5 @@
 import { OptimisticLockError } from '@mikro-orm/core';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { appJobName } from '~/common/jobs/job.types';
 import type { AuthenticatedUser } from '~/modules/domains/auth/app/auth.types';
 import { CurrentUserEntity } from '~/modules/domains/auth/infra/persistence/entities/current-user.entity';
@@ -25,6 +25,7 @@ import { normalizeContent } from '../utils/document-content.util';
 @Injectable()
 export class ArchiveSubdocCommandUseCase {
   private static readonly TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+  private readonly logger = new Logger(ArchiveSubdocCommandUseCase.name);
 
   constructor(
     private readonly auditService: AuditService,
@@ -192,17 +193,24 @@ export class ArchiveSubdocCommandUseCase {
     });
 
     if (archivedSubdocument.archivedAt) {
-      await this.jobDispatcher.dispatch(
-        appJobName.permanentlyDeleteArchivedDocument,
-        {
-          documentId: archivedSubdocument.id,
-          archivedAt: archivedSubdocument.archivedAt.toISOString(),
-        },
-        {
-          deduplicationKey: `${appJobName.permanentlyDeleteArchivedDocument}:${archivedSubdocument.id}:${archivedSubdocument.archivedAt.toISOString()}`,
-          delayMs: ArchiveSubdocCommandUseCase.TRASH_RETENTION_MS,
-        },
-      );
+      try {
+        await this.jobDispatcher.dispatch(
+          appJobName.permanentlyDeleteArchivedDocument,
+          {
+            documentId: archivedSubdocument.id,
+            archivedAt: archivedSubdocument.archivedAt.toISOString(),
+          },
+          {
+            deduplicationKey: `${appJobName.permanentlyDeleteArchivedDocument}:${archivedSubdocument.id}:${archivedSubdocument.archivedAt.toISOString()}`,
+            delayMs: ArchiveSubdocCommandUseCase.TRASH_RETENTION_MS,
+          },
+        );
+      }
+      catch (error) {
+        this.logger.warn(
+          `Archive cleanup enqueue failed for subdocument ${archivedSubdocument.id}, continuing: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
+      }
     }
 
     return {

@@ -78,4 +78,19 @@ describe('GetUserByIdUseCase', () => {
     expect(cacheManager.set).not.toHaveBeenCalled();
     expect(result).toBeNull();
   });
+
+  it('continues when cache operations fail', async () => {
+    const { userRepository, cacheManager } = buildDeps();
+    cacheManager.get.mockRejectedValue(new Error('cache down'));
+    cacheManager.set.mockRejectedValue(new Error('cache down'));
+    const useCase = new GetUserByIdUseCase(
+      userRepository,
+      cacheManager as unknown as Cache,
+    );
+
+    const result = await useCase.execute(user.id);
+
+    expect(userRepository.findById).toHaveBeenCalledWith(user.id);
+    expect(result).toEqual(user);
+  });
 });

@@ -1,8 +1,14 @@
-import type { ThrottlerStorage } from '@nestjs/throttler';
+import {
+  ThrottlerStorageService,
+  type ThrottlerStorage,
+} from '@nestjs/throttler';
 import { randomUUID } from 'node:crypto';
 import type { RedisClientType } from 'redis';
 
 type RateLimitRedisClient = Pick<RedisClientType, 'eval' | 'isOpen' | 'quit'>;
+type ShutdownAwareThrottlerStorage = ThrottlerStorage & {
+  onApplicationShutdown?: () => Promise<void> | void;
+};
 
 const incrementRateLimitScript = `
 local hitsKey = KEYS[1]
@@ -53,7 +59,11 @@ return {
 `;
 
 export class RedisRateLimitStorage implements ThrottlerStorage {
-  constructor(private readonly client: RateLimitRedisClient) {}
+  constructor(
+    private readonly client: RateLimitRedisClient,
+    private readonly fallbackStorage: ShutdownAwareThrottlerStorage = new ThrottlerStorageService(),
+    private readonly onError?: (error: unknown) => void,
+  ) {}
 
   async increment(
     key: string,
@@ -62,19 +72,34 @@ export class RedisRateLimitStorage implements ThrottlerStorage {
     blockDuration: number,
     throttlerName: string,
   ) {
-    const result = (await this.client.eval(incrementRateLimitScript, {
-      keys: [
-        this.buildStorageKey(throttlerName, key, 'hits'),
-        this.buildStorageKey(throttlerName, key, 'blocked'),
-      ],
-      arguments: [
-        String(Date.now()),
-        String(ttl),
-        String(limit),
-        String(blockDuration),
-        randomUUID(),
-      ],
-    })) as number[];
+    let result: number[];
+
+    try {
+      result = (await this.client.eval(incrementRateLimitScript, {
+        keys: [
+          this.buildStorageKey(throttlerName, key, 'hits'),
+          this.buildStorageKey(throttlerName, key, 'blocked'),
+        ],
+        arguments: [
+          String(Date.now()),
+          String(ttl),
+          String(limit),
+          String(blockDuration),
+          randomUUID(),
+        ],
+      })) as number[];
+    }
+    catch (error) {
+      this.onError?.(error);
+
+      return this.fallbackStorage.increment(
+        key,
+        ttl,
+        limit,
+        blockDuration,
+        throttlerName,
+      );
+    }
 
     const [totalHits, timeToExpireMs, isBlocked, timeToBlockExpireMs] = result;
 
@@ -89,6 +114,10 @@ export class RedisRateLimitStorage implements ThrottlerStorage {
   async onApplicationShutdown() {
     if (this.client.isOpen) {
       await this.client.quit();
+    }
+
+    if (typeof this.fallbackStorage.onApplicationShutdown === 'function') {
+      await this.fallbackStorage.onApplicationShutdown();
     }
   }
 

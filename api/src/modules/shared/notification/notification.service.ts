@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { appJobName } from '../../../common/jobs/job.types';
 import { JobDispatcher } from '../queue/app/ports/job-dispatcher';
 import type { NotificationInput } from './app/notification.types';
@@ -7,6 +7,8 @@ import { NOTIFICATION_CHANNELS } from './infra/notification.constants';
 
 @Injectable()
 export class NotificationService {
+  private readonly logger = new Logger(NotificationService.name);
+
   constructor(
     private readonly jobDispatcher: JobDispatcher,
     @Inject(NOTIFICATION_CHANNELS)
@@ -15,23 +17,30 @@ export class NotificationService {
 
   async send(input: NotificationInput): Promise<void> {
     if (input.delivery === 'async' && input.channel === 'email') {
-      await this.jobDispatcher.dispatch(
-        appJobName.notificationSendEmail,
-        {
-          to: Array.isArray(input.to) ? input.to : [input.to],
-          subject: input.subject,
-          text: input.text,
-          html: input.html,
-          from: input.from,
-          replyTo: input.replyTo,
-          cc: input.cc,
-          bcc: input.bcc,
-          tags: input.tags,
-        },
-        {
-          deduplicationKey: input.deduplicationKey,
-        },
-      );
+      try {
+        await this.jobDispatcher.dispatch(
+          appJobName.notificationSendEmail,
+          {
+            to: Array.isArray(input.to) ? input.to : [input.to],
+            subject: input.subject,
+            text: input.text,
+            html: input.html,
+            from: input.from,
+            replyTo: input.replyTo,
+            cc: input.cc,
+            bcc: input.bcc,
+            tags: input.tags,
+          },
+          {
+            deduplicationKey: input.deduplicationKey,
+          },
+        );
+      }
+      catch (error) {
+        this.logger.warn(
+          `Async notification enqueue failed, continuing: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
+      }
 
       return;
     }

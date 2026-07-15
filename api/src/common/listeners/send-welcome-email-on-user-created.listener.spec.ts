@@ -27,4 +27,17 @@ describe('SendWelcomeEmailOnUserCreatedListener', () => {
       },
     );
   });
+
+  it('does not rethrow when welcome email enqueue fails', async () => {
+    const jobDispatcher: jest.Mocked<JobDispatcher> = {
+      dispatch: jest.fn().mockRejectedValue(new Error('redis unavailable')),
+    };
+    const listener = new SendWelcomeEmailOnUserCreatedListener(jobDispatcher);
+
+    await expect(
+      listener.handle(
+        new UserCreatedEvent('user-1', 'member@example.com', 'Member User'),
+      ),
+    ).resolves.toBeUndefined();
+  });
 });

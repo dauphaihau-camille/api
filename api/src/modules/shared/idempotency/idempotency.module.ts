@@ -5,14 +5,19 @@ import { IdempotencyKeyInterceptor } from '../../../common/interceptors/idempote
 import { IDEMPOTENCY_REDIS } from '../../../common/interceptors/idempotency.constants';
 import { buildCacheConfig } from '../../../config/cache.config';
 import { CacheModule } from '../cache/cache.module';
+import { ObservabilityModule } from '../observability/observability.module';
+import { ObservabilityService } from '../observability/observability.service';
 
 @Module({
-  imports: [ConfigModule, CacheModule],
+  imports: [ConfigModule, CacheModule, ObservabilityModule],
   providers: [
     {
       provide: IDEMPOTENCY_REDIS,
-      inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => {
+      inject: [ConfigService, ObservabilityService],
+      useFactory: async (
+        configService: ConfigService,
+        observabilityService: ObservabilityService,
+      ) => {
         const cacheConfig = buildCacheConfig(configService);
 
         if (cacheConfig.driver !== 'redis') {
@@ -23,7 +28,18 @@ import { CacheModule } from '../cache/cache.module';
           url: cacheConfig.redisUrl,
         });
 
-        await client.connect();
+        client.on('error', () => {
+          observabilityService.recordRedisConnectionError('idempotency');
+        });
+
+        try {
+          await client.connect();
+        }
+        catch {
+          observabilityService.recordRedisConnectionError('idempotency');
+          client.destroy();
+          return null;
+        }
 
         return client;
       },
