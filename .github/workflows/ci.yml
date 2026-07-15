@@ -21,15 +21,15 @@ jobs:
         working-directory: api
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 9.3.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22.0.0
           cache: pnpm
@@ -69,15 +69,15 @@ jobs:
           --health-retries=10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 9.3.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22.0.0
           cache: pnpm
@@ -93,7 +93,7 @@ jobs:
           DB_PORT: 5432
           DB_USER: postgres
           DB_PASSWORD: postgres
-        run: pnpm test:e2e -- --runInBand
+        run: pnpm exec jest --config ./test/jest-e2e.json --watchman=false --runInBand
 
   integration:
     needs: validate
@@ -113,15 +113,15 @@ jobs:
           --health-retries=10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 9.3.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22.0.0
           cache: pnpm
