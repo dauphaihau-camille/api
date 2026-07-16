@@ -11,7 +11,10 @@ import { setupApiDocs } from '../platform/docs/setup-api-docs';
 import { setupBullBoard } from '../platform/docs/setup-bull-board';
 import { GlobalExceptionFilter } from '../platform/filters/global-exception.filter';
 import { RequestLoggingInterceptor } from '../platform/interceptors/request-logging.interceptor';
-import { parseCorsAllowedOrigins } from '../platform/config/cors.config';
+import {
+  APP_RUNTIME_CONFIG,
+  type AppRuntimeConfig,
+} from '../platform/config/app-runtime.config';
 import { AppModule } from './app.module';
 import { ObservabilityService } from '../platform/observability/observability.service';
 import { BULLMQ_QUEUE } from '../integrations/queue/infra/queue.constants';
@@ -29,15 +32,15 @@ async function bootstrap() {
   const bootstrapLogger = await app.resolve(PinoLogger);
   const requestLogger = await app.resolve(PinoLogger);
   const exceptionLogger = await app.resolve(PinoLogger);
-  const corsAllowedOrigins = parseCorsAllowedOrigins(process.env);
+  const appRuntimeConfig = app.get<AppRuntimeConfig>(APP_RUNTIME_CONFIG);
 
-  if (process.env.TRUST_PROXY === 'true') {
+  if (appRuntimeConfig.trustProxy) {
     app.getHttpAdapter().getInstance().set('trust proxy', true);
   }
 
-  if (corsAllowedOrigins.length > 0) {
+  if (appRuntimeConfig.corsAllowedOrigins.length > 0) {
     app.enableCors({
-      origin: corsAllowedOrigins,
+      origin: appRuntimeConfig.corsAllowedOrigins,
       credentials: true,
     });
   }
@@ -94,15 +97,15 @@ async function bootstrap() {
   bootstrapLogger.info({
     context: 'Bootstrap',
     event: 'bootstrap.http.listen.start',
-    port: Number(process.env.PORT ?? 3000),
+    port: appRuntimeConfig.port,
   }, 'Starting HTTP listener');
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(appRuntimeConfig.port);
 
   bootstrapLogger.info({
     context: 'Bootstrap',
     event: 'bootstrap.http.listen.ready',
-    port: Number(process.env.PORT ?? 3000),
+    port: appRuntimeConfig.port,
   }, 'HTTP listener ready');
 }
 

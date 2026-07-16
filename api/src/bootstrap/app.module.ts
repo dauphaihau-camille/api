@@ -1,10 +1,15 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { LoggerModule } from 'nestjs-pino';
 import { buildPinoLoggerParams } from '../platform/logging/pino-logger.config';
 import { RequestContextModule } from '../platform/request-context/request-context.module';
+import {
+  APP_RUNTIME_CONFIG,
+  buildAppRuntimeConfig,
+} from '../platform/config/app-runtime.config';
 import { validateAppEnv } from '../platform/config/app-env.config';
 import { buildDatabaseConfig } from '../platform/config/database.config';
 import { AuthModule } from '../domains/auth/auth.module';
@@ -74,6 +79,14 @@ import { WsModule } from '../platform/ws/ws.module';
     FavoriteModule,
     PublishModule,
     SearchModule,
+  ],
+  providers: [
+    {
+      provide: APP_RUNTIME_CONFIG,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) =>
+        buildAppRuntimeConfig(configService),
+    },
   ],
 })
 export class AppModule {}
