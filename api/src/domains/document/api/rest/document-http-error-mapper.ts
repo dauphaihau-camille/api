@@ -3,11 +3,13 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import {
   ArchivedDocumentDuplicationError,
   DocumentAppError,
+  DocumentDuplicationInvariantError,
   DocumentDescendantMoveError,
   DocumentNotFoundError,
   DocumentNotArchivedError,
@@ -39,6 +41,10 @@ export function mapDocumentAppErrorToHttpException(error: DocumentAppError): Htt
 
   if (error instanceof DocumentVersionConflictError) {
     return new ConflictException(error.message);
+  }
+
+  if (error instanceof DocumentDuplicationInvariantError) {
+    return new InternalServerErrorException(error.message);
   }
 
   if (

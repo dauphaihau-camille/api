@@ -66,6 +66,12 @@ export class ArchivedDocumentDuplicationError extends DocumentAppError {
   }
 }
 
+export class DocumentDuplicationInvariantError extends DocumentAppError {
+  constructor(details: string) {
+    super(`Document duplication invariant failed: ${details}.`);
+  }
+}
+
 export class DocumentNotArchivedError extends DocumentAppError {
   constructor() {
     super('Document must be in trash before it can be permanently deleted.');

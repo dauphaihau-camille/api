@@ -10,6 +10,7 @@ import { toDocumentSummary } from '../mappers/document-summary.mapper';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
 import {
   ArchivedDocumentDuplicationError,
+  DocumentDuplicationInvariantError,
   DocumentNotFoundError,
   DocumentPermissionDeniedError,
 } from '../errors/document-app.error';
@@ -51,7 +52,12 @@ export class DuplicateDocumentUseCase {
     if (!sourceSubtree) {
       throw new DocumentNotFoundError(sourceDocument.id);
     }
-    const sourceRootDocument = sourceSubtree[0]!;
+    const sourceRootDocument = sourceSubtree[0];
+    if (!sourceRootDocument) {
+      throw new DocumentDuplicationInvariantError(
+        `missing subtree root for source document ${sourceDocument.id}`,
+      );
+    }
 
     const {
       duplicatedRootDocument,
@@ -93,7 +99,11 @@ export class DuplicateDocumentUseCase {
       }
 
       for (const originalDocument of sourceSubtree) {
-        const duplicatedDocument = duplicatedDocumentByOriginalId.get(originalDocument.id)!;
+        const duplicatedDocument = this.getRequiredDuplicatedDocument(
+          duplicatedDocumentByOriginalId,
+          originalDocument.id,
+          'updating duplicated subtree content',
+        );
         duplicatedDocument.contentJson = this.documentSubdocService.replaceSubdocReferencesInContent(
           originalDocument.contentJson,
           duplicatedDocumentByOriginalId,
@@ -107,7 +117,11 @@ export class DuplicateDocumentUseCase {
         commandRepository.assignUpdatedByUser(duplicatedDocument, currentUser.userId);
       }
 
-      const duplicatedRootDocumentEntity = duplicatedDocumentByOriginalId.get(sourceDocument.id)!;
+      const duplicatedRootDocumentEntity = this.getRequiredDuplicatedDocument(
+        duplicatedDocumentByOriginalId,
+        sourceDocument.id,
+        'resolving duplicated root document',
+      );
       const parentDocument = sourceRootDocument.parentDocument?.id
         ? await commandRepository.findDocument(sourceRootDocument.parentDocument.id)
         : null;
@@ -140,10 +154,15 @@ export class DuplicateDocumentUseCase {
         duplicatedRootDocument: duplicatedRootDocumentEntity,
         duplicatedDocuments: duplicatedDocumentEntities,
         originalDocumentByDuplicateId: new Map(
-          sourceSubtree.map((originalDocument) => [
-            duplicatedDocumentByOriginalId.get(originalDocument.id)!.id,
-            originalDocument,
-          ]),
+          sourceSubtree.map((originalDocument) => {
+            const duplicatedDocument = this.getRequiredDuplicatedDocument(
+              duplicatedDocumentByOriginalId,
+              originalDocument.id,
+              'building duplicate-to-original lookup',
+            );
+
+            return [duplicatedDocument.id, originalDocument] as const;
+          }),
         ),
       };
     });
@@ -163,5 +182,21 @@ export class DuplicateDocumentUseCase {
     ));
 
     return toDocumentSummary(duplicatedRootDocument);
+  }
+
+  private getRequiredDuplicatedDocument(
+    duplicatedDocumentByOriginalId: Map<string, DocumentEntity>,
+    originalDocumentId: string,
+    operation: string,
+  ): DocumentEntity {
+    const duplicatedDocument = duplicatedDocumentByOriginalId.get(originalDocumentId);
+
+    if (!duplicatedDocument) {
+      throw new DocumentDuplicationInvariantError(
+        `${operation}: missing duplicate for source document ${originalDocumentId}`,
+      );
+    }
+
+    return duplicatedDocument;
   }
 }
