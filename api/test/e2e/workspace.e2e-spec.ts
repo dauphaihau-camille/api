@@ -56,7 +56,7 @@ describe('Workspace and membership flow (e2e)', () => {
     process.env.RATE_LIMIT_DRIVER = 'memory';
     process.env.QUEUE_DRIVER = 'inline';
     process.env.STORAGE_DRIVER = 'local';
-    const { AppModule } = requireModule('../../src/modules/app.module');
+    const { AppModule } = requireModule('../../src/bootstrap/app.module');
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
