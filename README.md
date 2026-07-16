@@ -11,27 +11,28 @@ The codebase follows a modular monolith structure with clear domain and shared-m
 Top-level structure:
 
 - `api/` - NestJS application source, config, migrations, scripts, and tests
-- `agent-skills/` - repository guidance and agent-facing notes
-- `docs/` - architecture and local-runtime documentation
+- `api/agent-skills/` - API-specific guidance and agent-facing notes
+- `api/docs/` - architecture and local-runtime documentation
 - `infra/` - Docker Compose services for app dependencies and observability
-- `scripts/` - workspace-level helper scripts
+- `justfile` - workspace task runner for local setup, runtime, migrations, and seeds
+- `render.yaml` - deployment configuration
 - `seed-data/` - seed assets and reference data
 
 ## Implemented Patterns and Capabilities
 
 ### Architecture
 
-- **Modular monolith** - the backend is delivered as one NestJS app while keeping business capabilities isolated in `domains/` and technical capabilities in `shared/`
+- **Modular monolith** - the backend is delivered as one NestJS app while keeping business capabilities isolated in `domains/`, runtime and framework plumbing in `platform/`, external adapters in `integrations/`, and small generic primitives in `shared/`
 - **Layered module structure** - modules are split into `api`, `app`, `domain`, and `infra` so transport, orchestration, business rules, and persistence stay separate
 - **Use cases plus ports/adapters** - application behavior is expressed as explicit use cases with infrastructure hidden behind repositories and service interfaces
 - **Request context propagation** - CLS-backed request context carries actor and request metadata through request handling and async work
-- **Layered error model** - domain and application errors are kept separate from HTTP concerns and mapped at the transport edge. See [`docs/layered-error-model.md`](docs/layered-error-model.md)
+- **Layered error model** - domain and application errors are kept separate from HTTP concerns and mapped at the transport edge. See [`api/docs/layered-error-model.md`](api/docs/layered-error-model.md)
 - **Event-driven side effects** - shared events and listeners decouple follow-up actions such as cache invalidation and welcome-email delivery from the initiating use case
 
 ### Product and API Surface
 
-- **Cursor pagination** - document listing uses forward-only `next_cursor` pagination instead of page numbers. See [`docs/cursor-pagination.md`](docs/cursor-pagination.md)
-- **Full-text search** - workspace document search uses PostgreSQL full-text search across titles and body text. See [`docs/search-workspace-documents.md`](docs/search-workspace-documents.md)
+- **Cursor pagination** - document listing uses forward-only `next_cursor` pagination instead of page numbers. See [`api/docs/cursor-pagination.md`](api/docs/cursor-pagination.md)
+- **Full-text search** - workspace document search uses PostgreSQL full-text search across titles and body text. See [`api/docs/search-workspace-documents.md`](api/docs/search-workspace-documents.md)
 - **JWT and cookie-backed auth flows** - authentication supports access and refresh token flows with HTTP-only cookie support
 - **RBAC foundations** - roles and permission checks are built into the auth and user-management path
 - **REST-first API** - the main HTTP surface is versioned under `/v1`
@@ -57,7 +58,7 @@ Top-level structure:
 - **OpenTelemetry tracing** - API and worker processes are wired for OTEL export through the local collector
 - **Local logs, metrics, and traces stack** - Grafana, Loki, Tempo, Prometheus, Promtail, and the OTEL collector are provisioned in Docker Compose
 - **Health and readiness endpoints** - `/health` and `/health/ready` support probes and local verification
-- **Two supported local runtime modes** - use host-run app plus Compose infra for fast iteration, or full Compose stack for container parity. See [`docs/local-dev-runtime-modes.md`](docs/local-dev-runtime-modes.md)
+- **Two supported local runtime modes** - use host-run app plus Compose infra for fast iteration, or full Compose stack for container parity. See [`api/docs/local-dev-runtime-modes.md`](api/docs/local-dev-runtime-modes.md)
 
 ## Stack
 
@@ -162,11 +163,11 @@ cd api && pnpm test:hurl
 ## Additional Docs
 
 - [`api/README.md`](api/README.md)
-- [`docs/adr/README.md`](docs/adr/README.md)
-- [`docs/api-project-structure.md`](docs/api-project-structure.md)
-- [`docs/layered-error-model.md`](docs/layered-error-model.md)
-- [`docs/local-dev-runtime-modes.md`](docs/local-dev-runtime-modes.md)
-- [`docs/observability-queries.md`](docs/observability-queries.md)
-- [`docs/search-workspace-documents.md`](docs/search-workspace-documents.md)
-- [`docs/use-case-vs-service.md`](docs/use-case-vs-service.md)
+- [`api/docs/adr/README.md`](api/docs/adr/README.md)
+- [`api/docs/project-structure.md`](api/docs/project-structure.md)
+- [`api/docs/layered-error-model.md`](api/docs/layered-error-model.md)
+- [`api/docs/local-dev-runtime-modes.md`](api/docs/local-dev-runtime-modes.md)
+- [`api/docs/observability-queries.md`](api/docs/observability-queries.md)
+- [`api/docs/search-workspace-documents.md`](api/docs/search-workspace-documents.md)
+- [`api/docs/use-case-vs-service.md`](api/docs/use-case-vs-service.md)
 - [`seed-data/README.md`](seed-data/README.md)
