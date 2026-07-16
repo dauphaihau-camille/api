@@ -1,4 +1,5 @@
 import type { Cache } from 'cache-manager';
+import { buildUserByIdCacheKey } from '../app/user-cache.keys';
 import { UserCreatedEvent } from '../events/user-created.event';
 import { InvalidateUserCacheOnUserCreatedListener } from './invalidate-user-cache-on-user-created.listener';
 
@@ -13,6 +14,8 @@ describe('InvalidateUserCacheOnUserCreatedListener', () => {
 
     await listener.handle(new UserCreatedEvent('user-1', 'user@example.com'));
 
-    expect(cacheManager.del).toHaveBeenCalledWith('user:id:user-1');
+    expect(cacheManager.del).toHaveBeenCalledWith(
+      buildUserByIdCacheKey('user-1'),
+    );
   });
 });
