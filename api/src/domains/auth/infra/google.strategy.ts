@@ -1,18 +1,16 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, type Profile, type VerifyCallback } from 'passport-google-oauth20';
 import type { OAuthIdentity } from '../app/auth.types';
-
-const DEFAULT_API_BASE_URL = 'http://localhost:3000';
+import type { EnabledOAuthProviderConfig } from './oauth-provider-config';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
-  constructor(configService: ConfigService) {
+  constructor(oauthProviderConfig: EnabledOAuthProviderConfig) {
     super({
-      clientID: configService.get<string>('GOOGLE_OAUTH_CLIENT_ID', ''),
-      clientSecret: configService.get<string>('GOOGLE_OAUTH_CLIENT_SECRET', ''),
-      callbackURL: buildOAuthCallbackUrl(configService, 'google'),
+      clientID: oauthProviderConfig.clientId,
+      clientSecret: oauthProviderConfig.clientSecret,
+      callbackURL: oauthProviderConfig.callbackUrl,
     });
   }
 
@@ -40,15 +38,4 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 
     done(null, identity);
   }
-}
-
-function buildOAuthCallbackUrl(
-  configService: Pick<ConfigService, 'get'>,
-  provider: 'google' | 'github',
-): string {
-  const apiBaseUrl = configService
-    .get<string>('API_BASE_URL', DEFAULT_API_BASE_URL)
-    .replace(/\/+$/, '');
-
-  return `${apiBaseUrl}/v1/auth/oauth/${provider}/callback`;
 }

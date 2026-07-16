@@ -59,7 +59,11 @@ import { UserSessionEntity } from './infra/persistence/entities/user-session.ent
 import { UserRoleEntity } from './infra/persistence/entities/user-role.entity';
 import { IdempotencyModule } from '../../platform/idempotency/idempotency.module';
 import { NotificationModule } from '../../integrations/notification/notification.module';
-import { isOAuthProviderEnabled } from './infra/oauth-provider-config';
+import {
+  buildOAuthProviderConfigs,
+  OAUTH_PROVIDER_CONFIGS,
+  type OAuthProviderConfigs,
+} from './infra/oauth-provider-config';
 
 const authEntities = [
   CurrentUserEntity,
@@ -104,6 +108,12 @@ const authEntities = [
       inject: [ConfigService],
       useFactory: (configService: ConfigService) =>
         buildAuthConfig(configService),
+    },
+    {
+      provide: OAUTH_PROVIDER_CONFIGS,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) =>
+        buildOAuthProviderConfigs(configService),
     },
     {
       provide: AuthUserRepository,
@@ -158,18 +168,18 @@ const authEntities = [
     AuthHttpExceptionFilter,
     {
       provide: GoogleStrategy,
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) =>
-        isOAuthProviderEnabled(configService, 'google')
-          ? new GoogleStrategy(configService)
+      inject: [OAUTH_PROVIDER_CONFIGS],
+      useFactory: (oauthProviderConfigs: OAuthProviderConfigs) =>
+        oauthProviderConfigs.google.enabled
+          ? new GoogleStrategy(oauthProviderConfigs.google)
           : null,
     },
     {
       provide: GithubStrategy,
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) =>
-        isOAuthProviderEnabled(configService, 'github')
-          ? new GithubStrategy(configService)
+      inject: [OAUTH_PROVIDER_CONFIGS],
+      useFactory: (oauthProviderConfigs: OAuthProviderConfigs) =>
+        oauthProviderConfigs.github.enabled
+          ? new GithubStrategy(oauthProviderConfigs.github)
           : null,
     },
     GoogleOAuthGuard,

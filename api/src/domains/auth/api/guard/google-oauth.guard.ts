@@ -1,18 +1,24 @@
 import type { ExecutionContext } from '@nestjs/common';
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Inject, Injectable } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import type { Request } from 'express';
-import { assertOAuthProviderEnabled } from '../../infra/oauth-provider-config';
+import {
+  assertOAuthProviderEnabled,
+  OAUTH_PROVIDER_CONFIGS,
+  type OAuthProviderConfigs,
+} from '../../infra/oauth-provider-config';
 
 @Injectable()
 export class GoogleOAuthGuard extends AuthGuard('google') {
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    @Inject(OAUTH_PROVIDER_CONFIGS)
+    private readonly oauthProviderConfigs: OAuthProviderConfigs,
+  ) {
     super();
   }
 
   override canActivate(context: ExecutionContext) {
-    assertOAuthProviderEnabled(this.configService, 'google');
+    assertOAuthProviderEnabled(this.oauthProviderConfigs, 'google');
 
     return super.canActivate(context);
   }

@@ -1,5 +1,9 @@
 import { NotFoundException } from '@nestjs/common';
-import { assertOAuthProviderEnabled, isOAuthProviderEnabled } from './oauth-provider-config';
+import {
+  assertOAuthProviderEnabled,
+  buildOAuthProviderConfig,
+  buildOAuthProviderConfigs,
+} from './oauth-provider-config';
 
 type MockConfigService = {
   get: (key: string) => string | undefined;
@@ -12,31 +16,45 @@ function createConfigService(values: Record<string, string | undefined>): MockCo
 }
 
 describe('oauth-provider-config', () => {
-  it('enables google oauth only when both credentials are present', () => {
+  it('keeps google oauth disabled when credentials are missing', () => {
     expect(
-      isOAuthProviderEnabled(
+      buildOAuthProviderConfig(
         createConfigService({
           GOOGLE_OAUTH_CLIENT_ID: 'google-client-id',
-          GOOGLE_OAUTH_CLIENT_SECRET: 'google-client-secret',
         }),
         'google',
       ),
-    ).toBe(true);
+    ).toEqual({
+      enabled: false,
+      provider: 'google',
+      displayName: 'Google',
+    });
+  });
 
+  it('builds github oauth config when credentials are present', () => {
     expect(
-      isOAuthProviderEnabled(
+      buildOAuthProviderConfig(
         createConfigService({
-          GOOGLE_OAUTH_CLIENT_ID: 'google-client-id',
+          API_BASE_URL: 'https://api.example.com/',
+          GITHUB_OAUTH_CLIENT_ID: 'github-client-id',
+          GITHUB_OAUTH_CLIENT_SECRET: 'github-client-secret',
         }),
-        'google',
+        'github',
       ),
-    ).toBe(false);
+    ).toEqual({
+      enabled: true,
+      provider: 'github',
+      displayName: 'GitHub',
+      clientId: 'github-client-id',
+      clientSecret: 'github-client-secret',
+      callbackUrl: 'https://api.example.com/v1/auth/oauth/github/callback',
+    });
   });
 
   it('throws a not found error when github oauth is disabled', () => {
     expect(() =>
       assertOAuthProviderEnabled(
-        createConfigService({}),
+        buildOAuthProviderConfigs(createConfigService({})),
         'github',
       )).toThrow(new NotFoundException('GitHub OAuth is not enabled.'));
   });

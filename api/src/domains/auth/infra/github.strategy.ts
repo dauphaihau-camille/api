@@ -1,11 +1,10 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { fetchWithTimeout } from '~/platform/http/fetch-with-timeout';
 import { Strategy, type Profile } from 'passport-github2';
 import type { OAuthIdentity } from '../app/auth.types';
+import type { EnabledOAuthProviderConfig } from './oauth-provider-config';
 
-const DEFAULT_API_BASE_URL = 'http://localhost:3000';
 const GITHUB_EMAIL_REQUEST_TIMEOUT_MS = 5_000;
 
 interface GithubEmailRecord {
@@ -18,11 +17,11 @@ type OAuthVerifyCallback = (error: Error | null, user?: OAuthIdentity | false) =
 
 @Injectable()
 export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
-  constructor(configService: ConfigService) {
+  constructor(oauthProviderConfig: EnabledOAuthProviderConfig) {
     super({
-      clientID: configService.get<string>('GITHUB_OAUTH_CLIENT_ID', ''),
-      clientSecret: configService.get<string>('GITHUB_OAUTH_CLIENT_SECRET', ''),
-      callbackURL: buildOAuthCallbackUrl(configService, 'github'),
+      clientID: oauthProviderConfig.clientId,
+      clientSecret: oauthProviderConfig.clientSecret,
+      callbackURL: oauthProviderConfig.callbackUrl,
       scope: ['user:email'],
     });
   }
@@ -83,15 +82,4 @@ async function loadVerifiedGithubEmail(accessToken: string): Promise<string | nu
     emails.find((email) => email.verified);
 
   return verifiedEmail?.email ?? null;
-}
-
-function buildOAuthCallbackUrl(
-  configService: Pick<ConfigService, 'get'>,
-  provider: 'google' | 'github',
-): string {
-  const apiBaseUrl = configService
-    .get<string>('API_BASE_URL', DEFAULT_API_BASE_URL)
-    .replace(/\/+$/, '');
-
-  return `${apiBaseUrl}/v1/auth/oauth/${provider}/callback`;
 }
