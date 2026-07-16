@@ -1,5 +1,9 @@
-import { ForbiddenException } from '@nestjs/common';
 import { WorkspaceRole } from '../domain/enums/workspace-role.enum';
+import {
+  WorkspaceMemberManagerPermissionDeniedError,
+  WorkspaceOwnerPermissionDeniedError,
+  WorkspacePermissionDeniedError,
+} from './errors/workspace-app.error';
 
 export function canEditWorkspace(role: WorkspaceRole): boolean {
   return role === WorkspaceRole.OWNER || role === WorkspaceRole.ADMIN;
@@ -15,18 +19,18 @@ export function canManageOwnerAssignments(role: WorkspaceRole): boolean {
 
 export function assertWorkspaceEditor(role: WorkspaceRole): void {
   if (!canEditWorkspace(role)) {
-    throw new ForbiddenException('You do not have permission to update this workspace.');
+    throw new WorkspacePermissionDeniedError();
   }
 }
 
 export function assertWorkspaceMemberManager(role: WorkspaceRole): void {
   if (!canManageMembers(role)) {
-    throw new ForbiddenException('You do not have permission to manage workspace members.');
+    throw new WorkspaceMemberManagerPermissionDeniedError();
   }
 }
 
 export function assertWorkspaceOwner(role: WorkspaceRole): void {
   if (!canManageOwnerAssignments(role)) {
-    throw new ForbiddenException('Only workspace owners can manage owner assignments.');
+    throw new WorkspaceOwnerPermissionDeniedError();
   }
 }

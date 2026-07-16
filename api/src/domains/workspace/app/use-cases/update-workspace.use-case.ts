@@ -1,13 +1,16 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { assertWorkspaceEditor } from '../workspace-permissions';
 import type { WorkspaceSummary } from '../contracts/workspace.contract';
 import type { UpdateWorkspaceInput } from '../contracts/workspace.input';
+import {
+  WorkspaceNotFoundError,
+  WorkspaceSlugInUseError,
+  WorkspaceSlugInvalidError,
+  WorkspaceSlugLengthError,
+  WorkspaceSlugReservedError,
+  WorkspaceVersionConflictAppError,
+} from '../errors/workspace-app.error';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
 import {
   WorkspaceRepository,
@@ -51,7 +54,7 @@ export class UpdateWorkspaceUseCase {
       });
 
       if (!updatedWorkspace) {
-        throw new NotFoundException(`Workspace ${workspaceIdentifier} was not found.`);
+        throw new WorkspaceNotFoundError(workspaceIdentifier);
       }
 
       return {
@@ -61,7 +64,7 @@ export class UpdateWorkspaceUseCase {
     }
     catch (error) {
       if (error instanceof WorkspaceVersionConflictError) {
-        throw new ConflictException('Workspace version conflict.');
+        throw new WorkspaceVersionConflictAppError();
       }
 
       throw error;
@@ -97,21 +100,21 @@ export class UpdateWorkspaceUseCase {
     const normalizedSlug = normalizeWorkspaceSlug(slug);
 
     if (normalizedSlug.length < 3 || normalizedSlug.length > 32) {
-      throw new BadRequestException('Workspace domain must be 3 to 32 characters.');
+      throw new WorkspaceSlugLengthError();
     }
 
     if (!isValidWorkspaceSlug(normalizedSlug)) {
-      throw new BadRequestException('Workspace domain is invalid.');
+      throw new WorkspaceSlugInvalidError();
     }
 
     if (isReservedWorkspaceSlug(normalizedSlug)) {
-      throw new ConflictException('Workspace domain is reserved.');
+      throw new WorkspaceSlugReservedError();
     }
 
     const existingWorkspace = await this.workspaceRepository.findBySlug(normalizedSlug);
 
     if (existingWorkspace && existingWorkspace.id !== workspaceIdToIgnore) {
-      throw new ConflictException('Workspace domain is already in use.');
+      throw new WorkspaceSlugInUseError();
     }
 
     return normalizedSlug;

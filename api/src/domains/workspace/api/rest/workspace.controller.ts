@@ -23,6 +23,10 @@ import { CreateWorkspaceUseCase } from '../../app/use-cases/create-workspace.use
 import { GetWorkspaceUseCase } from '../../app/use-cases/get-workspace.use-case';
 import { ListUserWorkspacesUseCase } from '../../app/use-cases/list-user-workspaces.use-case';
 import { UpdateWorkspaceUseCase } from '../../app/use-cases/update-workspace.use-case';
+import {
+  isWorkspaceAppError,
+  mapWorkspaceAppErrorToHttpException,
+} from './workspace-http-error-mapper';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { WorkspaceResponseDto } from './dto/workspace-response.dto';
@@ -53,7 +57,8 @@ export class WorkspaceController {
   ): Promise<WorkspaceResponseDto[]> {
     return this.listUserWorkspacesUseCase
       .execute(currentUser)
-      .then((workspaces) => workspaces.map(WorkspaceResponseDto.fromWorkspace));
+      .then((workspaces) => workspaces.map(WorkspaceResponseDto.fromWorkspace))
+      .catch(this.rethrowWorkspaceAppError);
   }
 
   @Post('workspaces')
@@ -74,7 +79,8 @@ export class WorkspaceController {
         slug: body.slug,
         description: body.description,
       })
-      .then(WorkspaceResponseDto.fromWorkspace);
+      .then(WorkspaceResponseDto.fromWorkspace)
+      .catch(this.rethrowWorkspaceAppError);
   }
 
   @Get('workspaces/:workspaceId')
@@ -91,7 +97,8 @@ export class WorkspaceController {
   ): Promise<WorkspaceResponseDto> {
     return this.getWorkspaceUseCase
       .execute(workspaceId, currentUser)
-      .then(WorkspaceResponseDto.fromWorkspace);
+      .then(WorkspaceResponseDto.fromWorkspace)
+      .catch(this.rethrowWorkspaceAppError);
   }
 
   @Patch('workspaces/:workspaceId')
@@ -114,6 +121,15 @@ export class WorkspaceController {
         slug: body.slug,
         description: body.description,
       })
-      .then(WorkspaceResponseDto.fromWorkspace);
+      .then(WorkspaceResponseDto.fromWorkspace)
+      .catch(this.rethrowWorkspaceAppError);
+  }
+
+  private rethrowWorkspaceAppError(error: unknown): never {
+    if (isWorkspaceAppError(error)) {
+      throw mapWorkspaceAppErrorToHttpException(error);
+    }
+
+    throw error;
   }
 }

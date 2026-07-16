@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsOptional,
   IsString,
@@ -12,6 +13,7 @@ export class CreateWorkspaceDto {
     minLength: 2,
     maxLength: 80,
   })
+  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
   @IsString()
   @MinLength(2)
   @MaxLength(80)

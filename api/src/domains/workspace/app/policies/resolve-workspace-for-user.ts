@@ -1,6 +1,6 @@
-import { NotFoundException } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import type { WorkspaceSummary } from '../contracts/workspace.contract';
+import { WorkspaceNotFoundError } from '../errors/workspace-app.error';
 import type { WorkspaceRepository } from '../ports/workspace.repository';
 import { findWorkspaceByIdentifier } from '../utils/find-workspace-by-identifier.util';
 
@@ -13,7 +13,7 @@ export async function resolveWorkspaceForUser(
   const workspace = findWorkspaceByIdentifier(workspaces, workspaceIdentifier);
 
   if (!workspace) {
-    throw new NotFoundException(`Workspace ${workspaceIdentifier} was not found.`);
+    throw new WorkspaceNotFoundError(workspaceIdentifier);
   }
 
   return workspace;
