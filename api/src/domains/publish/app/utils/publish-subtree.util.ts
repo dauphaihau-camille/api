@@ -1,10 +1,14 @@
-import type { DocumentEntity } from '../../../document/infra/persistence/entities/document.entity';
+type PublishSubtreeDocument = {
+  id: string;
+  publicAccessOverride?: 'unpublished' | null;
+  parentDocument?: { id: string } | null;
+};
 
-export function filterCascadePublishedDocuments(
-  subtree: DocumentEntity[],
-): DocumentEntity[] {
+export function filterCascadePublishedDocuments<T extends PublishSubtreeDocument>(
+  subtree: T[],
+): T[] {
   const excludedDocumentIds = new Set<string>();
-  const includedDocuments: DocumentEntity[] = [];
+  const includedDocuments: T[] = [];
 
   for (const document of subtree) {
     const parentDocumentId = document.parentDocument?.id;
