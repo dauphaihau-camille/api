@@ -1,10 +1,12 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
+import { fetchWithTimeout } from '~/platform/http/fetch-with-timeout';
 import { Strategy, type Profile } from 'passport-github2';
 import type { OAuthIdentity } from '../app/auth.types';
 
 const DEFAULT_API_BASE_URL = 'http://localhost:3000';
+const GITHUB_EMAIL_REQUEST_TIMEOUT_MS = 5_000;
 
 interface GithubEmailRecord {
   email: string;
@@ -62,13 +64,14 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
 }
 
 async function loadVerifiedGithubEmail(accessToken: string): Promise<string | null> {
-  const response = await fetch('https://api.github.com/user/emails', {
+  const response = await fetchWithTimeout('https://api.github.com/user/emails', {
     headers: {
       Accept: 'application/vnd.github+json',
       Authorization: `Bearer ${accessToken}`,
       'User-Agent': 'camille-auth',
       'X-GitHub-Api-Version': '2022-11-28',
     },
+    timeoutMs: GITHUB_EMAIL_REQUEST_TIMEOUT_MS,
   });
 
   if (!response.ok) {

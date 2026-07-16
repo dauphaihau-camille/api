@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { MAIL_CONFIG } from '~/platform/config/mail.config';
 import type { MailConfig } from '~/platform/config/mail.config';
+import { fetchWithTimeout } from '~/platform/http/fetch-with-timeout';
 import { MailSender } from '../app/ports/mail-sender';
 import { MailAddress, SendMailInput } from '../app/mail.types';
 
@@ -16,19 +17,22 @@ interface ResendSendEmailPayload {
   tags?: Array<{ name: string; value: string }>;
 }
 
+const RESEND_REQUEST_TIMEOUT_MS = 5_000;
+
 @Injectable()
 export class ResendMailSender implements MailSender {
   constructor(@Inject(MAIL_CONFIG) private readonly mailConfig: MailConfig) {}
 
   async send(input: SendMailInput): Promise<void> {
     const payload = this.buildPayload(input);
-    const response = await fetch('https://api.resend.com/emails', {
+    const response = await fetchWithTimeout('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.mailConfig.resendApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
+      timeoutMs: RESEND_REQUEST_TIMEOUT_MS,
     });
 
     if (response.ok) {
