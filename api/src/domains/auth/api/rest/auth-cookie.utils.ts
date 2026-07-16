@@ -1,6 +1,5 @@
 import type { Request, Response } from 'express';
 import { Inject, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import type { CookieOptions } from 'express';
 import { AUTH_CONFIG } from '~/platform/config/auth.config';
 import type { AuthConfig } from '~/platform/config/auth.config';
@@ -42,7 +41,6 @@ export function extractCookieValue(
 export class AuthCookieService {
   constructor(
     @Inject(AUTH_CONFIG) private readonly authConfig: AuthConfig,
-    private readonly configService: ConfigService,
   ) {}
 
   setAuthCookies(response: Response, authResponse: AuthResponse): void {
@@ -70,9 +68,7 @@ export class AuthCookieService {
   }
 
   getAppBaseUrl(): string {
-    return this.configService
-      .get<string>('APP_BASE_URL', 'http://localhost:4000')
-      .replace(/\/+$/, '');
+    return this.authConfig.appBaseUrl;
   }
 
   private buildCookieOptions(maxAgeSeconds: number): CookieOptions {

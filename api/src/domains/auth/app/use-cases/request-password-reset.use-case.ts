@@ -1,15 +1,15 @@
 import { randomBytes } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import ms from 'ms';
 import { NotificationService } from '~/integrations/notification/notification.service';
 import { Email } from '../../domain/value-objects/email';
 import { AuthUserRepository } from '../ports/auth-user.repository';
+import { PasswordResetLinkBuilder } from '../ports/password-reset-link-builder';
 import { PasswordResetTokenRepository } from '../ports/password-reset-token.repository';
 import { TokenHasher } from '../ports/token-hasher';
+import { parseDurationToMilliseconds } from '~/shared/libs/duration';
 
 const PASSWORD_RESET_TOKEN_BYTES = 32;
-const PASSWORD_RESET_TOKEN_TTL_MS = ms('1h');
+const PASSWORD_RESET_TOKEN_TTL_MS = parseDurationToMilliseconds('1h', 3_600_000);
 
 @Injectable()
 export class RequestPasswordResetUseCase {
@@ -20,7 +20,7 @@ export class RequestPasswordResetUseCase {
     private readonly passwordResetTokenRepository: PasswordResetTokenRepository,
     private readonly tokenHasher: TokenHasher,
     private readonly notificationService: NotificationService,
-    private readonly configService: ConfigService,
+    private readonly passwordResetLinkBuilder: PasswordResetLinkBuilder,
   ) {}
 
   async execute(emailRaw: string): Promise<void> {
@@ -46,7 +46,7 @@ export class RequestPasswordResetUseCase {
       expiresAt,
     });
 
-    const resetUrl = this.buildResetUrl(rawToken);
+    const resetUrl = this.passwordResetLinkBuilder.build(rawToken);
 
     await this.notificationService.send({
       channel: 'email',
@@ -68,16 +68,5 @@ export class RequestPasswordResetUseCase {
     this.logger.log(
       `Queued password reset email for user ${user.id} (${user.email.toString()})`,
     );
-  }
-
-  private buildResetUrl(token: string): string {
-    const appBaseUrl = this.configService.get<string>('APP_BASE_URL')?.trim();
-    const baseUrl = appBaseUrl?.replace(/\/$/, '');
-
-    if (!baseUrl) {
-      throw new Error('APP_BASE_URL must be configured for password reset');
-    }
-
-    return `${baseUrl}/reset?t=${encodeURIComponent(token)}`;
   }
 }

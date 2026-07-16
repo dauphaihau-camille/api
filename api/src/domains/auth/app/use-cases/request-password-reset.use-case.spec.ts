@@ -1,6 +1,6 @@
-import type { ConfigService } from '@nestjs/config';
 import type { NotificationService } from '~/integrations/notification/notification.service';
 import type { AuthUserRepository } from '../ports/auth-user.repository';
+import type { PasswordResetLinkBuilder } from '../ports/password-reset-link-builder';
 import type { PasswordResetTokenRepository } from '../ports/password-reset-token.repository';
 import type { TokenHasher } from '../ports/token-hasher';
 import { UserStatus } from '../../domain/enums/user-status.enum';
@@ -46,21 +46,15 @@ describe('RequestPasswordResetUseCase', () => {
     const notificationService = {
       send: jest.fn().mockResolvedValue(undefined),
     };
-    const configService = {
-      get: jest.fn((key: string) => {
-        if (key === 'APP_BASE_URL') {
-          return 'http://localhost:4000';
-        }
-
-        return undefined;
-      }),
+    const passwordResetLinkBuilder: jest.Mocked<PasswordResetLinkBuilder> = {
+      build: jest.fn().mockReturnValue('http://localhost:4000/reset?t=raw-token'),
     };
     const useCase = new RequestPasswordResetUseCase(
       authUserRepository,
       passwordResetTokenRepository,
       tokenHasher,
       notificationService as unknown as NotificationService,
-      configService as unknown as ConfigService,
+      passwordResetLinkBuilder,
     );
 
     await useCase.execute('member@example.com');
@@ -75,11 +69,14 @@ describe('RequestPasswordResetUseCase', () => {
         expiresAt: expect.any(Date),
       }),
     );
+    expect(passwordResetLinkBuilder.build).toHaveBeenCalledWith(expect.any(String));
     expect(notificationService.send).toHaveBeenCalledWith(
       expect.objectContaining({
         channel: 'email',
         delivery: 'async',
         subject: 'Reset your password',
+        text: expect.stringContaining('http://localhost:4000/reset?t=raw-token'),
+        html: expect.stringContaining('http://localhost:4000/reset?t=raw-token'),
       }),
     );
   });
@@ -108,20 +105,21 @@ describe('RequestPasswordResetUseCase', () => {
     const notificationService = {
       send: jest.fn(),
     };
-    const configService = {
-      get: jest.fn(),
+    const passwordResetLinkBuilder: jest.Mocked<PasswordResetLinkBuilder> = {
+      build: jest.fn(),
     };
     const useCase = new RequestPasswordResetUseCase(
       authUserRepository,
       passwordResetTokenRepository,
       tokenHasher,
       notificationService as unknown as NotificationService,
-      configService as unknown as ConfigService,
+      passwordResetLinkBuilder,
     );
 
     await useCase.execute('missing@example.com');
 
     expect(passwordResetTokenRepository.create).not.toHaveBeenCalled();
+    expect(passwordResetLinkBuilder.build).not.toHaveBeenCalled();
     expect(notificationService.send).not.toHaveBeenCalled();
   });
 });

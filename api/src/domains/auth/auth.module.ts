@@ -11,6 +11,7 @@ import { AuthUserRepository } from './app/ports/auth-user.repository';
 import { EmailLoginChallengeRepository } from './app/ports/email-login-challenge.repository';
 import { OAuthAccountRepository } from './app/ports/oauth-account.repository';
 import { PasswordHasher } from './app/ports/password-hasher';
+import { PasswordResetLinkBuilder } from './app/ports/password-reset-link-builder';
 import { PasswordResetTokenRepository } from './app/ports/password-reset-token.repository';
 import { TokenHasher } from './app/ports/token-hasher';
 import { GetCurrentUserUseCase } from './app/use-cases/get-current-user.use-case';
@@ -36,6 +37,7 @@ import { AuthHttpExceptionFilter } from './api/rest/auth-http-exception.filter';
 import { GithubStrategy } from './infra/github.strategy';
 import { GoogleStrategy } from './infra/google.strategy';
 import { JwtStrategy } from './infra/jwt.strategy';
+import { AuthPasswordResetLinkBuilder } from './infra/password-reset-link-builder.service';
 import { CurrentUserEntity } from './infra/persistence/entities/current-user.entity';
 import { CurrentUserCredentialEntity } from './infra/persistence/entities/current-user-credential.entity';
 import { EmailLoginChallengeEntity } from './infra/persistence/entities/email-login-challenge.entity';
@@ -130,6 +132,10 @@ const authEntities = [
     {
       provide: TokenHasher,
       useClass: Sha256TokenHasher,
+    },
+    {
+      provide: PasswordResetLinkBuilder,
+      useClass: AuthPasswordResetLinkBuilder,
     },
     {
       provide: AuthTokenService,

@@ -6,6 +6,7 @@ export interface AuthConfig {
   jwtAccessTtlSeconds: number;
   jwtRefreshSecret: string;
   jwtRefreshTtlSeconds: number;
+  appBaseUrl: string;
   accessCookieName: string;
   refreshCookieName: string;
   cookieDomain?: string;
@@ -37,6 +38,9 @@ export function buildAuthConfig(
       configService.get<string>('JWT_REFRESH_TTL', '7d'),
       7 * 24 * 60 * 60,
     ),
+    appBaseUrl: configService
+      .get<string>('APP_BASE_URL', 'http://localhost:4000')
+      .replace(/\/+$/, ''),
     accessCookieName: configService.get<string>(
       'AUTH_COOKIE_ACCESS_NAME',
       'accessToken',
