@@ -1,6 +1,7 @@
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 import { StorageService } from '~/integrations/storage/app/ports/storage.service';
+import { resolveUserAvatarUrl } from '~/integrations/storage/app/user-avatar-url.util';
 import { CurrentUserEntity } from '../../auth/infra/persistence/entities/current-user.entity';
 import { UserRepository } from '../app/ports/user.repository';
 import type {
@@ -47,9 +48,7 @@ export class MikroOrmUserRepository implements UserRepository {
   }
 
   private toSummary(user: CurrentUserEntity): UserSummary {
-    const avatar = user.avatar
-      ? this.storageService.getPublicUrl(user.avatar) ?? user.avatar
-      : undefined;
+    const avatar = resolveUserAvatarUrl(user, this.storageService);
 
     return {
       id: user.id,

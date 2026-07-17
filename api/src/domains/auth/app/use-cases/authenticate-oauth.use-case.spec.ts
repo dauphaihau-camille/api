@@ -3,6 +3,7 @@ import type { UserCreatedEvent } from '~/domains/user/events/user-created.event'
 import type { OAuthIdentity } from '../auth.types';
 import { UserStatus } from '../../domain/enums/user-status.enum';
 import type { UserAccount } from '../../domain/models/user-account';
+import { UserAvatarSourceType } from '../../domain/models/user-avatar';
 import { Email } from '../../domain/value-objects/email';
 import { RoleKey } from '../../domain/value-objects/role-key';
 import { OAuthEmailNotVerifiedError } from '../errors/auth-app.error';
@@ -126,7 +127,8 @@ describe('AuthenticateOAuthUseCase', () => {
       ...existingUser,
       id: 'user-2',
       email: Email.create('new@example.com'),
-      avatar: 'https://example.com/avatar.png',
+      avatarSourceType: UserAvatarSourceType.EXTERNAL,
+      avatarSourceUrl: 'https://example.com/avatar.png',
       emailVerifiedAt: new Date(),
     };
     const authUserRepository: jest.Mocked<AuthUserRepository> = {
@@ -169,7 +171,8 @@ describe('AuthenticateOAuthUseCase', () => {
     expect(result.isOk).toBe(true);
     expect(authUserRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        avatar: 'https://example.com/avatar.png',
+        avatarSourceType: UserAvatarSourceType.EXTERNAL,
+        avatarSourceUrl: 'https://example.com/avatar.png',
         displayName: 'Member User',
       }),
     );

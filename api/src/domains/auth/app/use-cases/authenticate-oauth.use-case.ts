@@ -11,6 +11,7 @@ import {
 import { AuthUserRepository } from '../ports/auth-user.repository';
 import { OAuthAccountRepository } from '../ports/oauth-account.repository';
 import { UserStatus } from '../../domain/enums/user-status.enum';
+import { UserAvatarSourceType } from '../../domain/models/user-avatar';
 import { Email } from '../../domain/value-objects/email';
 import { RoleKey } from '../../domain/value-objects/role-key';
 import { IssueSessionUseCase } from './shared/issue-session.use-case';
@@ -55,7 +56,10 @@ export class AuthenticateOAuthUseCase {
       user = await this.authUserRepository.create({
         email,
         displayName: identity.displayName?.trim() || undefined,
-        avatar: identity.avatar,
+        avatarSourceType: identity.avatar
+          ? UserAvatarSourceType.EXTERNAL
+          : undefined,
+        avatarSourceUrl: identity.avatar,
         status: UserStatus.ACTIVE,
         emailVerifiedAt: new Date(),
       });

@@ -8,6 +8,7 @@ import {
   Unique,
 } from '@mikro-orm/core';
 import { AbstractAuthEntity } from './abstract-auth.entity';
+import { UserAvatarSourceType } from '~/domains/auth/domain/models/user-avatar';
 import { UserStatus } from '~/domains/auth/domain/enums/user-status.enum';
 import { CurrentUserCredentialEntity } from './current-user-credential.entity';
 import { EmailVerificationTokenEntity } from './email-verification-token.entity';
@@ -28,8 +29,18 @@ export class CurrentUserEntity extends AbstractAuthEntity {
   @Property({ fieldName: 'display_name', nullable: true })
   displayName?: string;
 
-  @Property({ fieldName: 'avatar', nullable: true })
-  avatar?: string;
+  @Enum({
+    items: () => UserAvatarSourceType,
+    fieldName: 'avatar_source_type',
+    nullable: true,
+  })
+  avatarSourceType?: UserAvatarSourceType;
+
+  @Property({ fieldName: 'avatar_source_url', nullable: true })
+  avatarSourceUrl?: string;
+
+  @Property({ fieldName: 'avatar_storage_key', nullable: true })
+  avatarStorageKey?: string;
 
   @Enum({ items: () => UserStatus, fieldName: 'status' })
   status = UserStatus.ACTIVE;

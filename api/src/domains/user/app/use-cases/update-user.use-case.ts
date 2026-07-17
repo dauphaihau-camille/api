@@ -8,11 +8,14 @@ import {
   resolveImageExtension,
   resolveStorageEnvironmentSegment,
 } from '~/integrations/storage/app/storage-key-builder';
+import { resolveUserAvatarUrl } from '~/integrations/storage/app/user-avatar-url.util';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import {
   AuthUserRepository,
   UserAccountVersionConflictError,
 } from '~/domains/auth/app/ports/auth-user.repository';
+import type { UserAccount } from '~/domains/auth/domain/models/user-account';
+import { UserAvatarSourceType } from '~/domains/auth/domain/models/user-avatar';
 import { UserStatus } from '~/domains/auth/domain/enums/user-status.enum';
 import type { UserSummary } from '../user.types';
 import {
@@ -76,7 +79,7 @@ export class UpdateUserUseCase {
       avatarKey = storedAvatar.key;
     }
 
-    let updatedUser;
+    let updatedUser: UserAccount | null;
     try {
       updatedUser = await this.authUserRepository.update(userId, {
         version: input.version,
@@ -84,7 +87,13 @@ export class UpdateUserUseCase {
           ? { displayName: input.displayName }
           : {}),
         ...(input.status !== undefined ? { status: input.status } : {}),
-        ...(avatarKey !== undefined ? { avatar: avatarKey } : {}),
+        ...(avatarKey !== undefined
+          ? {
+            avatarSourceType: UserAvatarSourceType.INTERNAL,
+            avatarSourceUrl: null,
+            avatarStorageKey: avatarKey,
+          }
+          : {}),
       });
     }
     catch (error) {
@@ -107,8 +116,12 @@ export class UpdateUserUseCase {
       return err(new UserNotFoundError());
     }
 
-    if (avatarKey && existingUser.avatar && existingUser.avatar !== avatarKey) {
-      await this.storageService.deleteObject(existingUser.avatar);
+    if (
+      avatarKey
+      && existingUser.avatarStorageKey
+      && existingUser.avatarStorageKey !== avatarKey
+    ) {
+      await this.storageService.deleteObject(existingUser.avatarStorageKey);
     }
 
     this.eventEmitter.emit(
@@ -135,12 +148,12 @@ export class UpdateUserUseCase {
     version: number;
     email: { toString(): string };
     displayName?: string;
-    avatar?: string;
+    avatarSourceType?: UserAvatarSourceType;
+    avatarSourceUrl?: string;
+    avatarStorageKey?: string;
     status: UserStatus;
   }): UserSummary {
-    const avatar = user.avatar
-      ? (this.storageService.getPublicUrl(user.avatar) ?? user.avatar)
-      : undefined;
+    const avatar = resolveUserAvatarUrl(user, this.storageService);
 
     return {
       id: user.id,

@@ -1,1 +1,4 @@
-pnpm --dir api exec lint-staged
+export VOLTA_HOME="${VOLTA_HOME:-$HOME/.volta}"
+export PATH="$VOLTA_HOME/bin:$PATH"
+
+volta run --node 22.0.0 --pnpm 9.3.0 pnpm --dir api exec lint-staged

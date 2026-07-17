@@ -1,6 +1,7 @@
 import type { UserStatus } from '../../domain/enums/user-status.enum';
 import type { RoleDefinition } from '../../domain/models/role-definition';
 import type { UserAccount } from '../../domain/models/user-account';
+import type { UserAvatarSourceType } from '../../domain/models/user-avatar';
 import type { Email } from '../../domain/value-objects/email';
 import type { PasswordHash } from '../../domain/value-objects/password-hash';
 import type { RoleKey } from '../../domain/value-objects/role-key';
@@ -8,7 +9,9 @@ import type { RoleKey } from '../../domain/value-objects/role-key';
 export interface CreateUserAccountInput {
   email: Email;
   displayName?: string;
-  avatar?: string;
+  avatarSourceType?: UserAvatarSourceType;
+  avatarSourceUrl?: string;
+  avatarStorageKey?: string;
   status: UserStatus;
   passwordHash?: PasswordHash;
   passwordUpdatedAt?: Date;
@@ -18,7 +21,9 @@ export interface CreateUserAccountInput {
 export interface UpdateUserAccountInput {
   version: number;
   displayName?: string;
-  avatar?: string;
+  avatarSourceType?: UserAvatarSourceType | null;
+  avatarSourceUrl?: string | null;
+  avatarStorageKey?: string | null;
   status?: UserStatus;
 }
 

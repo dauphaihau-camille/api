@@ -69,7 +69,9 @@ export class MikroOrmAuthUserRepository implements AuthUserRepository {
     const user = userRepository.create({
       email: input.email.toString(),
       displayName: input.displayName,
-      avatar: input.avatar,
+      avatarSourceType: input.avatarSourceType,
+      avatarSourceUrl: input.avatarSourceUrl,
+      avatarStorageKey: input.avatarStorageKey,
       status: input.status,
       emailVerifiedAt: input.emailVerifiedAt,
     });
@@ -112,8 +114,16 @@ export class MikroOrmAuthUserRepository implements AuthUserRepository {
         user.displayName = input.displayName;
       }
 
-      if (input.avatar !== undefined) {
-        user.avatar = input.avatar;
+      if (input.avatarSourceType !== undefined) {
+        user.avatarSourceType = input.avatarSourceType ?? undefined;
+      }
+
+      if (input.avatarSourceUrl !== undefined) {
+        user.avatarSourceUrl = input.avatarSourceUrl ?? undefined;
+      }
+
+      if (input.avatarStorageKey !== undefined) {
+        user.avatarStorageKey = input.avatarStorageKey ?? undefined;
       }
 
       if (input.status !== undefined) {
@@ -229,7 +239,9 @@ export class MikroOrmAuthUserRepository implements AuthUserRepository {
       version: user.version,
       email: Email.create(user.email),
       displayName: user.displayName,
-      avatar: user.avatar,
+      avatarSourceType: user.avatarSourceType,
+      avatarSourceUrl: user.avatarSourceUrl,
+      avatarStorageKey: user.avatarStorageKey,
       status: user.status,
       emailVerifiedAt: user.emailVerifiedAt,
       passwordHash: user.credential

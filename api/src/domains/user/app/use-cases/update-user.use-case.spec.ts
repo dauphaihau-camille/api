@@ -6,6 +6,7 @@ import {
   UserAccountVersionConflictError,
   type UpdateUserAccountInput,
 } from '~/domains/auth/app/ports/auth-user.repository';
+import { UserAvatarSourceType } from '~/domains/auth/domain/models/user-avatar';
 import { UserStatus } from '~/domains/auth/domain/enums/user-status.enum';
 import type { UserAccount } from '~/domains/auth/domain/models/user-account';
 import { Email } from '~/domains/auth/domain/value-objects/email';
@@ -36,7 +37,8 @@ describe('UpdateUserUseCase', () => {
     version: 3,
     email: Email.create('member@example.com'),
     displayName: 'Member User',
-    avatar: 'avatars/users/user-1/original.png',
+    avatarSourceType: UserAvatarSourceType.INTERNAL,
+    avatarStorageKey: 'avatars/users/user-1/original.png',
     status: UserStatus.ACTIVE,
     roles: [RoleKey.create('member')],
     permissions: [],
@@ -46,7 +48,7 @@ describe('UpdateUserUseCase', () => {
     ...existingUser,
     version: 4,
     displayName: 'Updated Member',
-    avatar: 'avatars/users/user-1/new.png',
+    avatarStorageKey: 'avatars/users/user-1/new.png',
     status: UserStatus.DISABLED,
   };
 
@@ -60,7 +62,9 @@ describe('UpdateUserUseCase', () => {
         async (_id: string, input: UpdateUserAccountInput) => ({
           ...updatedUser,
           displayName: input.displayName ?? existingUser.displayName,
-          avatar: input.avatar ?? existingUser.avatar,
+          avatarSourceType: input.avatarSourceType ?? existingUser.avatarSourceType,
+          avatarSourceUrl: input.avatarSourceUrl ?? existingUser.avatarSourceUrl,
+          avatarStorageKey: input.avatarStorageKey ?? existingUser.avatarStorageKey,
           status: input.status ?? existingUser.status,
         }),
       ),
@@ -71,10 +75,10 @@ describe('UpdateUserUseCase', () => {
     };
     const storageService: jest.Mocked<StorageService> = {
       putObject: jest.fn().mockResolvedValue({
-        key: updatedUser.avatar!,
+        key: updatedUser.avatarStorageKey!,
         size: 42,
         contentType: 'image/png',
-        url: 'https://cdn.example.com/' + updatedUser.avatar,
+        url: 'https://cdn.example.com/' + updatedUser.avatarStorageKey,
       }),
       getObject: jest.fn(),
       deleteObject: jest.fn().mockResolvedValue(undefined),
@@ -126,7 +130,9 @@ describe('UpdateUserUseCase', () => {
         version: 3,
         displayName: 'Updated Member',
         status: UserStatus.DISABLED,
-        avatar: updatedUser.avatar,
+        avatarSourceType: UserAvatarSourceType.INTERNAL,
+        avatarSourceUrl: null,
+        avatarStorageKey: updatedUser.avatarStorageKey,
       }),
     );
     expect(storageService.deleteObject).toHaveBeenCalledWith(
@@ -149,6 +155,35 @@ describe('UpdateUserUseCase', () => {
         status: UserStatus.DISABLED,
       },
     });
+  });
+
+  it('does not delete an existing external oauth avatar when uploading a new one', async () => {
+    const { authUserRepository, storageService, eventEmitter } = buildDeps();
+    authUserRepository.findById.mockResolvedValue({
+      ...existingUser,
+      avatarSourceType: UserAvatarSourceType.EXTERNAL,
+      avatarSourceUrl: 'https://avatars.githubusercontent.com/u/73809318?v=4',
+      avatarStorageKey: undefined,
+    });
+    const useCase = new UpdateUserUseCase(
+      authUserRepository,
+      storageService,
+      eventEmitter as unknown as EventEmitter2,
+    );
+
+    const result = await useCase.execute(adminActor, 'user-1', {
+      version: 3,
+      avatarFile: {
+        originalname: 'avatar.png',
+        mimetype: 'image/png',
+        buffer: Buffer.from('avatar'),
+      } as UploadedAvatarFile,
+    });
+
+    expect(result.isOk).toBe(true);
+    expect(storageService.deleteObject).not.toHaveBeenCalledWith(
+      'https://avatars.githubusercontent.com/u/73809318?v=4',
+    );
   });
 
   it('rejects non-admin callers', async () => {
@@ -220,7 +255,7 @@ describe('UpdateUserUseCase', () => {
       throw new Error('Expected update user to fail for stale version');
     }
 
-    expect(storageService.deleteObject).toHaveBeenCalledWith(updatedUser.avatar!);
+    expect(storageService.deleteObject).toHaveBeenCalledWith(updatedUser.avatarStorageKey!);
     expect(result.error).toBeInstanceOf(UserVersionConflictError);
   });
 });

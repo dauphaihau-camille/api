@@ -3,6 +3,7 @@ import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
 import { StorageService } from '~/integrations/storage/app/ports/storage.service';
+import { resolveUserAvatarUrl } from '~/integrations/storage/app/user-avatar-url.util';
 import {
   WorkspaceMemberVersionConflictError,
   WorkspaceRepository,
@@ -84,11 +85,13 @@ export class MikroOrmWorkspaceRepository implements WorkspaceRepository {
     const membershipRepository = entityManager.getRepository(WorkspaceMemberEntity);
     const userRepository = entityManager.getRepository(CurrentUserEntity);
     const owner = await userRepository.findOneOrFail({ id: input.ownerUserId });
+
     const workspace = workspaceRepository.create({
       name: input.name,
       slug: input.slug,
       description: input.description,
     });
+
     const membership = membershipRepository.create({
       workspace,
       user: owner,
@@ -196,7 +199,7 @@ export class MikroOrmWorkspaceRepository implements WorkspaceRepository {
         id: user.id,
         email: user.email,
         displayName: user.displayName,
-        avatar: user.avatar,
+        avatar: resolveUserAvatarUrl(user, this.storageService),
       }
       : null;
   }
@@ -318,9 +321,7 @@ export class MikroOrmWorkspaceRepository implements WorkspaceRepository {
   }
 
   private toMemberSummary(membership: WorkspaceMemberEntity): WorkspaceMemberSummary {
-    const avatar = membership.user.avatar
-      ? this.storageService.getPublicUrl(membership.user.avatar) ?? membership.user.avatar
-      : undefined;
+    const avatar = resolveUserAvatarUrl(membership.user, this.storageService);
 
     return {
       id: membership.id,
