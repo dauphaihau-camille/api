@@ -50,6 +50,8 @@ type DocumentResponse = {
   archived_at?: string;
 };
 
+let uniqueSequence = 0;
+
 describe('Document mutation flow (e2e)', () => {
   let app: INestApplication<App>;
   let originalEnv: NodeJS.ProcessEnv;
@@ -177,7 +179,10 @@ describe('Document mutation flow (e2e)', () => {
       workspace_id: workspace.id,
       title: 'Launch Plan',
     });
-    const childDocument = await createSubdocument(owner.cookie, parentDocument.id);
+    const { childDocument, parentDocument: parentAfterSubdoc } = await createSubdocument(
+      owner.cookie,
+      parentDocument.id,
+    );
 
     expect(childDocument).toMatchObject({
       workspace_id: workspace.id,
@@ -189,7 +194,7 @@ describe('Document mutation flow (e2e)', () => {
       .patch(`/v1/documents/${parentDocument.id}`)
       .set('Cookie', owner.cookie)
       .send({
-        version: parentDocument.version,
+        version: parentAfterSubdoc.version,
         title: 'Launch Plan Updated',
         content: [{
           type: 'paragraph',
@@ -213,7 +218,7 @@ describe('Document mutation flow (e2e)', () => {
       .patch(`/v1/documents/${parentDocument.id}`)
       .set('Cookie', owner.cookie)
       .send({
-        version: parentDocument.version,
+        version: parentAfterSubdoc.version,
         title: 'Stale title should fail',
       })
       .expect(409);
@@ -303,11 +308,11 @@ describe('Document mutation flow (e2e)', () => {
   });
 
   it('rejects parent_document_id on root document creation', async () => {
-    const suffix = `${Date.now()}-root-contract`;
-    const owner = await registerUser(`document-root-contract-owner-${suffix}`);
+    const suffix = `${Date.now()}-${uniqueSequence += 1}`;
+    const owner = await registerUser(`doc-root-owner-${suffix}`);
     const workspace = await createWorkspace(owner.cookie, {
       name: 'Document Root Contract',
-      slug: `document-root-contract-${suffix}`,
+      slug: `doc-root-${suffix}`,
     });
     const parentDocument = await createRootDocument(owner.cookie, {
       workspace_id: workspace.id,
@@ -326,7 +331,7 @@ describe('Document mutation flow (e2e)', () => {
   });
 
   async function registerUser(label: string): Promise<RegisteredUser> {
-    const email = `${label}-${Date.now()}@example.com`;
+    const email = `u${Date.now()}-${uniqueSequence += 1}@example.com`;
     const response = await request(app.getHttpServer())
       .post('/v1/auth/register')
       .send({
@@ -383,7 +388,10 @@ describe('Document mutation flow (e2e)', () => {
   async function createSubdocument(
     cookie: string[],
     parentDocumentId: string,
-  ): Promise<DocumentResponse> {
+  ): Promise<{
+    childDocument: DocumentResponse;
+    parentDocument: DocumentResponse;
+  }> {
     const parentResponse = await request(app.getHttpServer())
       .get(`/v1/documents/${parentDocumentId}`)
       .set('Cookie', cookie)
@@ -398,7 +406,15 @@ describe('Document mutation flow (e2e)', () => {
       })
       .expect(201);
 
-    return (response.body as { child_document: DocumentResponse }).child_document;
+    const body = response.body as {
+      child_document: DocumentResponse;
+      parent_document: DocumentResponse;
+    };
+
+    return {
+      childDocument: body.child_document,
+      parentDocument: body.parent_document,
+    };
   }
 
   async function archiveDocument(
