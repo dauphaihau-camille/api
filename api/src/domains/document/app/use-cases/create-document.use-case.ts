@@ -3,7 +3,6 @@ import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { AuditService } from '~/integrations/audit/audit.service';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import { DocumentCommandRepository } from '../ports/document-command.repository';
-import { DocumentNavigationQueryRepository } from '../ports/document-navigation-query.repository';
 import { DEFAULT_CONTENT_FORMAT } from '../constants/document.constants';
 import type { DocumentSummary } from '../contracts/document.contract';
 import type { CreateDocumentInput } from '../contracts/document.input';
@@ -11,11 +10,7 @@ import { toDocumentSummary } from '../mappers/document-summary.mapper';
 import { extractDocumentSearchText } from '../utils/document-search-text.util';
 import { DocumentSubdocService } from '../services/document-subdoc.service';
 import { DocumentTreeService } from '../services/document-tree.service';
-import {
-  DocumentNotFoundError,
-  DocumentTeamspaceNotFoundError,
-  ParentDocumentWorkspaceMismatchError,
-} from '../errors/document-app.error';
+import { DocumentTeamspaceNotFoundError } from '../errors/document-app.error';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
 import { normalizeContent } from '../utils/document-content.util';
 import { normalizeTitle } from '../utils/document-title.util';
@@ -26,7 +21,6 @@ export class CreateDocumentUseCase {
     private readonly auditService: AuditService,
     private readonly workspaceRepository: WorkspaceRepository,
     private readonly documentCommandRepository: DocumentCommandRepository,
-    private readonly documentNavigationQueryRepository: DocumentNavigationQueryRepository,
     private readonly documentSubdocService: DocumentSubdocService,
     private readonly documentTreeService: DocumentTreeService,
   ) {}
@@ -36,16 +30,7 @@ export class CreateDocumentUseCase {
     input: CreateDocumentInput,
   ): Promise<DocumentSummary> {
     const workspace = await resolveWorkspaceForUser(this.workspaceRepository, input.workspaceId, currentUser);
-
-    const parentDocument = input.parentDocumentId
-      ? await this.documentNavigationQueryRepository.findDocument(input.parentDocumentId)
-      : undefined;
-
-    if (input.parentDocumentId && !parentDocument) {
-      throw new DocumentNotFoundError(input.parentDocumentId);
-    }
-
-    const teamspaceId = parentDocument?.teamspace?.id ?? input.teamspaceId;
+    const teamspaceId = input.teamspaceId;
     const teamspace = teamspaceId
       ? await this.documentCommandRepository.findTeamspaceByIdInWorkspace(teamspaceId, workspace.id)
       : undefined;
@@ -54,31 +39,22 @@ export class CreateDocumentUseCase {
       throw new DocumentTeamspaceNotFoundError(teamspaceId);
     }
 
-    if (parentDocument && parentDocument.workspace.id !== workspace.id) {
-      throw new ParentDocumentWorkspaceMismatchError();
-    }
-
     const normalizedContent = normalizeContent(input.content);
 
     const document = await this.documentCommandRepository.withTransaction(async ({
       commandRepository,
       subdocReferenceRepository,
     }) => {
-      const transactionalParentDocument = parentDocument?.id
-        ? await commandRepository.findDocument(parentDocument.id)
-        : null;
-
       const createdDocument = commandRepository.createDocument({
         workspaceId: workspace.id,
         teamspaceId: teamspace?.id,
-        parentDocumentId: transactionalParentDocument?.id ?? undefined,
         title: normalizeTitle(input.title),
         contentFormat: input.contentFormat ?? DEFAULT_CONTENT_FORMAT,
         contentJson: normalizedContent,
         searchText: extractDocumentSearchText(normalizedContent),
         sortKey: await this.documentTreeService.resolveSortKeyForCreate(
           workspace.id,
-          parentDocument?.id,
+          undefined,
           teamspace?.id,
         ),
         createdByUserId: currentUser.userId,
@@ -102,7 +78,6 @@ export class CreateDocumentUseCase {
       metadata: {
         workspaceId: workspace.id,
         teamspaceId: teamspace?.id,
-        parentDocumentId: parentDocument?.id,
       },
     });
 

@@ -173,20 +173,16 @@ describe('Document mutation flow (e2e)', () => {
       })
       .expect(201);
 
-    const parentDocument = await createDocument(owner.cookie, {
+    const parentDocument = await createRootDocument(owner.cookie, {
       workspace_id: workspace.id,
       title: 'Launch Plan',
     });
-    const childDocument = await createDocument(owner.cookie, {
-      workspace_id: workspace.id,
-      parent_document_id: parentDocument.id,
-      title: 'Launch Checklist',
-    });
+    const childDocument = await createSubdocument(owner.cookie, parentDocument.id);
 
     expect(childDocument).toMatchObject({
       workspace_id: workspace.id,
       parent_document_id: parentDocument.id,
-      title: 'Launch Checklist',
+      title: 'Untitled',
     });
 
     const updatedParentResponse = await request(app.getHttpServer())
@@ -254,7 +250,7 @@ describe('Document mutation flow (e2e)', () => {
 
     expect(movedChild).toMatchObject({
       id: childDocument.id,
-      title: 'Launch Checklist',
+      title: 'Untitled',
     });
     expect(movedChild.parent_document_id).toBeUndefined();
     expect(movedChild.version).toBeGreaterThan(childDocument.version);
@@ -273,7 +269,7 @@ describe('Document mutation flow (e2e)', () => {
 
     expect(archivedListItem).toMatchObject({
       id: childDocument.id,
-      title: 'Launch Checklist',
+      title: 'Untitled',
     });
 
     const restoredChildResponse = await request(app.getHttpServer())
@@ -287,7 +283,7 @@ describe('Document mutation flow (e2e)', () => {
 
     expect(restoredChild).toMatchObject({
       id: childDocument.id,
-      title: 'Launch Checklist',
+      title: 'Untitled',
     });
     expect(restoredChild.archived_at).toBeUndefined();
     expect(restoredChild.version).toBeGreaterThan(archivedChild.version);
@@ -304,6 +300,29 @@ describe('Document mutation flow (e2e)', () => {
       .get(`/v1/documents/${childDocument.id}`)
       .set('Cookie', owner.cookie)
       .expect(404);
+  });
+
+  it('rejects parent_document_id on root document creation', async () => {
+    const suffix = `${Date.now()}-root-contract`;
+    const owner = await registerUser(`document-root-contract-owner-${suffix}`);
+    const workspace = await createWorkspace(owner.cookie, {
+      name: 'Document Root Contract',
+      slug: `document-root-contract-${suffix}`,
+    });
+    const parentDocument = await createRootDocument(owner.cookie, {
+      workspace_id: workspace.id,
+      title: 'Parent',
+    });
+
+    await request(app.getHttpServer())
+      .post('/v1/documents')
+      .set('Cookie', owner.cookie)
+      .send({
+        workspace_id: workspace.id,
+        parent_document_id: parentDocument.id,
+        title: 'Should Fail',
+      })
+      .expect(400);
   });
 
   async function registerUser(label: string): Promise<RegisteredUser> {
@@ -345,11 +364,10 @@ describe('Document mutation flow (e2e)', () => {
     return response.body as WorkspaceResponse;
   }
 
-  async function createDocument(
+  async function createRootDocument(
     cookie: string[],
     input: {
       workspace_id: string;
-      parent_document_id?: string;
       title: string;
     },
   ): Promise<DocumentResponse> {
@@ -360,6 +378,27 @@ describe('Document mutation flow (e2e)', () => {
       .expect(201);
 
     return response.body as DocumentResponse;
+  }
+
+  async function createSubdocument(
+    cookie: string[],
+    parentDocumentId: string,
+  ): Promise<DocumentResponse> {
+    const parentResponse = await request(app.getHttpServer())
+      .get(`/v1/documents/${parentDocumentId}`)
+      .set('Cookie', cookie)
+      .expect(200);
+
+    const parentDocument = parentResponse.body as DocumentResponse;
+    const response = await request(app.getHttpServer())
+      .post(`/v1/documents/${parentDocumentId}/commands/create-subdoc`)
+      .set('Cookie', cookie)
+      .send({
+        version: parentDocument.version,
+      })
+      .expect(201);
+
+    return (response.body as { child_document: DocumentResponse }).child_document;
   }
 
   async function archiveDocument(

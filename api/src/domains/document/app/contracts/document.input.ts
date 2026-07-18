@@ -3,7 +3,6 @@ import type { DocumentContentFormat } from './document.contract';
 export interface CreateDocumentInput {
   workspaceId: string;
   teamspaceId?: string;
-  parentDocumentId?: string;
   title?: string;
   contentFormat?: DocumentContentFormat;
   content?: unknown[];

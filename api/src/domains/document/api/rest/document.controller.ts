@@ -207,7 +207,6 @@ export class DocumentController {
       .execute(currentUser, {
         workspaceId: body.workspace_id,
         teamspaceId: body.teamspace_id,
-        parentDocumentId: body.parent_document_id,
         title: body.title,
         contentFormat: body.content_format,
         content: body.content,

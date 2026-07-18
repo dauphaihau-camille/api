@@ -18,13 +18,6 @@ export class CreateDocumentDto {
   teamspace_id?: string;
 
   @ApiPropertyOptional({
-    example: '66cf61ad-e395-4f91-8af9-15d309c347f2',
-  })
-  @IsOptional()
-  @IsString()
-  parent_document_id?: string;
-
-  @ApiPropertyOptional({
     example: 'Roadmap',
     maxLength: 180,
   })
