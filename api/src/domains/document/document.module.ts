@@ -21,7 +21,7 @@ import { ArchiveDocumentUseCase } from './app/use-cases/archive-document.use-cas
 import { ArchiveSubdocCommandUseCase } from './app/use-cases/archive-subdoc-command.use-case';
 import { CreateDocumentUseCase } from './app/use-cases/create-document.use-case';
 import { CreateSubdocCommandUseCase } from './app/use-cases/create-subdoc-command.use-case';
-import { DocumentSubdocService } from './app/services/document-subdoc.service';
+import { DocumentSubdocContentService } from './app/services/document-subdoc-content.service';
 import { DocumentTreeService } from './app/services/document-tree.service';
 import { DuplicateDocumentUseCase } from './app/use-cases/duplicate-document.use-case';
 import { GetDefaultWorkspaceDocumentUseCase } from './app/use-cases/get-default-workspace-document.use-case';
@@ -32,6 +32,9 @@ import { ListWorkspaceDocumentsUseCase } from './app/use-cases/list-workspace-do
 import { MoveDocumentUseCase } from './app/use-cases/move-document.use-case';
 import { PermanentlyDeleteDocumentUseCase } from './app/use-cases/permanently-delete-document.use-case';
 import { RestoreDocumentUseCase } from './app/use-cases/restore-document.use-case';
+import { RemoveArchivedSubdocReferencesUseCase } from './app/use-cases/remove-archived-subdoc-references.use-case';
+import { SyncDocumentSubdocReferencesUseCase } from './app/use-cases/sync-document-subdoc-references.use-case';
+import { SyncReferencedSubdocTitlesUseCase } from './app/use-cases/sync-referenced-subdoc-titles.use-case';
 import { UpdateDocumentUseCase } from './app/use-cases/update-document.use-case';
 import { MikroOrmDocumentCommandRepository } from './infra/mikro-orm-document-command.repository';
 import { MikroOrmDocumentNavigationQueryRepository } from './infra/mikro-orm-document-navigation-query.repository';
@@ -93,7 +96,7 @@ import { DocumentFavoriteEntity } from '../favorite/infra/persistence/entities/d
       useClass: WorkspaceDefaultDocumentProvisionerService,
     },
     DocumentTreeService,
-    DocumentSubdocService,
+    DocumentSubdocContentService,
     DocumentObservabilityService,
     ListWorkspaceDocumentsUseCase,
     ListArchivedWorkspaceDocumentsUseCase,
@@ -107,6 +110,9 @@ import { DocumentFavoriteEntity } from '../favorite/infra/persistence/entities/d
     MoveDocumentUseCase,
     DuplicateDocumentUseCase,
     ArchiveDocumentUseCase,
+    SyncDocumentSubdocReferencesUseCase,
+    SyncReferencedSubdocTitlesUseCase,
+    RemoveArchivedSubdocReferencesUseCase,
     RestoreDocumentUseCase,
     PermanentlyDeleteDocumentUseCase,
   ],

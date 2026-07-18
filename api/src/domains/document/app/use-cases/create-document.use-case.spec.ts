@@ -4,8 +4,8 @@ import type { WorkspaceRepository } from '../../../workspace/app/ports/workspace
 import { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.enum';
 import type { DocumentCommandRepository } from '../ports/document-command.repository';
 import type { DocumentTreeService } from '../services/document-tree.service';
-import type { DocumentSubdocService } from '../services/document-subdoc.service';
 import { CreateDocumentUseCase } from './create-document.use-case';
+import type { SyncDocumentSubdocReferencesUseCase } from './sync-document-subdoc-references.use-case';
 
 describe('CreateDocumentUseCase', () => {
   const currentUser: AuthenticatedUser = {
@@ -47,17 +47,17 @@ describe('CreateDocumentUseCase', () => {
     } as unknown as jest.Mocked<DocumentTreeService>;
   }
 
-  function createSubdocService() {
+  function createSyncDocumentSubdocReferencesUseCase() {
     return {
-      syncSubdocReferencesForDoc: jest.fn(),
-    } as unknown as jest.Mocked<DocumentSubdocService>;
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<SyncDocumentSubdocReferencesUseCase>;
   }
 
   it('creates a root document without a parent reference', async () => {
     const workspaceRepository = createWorkspaceRepository();
     const commandRepository = createCommandRepository();
     const treeService = createTreeService();
-    const subdocService = createSubdocService();
+    const syncDocumentSubdocReferencesUseCase = createSyncDocumentSubdocReferencesUseCase();
     const auditService = {
       record: jest.fn(),
     };
@@ -94,7 +94,7 @@ describe('CreateDocumentUseCase', () => {
       auditService as never,
       workspaceRepository,
       commandRepository,
-      subdocService,
+      syncDocumentSubdocReferencesUseCase,
       treeService,
     );
 
@@ -102,7 +102,7 @@ describe('CreateDocumentUseCase', () => {
       workspaceId: 'workspace-1',
     });
 
-    expect(subdocService.syncSubdocReferencesForDoc).toHaveBeenCalledWith(
+    expect(syncDocumentSubdocReferencesUseCase.execute).toHaveBeenCalledWith(
       createdDocument,
       { id: 'subdoc-repo' },
     );

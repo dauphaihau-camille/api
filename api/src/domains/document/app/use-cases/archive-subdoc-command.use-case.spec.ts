@@ -5,8 +5,10 @@ import { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.en
 import type { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import type { DocumentCommandRepository } from '../ports/document-command.repository';
 import type { DocumentTreeService } from '../services/document-tree.service';
-import type { DocumentSubdocService } from '../services/document-subdoc.service';
+import type { DocumentSubdocContentService } from '../services/document-subdoc-content.service';
 import { ArchiveSubdocCommandUseCase } from './archive-subdoc-command.use-case';
+import type { RemoveArchivedSubdocReferencesUseCase } from './remove-archived-subdoc-references.use-case';
+import type { SyncDocumentSubdocReferencesUseCase } from './sync-document-subdoc-references.use-case';
 
 describe('ArchiveSubdocCommandUseCase', () => {
   const currentUser: AuthenticatedUser = {
@@ -52,12 +54,22 @@ describe('ArchiveSubdocCommandUseCase', () => {
     } as unknown as jest.Mocked<DocumentTreeService>;
   }
 
-  function createSubdocService() {
+  function createSubdocContentService() {
     return {
-      removeArchivedSubdocReferences: jest.fn(),
-      removeSubdocBlocksFromContent: jest.fn(),
-      syncSubdocReferencesForDoc: jest.fn(),
-    } as unknown as jest.Mocked<DocumentSubdocService>;
+      removeBlocks: jest.fn(),
+    } as unknown as jest.Mocked<DocumentSubdocContentService>;
+  }
+
+  function createRemoveArchivedSubdocReferencesUseCase() {
+    return {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<RemoveArchivedSubdocReferencesUseCase>;
+  }
+
+  function createSyncDocumentSubdocReferencesUseCase() {
+    return {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<SyncDocumentSubdocReferencesUseCase>;
   }
 
   function createPublishRepository() {
@@ -70,7 +82,9 @@ describe('ArchiveSubdocCommandUseCase', () => {
     const workspaceRepository = createWorkspaceRepository();
     const commandRepository = createCommandRepository();
     const treeService = createTreeService();
-    const subdocService = createSubdocService();
+    const subdocContentService = createSubdocContentService();
+    const removeArchivedSubdocReferencesUseCase = createRemoveArchivedSubdocReferencesUseCase();
+    const syncDocumentSubdocReferencesUseCase = createSyncDocumentSubdocReferencesUseCase();
     const publishRepository = createPublishRepository();
     const auditService = {
       record: jest.fn(),
@@ -134,7 +148,7 @@ describe('ArchiveSubdocCommandUseCase', () => {
       .mockResolvedValueOnce(parentDocument as never)
       .mockResolvedValueOnce(childDocument as never);
     treeService.findDescendants.mockResolvedValue([descendant] as never);
-    subdocService.removeSubdocBlocksFromContent.mockReturnValue({
+    subdocContentService.removeBlocks.mockReturnValue({
       changed: true,
       content: nextParentContent,
     });
@@ -163,7 +177,9 @@ describe('ArchiveSubdocCommandUseCase', () => {
       publishRepository,
       commandRepository,
       treeService,
-      subdocService,
+      subdocContentService,
+      removeArchivedSubdocReferencesUseCase,
+      syncDocumentSubdocReferencesUseCase,
     );
 
     const result = await useCase.execute(currentUser, 'parent-1', {
@@ -171,17 +187,17 @@ describe('ArchiveSubdocCommandUseCase', () => {
       version: 3,
     });
 
-    expect(subdocService.removeSubdocBlocksFromContent).toHaveBeenCalledWith(
+    expect(subdocContentService.removeBlocks).toHaveBeenCalledWith(
       originalParentContent,
       new Set(['child-1', 'child-2']),
     );
     expect(parentDocument.contentJson).toEqual(nextParentContent);
     expect(parentDocument.updatedBy).toEqual({ id: currentUser.userId });
-    expect(subdocService.removeArchivedSubdocReferences).toHaveBeenCalledWith(
+    expect(removeArchivedSubdocReferencesUseCase.execute).toHaveBeenCalledWith(
       [childDocument, descendant],
       { id: 'subdoc-repo' },
     );
-    expect(subdocService.syncSubdocReferencesForDoc).toHaveBeenCalledWith(
+    expect(syncDocumentSubdocReferencesUseCase.execute).toHaveBeenCalledWith(
       parentDocument,
       { id: 'subdoc-repo' },
     );

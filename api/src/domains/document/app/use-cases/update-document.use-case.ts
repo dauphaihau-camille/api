@@ -15,9 +15,10 @@ import {
   DocumentPermissionDeniedError,
   DocumentVersionConflictError,
 } from '../errors/document-app.error';
-import { DocumentSubdocService } from '../services/document-subdoc.service';
 import { normalizeContent } from '../utils/document-content.util';
 import { normalizeTitle } from '../utils/document-title.util';
+import { SyncDocumentSubdocReferencesUseCase } from './sync-document-subdoc-references.use-case';
+import { SyncReferencedSubdocTitlesUseCase } from './sync-referenced-subdoc-titles.use-case';
 
 @Injectable()
 export class UpdateDocumentUseCase {
@@ -25,7 +26,8 @@ export class UpdateDocumentUseCase {
     private readonly auditService: AuditService,
     private readonly workspaceRepository: WorkspaceRepository,
     private readonly documentCommandRepository: DocumentCommandRepository,
-    private readonly documentSubdocService: DocumentSubdocService,
+    private readonly syncDocumentSubdocReferencesUseCase: SyncDocumentSubdocReferencesUseCase,
+    private readonly syncReferencedSubdocTitlesUseCase: SyncReferencedSubdocTitlesUseCase,
   ) {}
 
   async execute(
@@ -69,11 +71,11 @@ export class UpdateDocumentUseCase {
     this.documentCommandRepository.assignUpdatedByUser(document, currentUser.userId);
 
     if (input.content !== undefined) {
-      await this.documentSubdocService.syncSubdocReferencesForDoc(document);
+      await this.syncDocumentSubdocReferencesUseCase.execute(document);
     }
 
     if (input.title !== undefined) {
-      await this.documentSubdocService.syncReferencedSubdocTitles(document);
+      await this.syncReferencedSubdocTitlesUseCase.execute(document);
     }
 
     await this.documentCommandRepository.saveDocument(document);

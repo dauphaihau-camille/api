@@ -8,12 +8,12 @@ import type { DocumentSummary } from '../contracts/document.contract';
 import type { CreateDocumentInput } from '../contracts/document.input';
 import { toDocumentSummary } from '../mappers/document-summary.mapper';
 import { extractDocumentSearchText } from '../utils/document-search-text.util';
-import { DocumentSubdocService } from '../services/document-subdoc.service';
 import { DocumentTreeService } from '../services/document-tree.service';
 import { DocumentTeamspaceNotFoundError } from '../errors/document-app.error';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
 import { normalizeContent } from '../utils/document-content.util';
 import { normalizeTitle } from '../utils/document-title.util';
+import { SyncDocumentSubdocReferencesUseCase } from './sync-document-subdoc-references.use-case';
 
 @Injectable()
 export class CreateDocumentUseCase {
@@ -21,7 +21,7 @@ export class CreateDocumentUseCase {
     private readonly auditService: AuditService,
     private readonly workspaceRepository: WorkspaceRepository,
     private readonly documentCommandRepository: DocumentCommandRepository,
-    private readonly documentSubdocService: DocumentSubdocService,
+    private readonly syncDocumentSubdocReferencesUseCase: SyncDocumentSubdocReferencesUseCase,
     private readonly documentTreeService: DocumentTreeService,
   ) {}
 
@@ -62,7 +62,7 @@ export class CreateDocumentUseCase {
       });
 
       await commandRepository.saveDocument(createdDocument);
-      await this.documentSubdocService.syncSubdocReferencesForDoc(
+      await this.syncDocumentSubdocReferencesUseCase.execute(
         createdDocument,
         subdocReferenceRepository,
       );

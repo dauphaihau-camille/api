@@ -15,11 +15,13 @@ import {
 } from '../errors/document-app.error';
 import type { ArchiveSubdocCommandResult } from '../contracts/document.contract';
 import { toDocumentSummary } from '../mappers/document-summary.mapper';
-import { DocumentSubdocService } from '../services/document-subdoc.service';
+import { DocumentSubdocContentService } from '../services/document-subdoc-content.service';
 import { DocumentTreeService } from '../services/document-tree.service';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
 import { extractDocumentSearchText } from '../utils/document-search-text.util';
 import { normalizeContent } from '../utils/document-content.util';
+import { RemoveArchivedSubdocReferencesUseCase } from './remove-archived-subdoc-references.use-case';
+import { SyncDocumentSubdocReferencesUseCase } from './sync-document-subdoc-references.use-case';
 
 @Injectable()
 export class ArchiveSubdocCommandUseCase {
@@ -33,7 +35,9 @@ export class ArchiveSubdocCommandUseCase {
     private readonly publishRepository: PublishRepository,
     private readonly documentCommandRepository: DocumentCommandRepository,
     private readonly documentTreeService: DocumentTreeService,
-    private readonly documentSubdocService: DocumentSubdocService,
+    private readonly documentSubdocContentService: DocumentSubdocContentService,
+    private readonly removeArchivedSubdocReferencesUseCase: RemoveArchivedSubdocReferencesUseCase,
+    private readonly syncDocumentSubdocReferencesUseCase: SyncDocumentSubdocReferencesUseCase,
   ) {}
 
   async execute(
@@ -146,8 +150,8 @@ export class ArchiveSubdocCommandUseCase {
         const parentContent = input.content !== undefined
           ? normalizeContent(input.content)
           : transactionalParentDocument.contentJson;
-        const normalizedParentContent = this.documentSubdocService
-          .removeSubdocBlocksFromContent(parentContent, archivedDocumentIds).content;
+        const normalizedParentContent = this.documentSubdocContentService
+          .removeBlocks(parentContent, archivedDocumentIds).content;
 
         transactionalParentDocument.contentJson = normalizedParentContent;
         transactionalParentDocument.searchText = extractDocumentSearchText(
@@ -158,11 +162,11 @@ export class ArchiveSubdocCommandUseCase {
           currentUser.userId,
         );
 
-        await this.documentSubdocService.removeArchivedSubdocReferences(
+        await this.removeArchivedSubdocReferencesUseCase.execute(
           archivedDocuments,
           subdocReferenceRepository,
         );
-        await this.documentSubdocService.syncSubdocReferencesForDoc(
+        await this.syncDocumentSubdocReferencesUseCase.execute(
           transactionalParentDocument,
           subdocReferenceRepository,
         );

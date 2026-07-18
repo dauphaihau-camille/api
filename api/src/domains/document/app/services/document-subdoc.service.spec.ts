@@ -1,7 +1,7 @@
-import { DocumentSubdocService } from './document-subdoc.service';
+import { DocumentSubdocContentService } from './document-subdoc-content.service';
 
-describe('DocumentSubdocService', () => {
-  const service = new DocumentSubdocService({} as never);
+describe('DocumentSubdocContentService', () => {
+  const service = new DocumentSubdocContentService();
 
   it('replaces duplicated subdoc references in content', () => {
     const duplicatedDocument = {
@@ -22,7 +22,7 @@ describe('DocumentSubdocService', () => {
       },
     ];
 
-    const result = service.replaceSubdocReferencesInContent(
+    const result = service.replaceReferencesInContent(
       content,
       new Map([['original-1', duplicatedDocument as never]]),
     );
@@ -72,7 +72,7 @@ describe('DocumentSubdocService', () => {
       },
     ];
 
-    const result = service.appendMissingChildSubdocBlocks(
+    const result = service.appendMissingChildBlocks(
       content,
       parentDocument as never,
       duplicatedDocuments as never,
@@ -326,7 +326,7 @@ describe('DocumentSubdocService', () => {
       },
     ];
 
-    const result = service.removeSubdocBlocksFromContent(
+    const result = service.removeBlocks(
       content,
       new Set(['child-1', 'child-2']),
     );

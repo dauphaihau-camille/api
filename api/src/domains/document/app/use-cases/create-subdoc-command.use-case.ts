@@ -10,7 +10,7 @@ import type { CreateSubdocCommandResult } from '../contracts/document.contract';
 import { toDocumentSummary } from '../mappers/document-summary.mapper';
 import { extractDocumentSearchText } from '../utils/document-search-text.util';
 import { normalizeContent } from '../utils/document-content.util';
-import { DocumentSubdocService } from '../services/document-subdoc.service';
+import { DocumentSubdocContentService } from '../services/document-subdoc-content.service';
 import { DocumentTreeService } from '../services/document-tree.service';
 import {
   DocumentNotFoundError,
@@ -18,6 +18,7 @@ import {
   DocumentVersionConflictError,
 } from '../errors/document-app.error';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
+import { SyncDocumentSubdocReferencesUseCase } from './sync-document-subdoc-references.use-case';
 
 @Injectable()
 export class CreateSubdocCommandUseCase {
@@ -26,7 +27,8 @@ export class CreateSubdocCommandUseCase {
     private readonly workspaceRepository: WorkspaceRepository,
     private readonly documentCommandRepository: DocumentCommandRepository,
     private readonly documentNavigationQueryRepository: DocumentNavigationQueryRepository,
-    private readonly documentSubdocService: DocumentSubdocService,
+    private readonly documentSubdocContentService: DocumentSubdocContentService,
+    private readonly syncDocumentSubdocReferencesUseCase: SyncDocumentSubdocReferencesUseCase,
     private readonly documentTreeService: DocumentTreeService,
   ) {}
 
@@ -104,7 +106,7 @@ export class CreateSubdocCommandUseCase {
           ? normalizeContent(input.content)
           : transactionalParentDocument.contentJson;
 
-        transactionalParentDocument.contentJson = this.documentSubdocService.insertSubdocBlock(
+        transactionalParentDocument.contentJson = this.documentSubdocContentService.insertSubdocBlock(
           parentContent,
           createdDocument,
           input.anchorBlockId,
@@ -122,11 +124,11 @@ export class CreateSubdocCommandUseCase {
           createdDocument,
           transactionalParentDocument,
         ]);
-        await this.documentSubdocService.syncSubdocReferencesForDoc(
+        await this.syncDocumentSubdocReferencesUseCase.execute(
           createdDocument,
           subdocReferenceRepository,
         );
-        await this.documentSubdocService.syncSubdocReferencesForDoc(
+        await this.syncDocumentSubdocReferencesUseCase.execute(
           transactionalParentDocument,
           subdocReferenceRepository,
         );

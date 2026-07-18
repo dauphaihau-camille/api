@@ -5,8 +5,8 @@ import { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.en
 import type { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import type { DocumentCommandRepository } from '../ports/document-command.repository';
 import type { DocumentTreeService } from '../services/document-tree.service';
-import type { DocumentSubdocService } from '../services/document-subdoc.service';
 import { ArchiveDocumentUseCase } from './archive-document.use-case';
+import type { RemoveArchivedSubdocReferencesUseCase } from './remove-archived-subdoc-references.use-case';
 
 describe('ArchiveDocumentUseCase', () => {
   const currentUser: AuthenticatedUser = {
@@ -51,10 +51,10 @@ describe('ArchiveDocumentUseCase', () => {
     } as unknown as jest.Mocked<DocumentTreeService>;
   }
 
-  function createSubdocService() {
+  function createRemoveArchivedSubdocReferencesUseCase() {
     return {
-      removeArchivedSubdocReferences: jest.fn(),
-    } as unknown as jest.Mocked<DocumentSubdocService>;
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<RemoveArchivedSubdocReferencesUseCase>;
   }
 
   function createPublishRepository() {
@@ -67,7 +67,7 @@ describe('ArchiveDocumentUseCase', () => {
     const workspaceRepository = createWorkspaceRepository();
     const commandRepository = createCommandRepository();
     const treeService = createTreeService();
-    const subdocService = createSubdocService();
+    const removeArchivedSubdocReferencesUseCase = createRemoveArchivedSubdocReferencesUseCase();
     const publishRepository = createPublishRepository();
     const auditService = {
       record: jest.fn(),
@@ -111,12 +111,12 @@ describe('ArchiveDocumentUseCase', () => {
       publishRepository,
       commandRepository,
       treeService,
-      subdocService,
+      removeArchivedSubdocReferencesUseCase,
     );
 
     await useCase.execute('document-1', 3, currentUser);
 
-    expect(subdocService.removeArchivedSubdocReferences).toHaveBeenCalledWith([
+    expect(removeArchivedSubdocReferencesUseCase.execute).toHaveBeenCalledWith([
       document,
       descendant,
     ], { id: 'subdoc-repo' });

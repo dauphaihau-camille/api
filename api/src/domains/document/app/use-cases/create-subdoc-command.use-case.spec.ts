@@ -5,9 +5,10 @@ import { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.en
 import type { DocumentNavigationQueryRepository } from '../ports/document-navigation-query.repository';
 import type { DocumentCommandRepository } from '../ports/document-command.repository';
 import type { DocumentTreeService } from '../services/document-tree.service';
-import type { DocumentSubdocService } from '../services/document-subdoc.service';
+import type { DocumentSubdocContentService } from '../services/document-subdoc-content.service';
 import { DEFAULT_DOCUMENT_CONTENT } from '../constants/document.constants';
 import { CreateSubdocCommandUseCase } from './create-subdoc-command.use-case';
+import type { SyncDocumentSubdocReferencesUseCase } from './sync-document-subdoc-references.use-case';
 
 describe('CreateSubdocCommandUseCase', () => {
   const currentUser: AuthenticatedUser = {
@@ -54,11 +55,16 @@ describe('CreateSubdocCommandUseCase', () => {
     } as unknown as jest.Mocked<DocumentTreeService>;
   }
 
-  function createSubdocService() {
+  function createSubdocContentService() {
     return {
       insertSubdocBlock: jest.fn(),
-      syncSubdocReferencesForDoc: jest.fn(),
-    } as unknown as jest.Mocked<DocumentSubdocService>;
+    } as unknown as jest.Mocked<DocumentSubdocContentService>;
+  }
+
+  function createSyncDocumentSubdocReferencesUseCase() {
+    return {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<SyncDocumentSubdocReferencesUseCase>;
   }
 
   it('creates a child document and updates the parent content in one command', async () => {
@@ -66,7 +72,8 @@ describe('CreateSubdocCommandUseCase', () => {
     const navigationQueryRepository = createNavigationQueryRepository();
     const commandRepository = createCommandRepository();
     const treeService = createTreeService();
-    const subdocService = createSubdocService();
+    const subdocContentService = createSubdocContentService();
+    const syncDocumentSubdocReferencesUseCase = createSyncDocumentSubdocReferencesUseCase();
     const auditService = {
       record: jest.fn(),
     };
@@ -133,7 +140,7 @@ describe('CreateSubdocCommandUseCase', () => {
     ];
 
     navigationQueryRepository.findDocument.mockResolvedValue(parentDocument as never);
-    subdocService.insertSubdocBlock.mockReturnValue(nextParentContent);
+    subdocContentService.insertSubdocBlock.mockReturnValue(nextParentContent);
     commandRepository.withTransaction.mockImplementation(async (callback) =>
       callback({
         commandRepository: {
@@ -154,7 +161,8 @@ describe('CreateSubdocCommandUseCase', () => {
       workspaceRepository,
       commandRepository,
       navigationQueryRepository,
-      subdocService,
+      subdocContentService,
+      syncDocumentSubdocReferencesUseCase,
       treeService,
     );
 
@@ -165,7 +173,7 @@ describe('CreateSubdocCommandUseCase', () => {
       content: unsavedParentContent,
     });
 
-    expect(subdocService.insertSubdocBlock).toHaveBeenCalledWith(
+    expect(subdocContentService.insertSubdocBlock).toHaveBeenCalledWith(
       unsavedParentContent,
       childDocument,
       'anchor-block-1',
@@ -173,12 +181,12 @@ describe('CreateSubdocCommandUseCase', () => {
     );
     expect(parentDocument.contentJson).toEqual(nextParentContent);
     expect(parentDocument.updatedBy).toEqual({ id: currentUser.userId });
-    expect(subdocService.syncSubdocReferencesForDoc).toHaveBeenNthCalledWith(
+    expect(syncDocumentSubdocReferencesUseCase.execute).toHaveBeenNthCalledWith(
       1,
       childDocument,
       { id: 'subdoc-repo' },
     );
-    expect(subdocService.syncSubdocReferencesForDoc).toHaveBeenNthCalledWith(
+    expect(syncDocumentSubdocReferencesUseCase.execute).toHaveBeenNthCalledWith(
       2,
       parentDocument,
       { id: 'subdoc-repo' },

@@ -14,9 +14,10 @@ import {
   DocumentNotFoundError,
   DocumentPermissionDeniedError,
 } from '../errors/document-app.error';
-import { DocumentSubdocService } from '../services/document-subdoc.service';
+import { DocumentSubdocContentService } from '../services/document-subdoc-content.service';
 import { DocumentTreeService } from '../services/document-tree.service';
 import { extractDocumentSearchText } from '../utils/document-search-text.util';
+import { SyncDocumentSubdocReferencesUseCase } from './sync-document-subdoc-references.use-case';
 
 @Injectable()
 export class DuplicateDocumentUseCase {
@@ -24,7 +25,8 @@ export class DuplicateDocumentUseCase {
     private readonly auditService: AuditService,
     private readonly workspaceRepository: WorkspaceRepository,
     private readonly documentCommandRepository: DocumentCommandRepository,
-    private readonly documentSubdocService: DocumentSubdocService,
+    private readonly documentSubdocContentService: DocumentSubdocContentService,
+    private readonly syncDocumentSubdocReferencesUseCase: SyncDocumentSubdocReferencesUseCase,
     private readonly documentTreeService: DocumentTreeService,
   ) {}
 
@@ -104,11 +106,11 @@ export class DuplicateDocumentUseCase {
           originalDocument.id,
           'updating duplicated subtree content',
         );
-        duplicatedDocument.contentJson = this.documentSubdocService.replaceSubdocReferencesInContent(
+        duplicatedDocument.contentJson = this.documentSubdocContentService.replaceReferencesInContent(
           originalDocument.contentJson,
           duplicatedDocumentByOriginalId,
         );
-        duplicatedDocument.contentJson = this.documentSubdocService.appendMissingChildSubdocBlocks(
+        duplicatedDocument.contentJson = this.documentSubdocContentService.appendMissingChildBlocks(
           duplicatedDocument.contentJson,
           duplicatedDocument,
           duplicatedDocumentEntities,
@@ -127,7 +129,7 @@ export class DuplicateDocumentUseCase {
         : null;
 
       if (parentDocument) {
-        parentDocument.contentJson = this.documentSubdocService.appendSubdocBlock(
+        parentDocument.contentJson = this.documentSubdocContentService.appendSubdocBlock(
           parentDocument.contentJson,
           duplicatedRootDocumentEntity,
         );
@@ -142,10 +144,10 @@ export class DuplicateDocumentUseCase {
       );
 
       for (const duplicatedDocument of duplicatedDocumentEntities) {
-        await this.documentSubdocService.syncSubdocReferencesForDoc(duplicatedDocument, subdocReferenceRepository);
+        await this.syncDocumentSubdocReferencesUseCase.execute(duplicatedDocument, subdocReferenceRepository);
       }
       if (parentDocument) {
-        await this.documentSubdocService.syncSubdocReferencesForDoc(parentDocument, subdocReferenceRepository);
+        await this.syncDocumentSubdocReferencesUseCase.execute(parentDocument, subdocReferenceRepository);
       }
 
       await commandRepository.flush();

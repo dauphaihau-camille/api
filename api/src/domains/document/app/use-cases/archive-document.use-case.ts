@@ -14,10 +14,10 @@ import {
   DocumentVersionConflictError,
 } from '../errors/document-app.error';
 import { DocumentTreeService } from '../services/document-tree.service';
-import { DocumentSubdocService } from '../services/document-subdoc.service';
 import type { DocumentSummary } from '../contracts/document.contract';
 import { toDocumentSummary } from '../mappers/document-summary.mapper';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
+import { RemoveArchivedSubdocReferencesUseCase } from './remove-archived-subdoc-references.use-case';
 
 @Injectable()
 export class ArchiveDocumentUseCase {
@@ -31,7 +31,7 @@ export class ArchiveDocumentUseCase {
     private readonly publishRepository: PublishRepository,
     private readonly documentCommandRepository: DocumentCommandRepository,
     private readonly documentTreeService: DocumentTreeService,
-    private readonly documentSubdocService: DocumentSubdocService,
+    private readonly removeArchivedSubdocReferencesUseCase: RemoveArchivedSubdocReferencesUseCase,
   ) {}
 
   async execute(
@@ -95,7 +95,7 @@ export class ArchiveDocumentUseCase {
         commandRepository.assignUpdatedByUser(item, currentUser.userId);
       }
 
-      await this.documentSubdocService.removeArchivedSubdocReferences(
+      await this.removeArchivedSubdocReferencesUseCase.execute(
         [document, ...descendants],
         subdocReferenceRepository,
       );
