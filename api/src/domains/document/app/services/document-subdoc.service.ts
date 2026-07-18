@@ -320,13 +320,6 @@ export class DocumentSubdocService {
       children: [],
     };
 
-    if (!anchorBlockId) {
-      return [
-        ...content,
-        subdocBlock,
-      ];
-    }
-
     const hasMeaningfulInlineContent = (inlineContent: unknown) => {
       if (!Array.isArray(inlineContent) || inlineContent.length === 0) {
         return false;
@@ -357,6 +350,48 @@ export class DocumentSubdocService {
       }).join('');
     };
 
+    const isReplaceableEmptyParagraph = (block: {
+      type?: unknown;
+      content?: unknown;
+      props?: unknown;
+      children?: unknown;
+    }) => {
+      if (block.type !== 'paragraph') {
+        return false;
+      }
+
+      if (Array.isArray(block.children) && block.children.length > 0) {
+        return false;
+      }
+
+      return !hasMeaningfulInlineContent(block.content);
+    };
+
+    if (content.length === 1) {
+      const rootBlock = content[0];
+
+      if (
+        rootBlock
+        && typeof rootBlock === 'object'
+        && !Array.isArray(rootBlock)
+        && isReplaceableEmptyParagraph(rootBlock as {
+          type?: unknown;
+          content?: unknown;
+          props?: unknown;
+          children?: unknown;
+        })
+      ) {
+        return [subdocBlock];
+      }
+    }
+
+    if (!anchorBlockId) {
+      return [
+        ...content,
+        subdocBlock,
+      ];
+    }
+
     const shouldReplaceAnchorBlock = (block: {
       type?: unknown;
       content?: unknown;
@@ -380,7 +415,7 @@ export class DocumentSubdocService {
         return true;
       }
 
-      return !hasMeaningfulInlineContent(block.content);
+      return isReplaceableEmptyParagraph(block);
     };
 
     const insertAtAnchor = (blocks: unknown[]): { inserted: boolean; blocks: unknown[] } => {
