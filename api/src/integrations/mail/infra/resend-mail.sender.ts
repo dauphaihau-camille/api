@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { MAIL_CONFIG } from '~/platform/config/mail.config';
 import type { MailConfig } from '~/platform/config/mail.config';
 import { fetchWithTimeout } from '~/platform/http/fetch-with-timeout';
@@ -18,13 +18,24 @@ interface ResendSendEmailPayload {
 }
 
 const RESEND_REQUEST_TIMEOUT_MS = 5_000;
+const RESERVED_TEST_DOMAINS = new Set(['example.com', 'example.org', 'example.net']);
 
 @Injectable()
 export class ResendMailSender implements MailSender {
+  private readonly logger = new Logger(ResendMailSender.name);
+
   constructor(@Inject(MAIL_CONFIG) private readonly mailConfig: MailConfig) {}
 
   async send(input: SendMailInput): Promise<void> {
     const payload = this.buildPayload(input);
+
+    if (this.shouldLogInsteadOfSending(input)) {
+      this.logger.warn(
+        `Skipping Resend delivery for reserved test recipient domain in non-production runtime: ${JSON.stringify(payload)}`,
+      );
+      return;
+    }
+
     const response = await fetchWithTimeout('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -86,5 +97,35 @@ export class ResendMailSender implements MailSender {
 
   private formatAddress(address: MailAddress): string {
     return address.name ? `${address.name} <${address.email}>` : address.email;
+  }
+
+  private shouldLogInsteadOfSending(input: SendMailInput): boolean {
+    if (process.env.NODE_ENV === 'production') {
+      return false;
+    }
+
+    const recipients = [
+      ...this.toAddressArray(input.to),
+      ...this.toAddressArray(input.cc),
+      ...this.toAddressArray(input.bcc),
+      ...this.toAddressArray(input.replyTo),
+    ];
+
+    return recipients.some((recipient) => this.isReservedTestDomain(recipient.email));
+  }
+
+  private toAddressArray(
+    value?: MailAddress | MailAddress[],
+  ): MailAddress[] {
+    if (!value) {
+      return [];
+    }
+
+    return Array.isArray(value) ? value : [value];
+  }
+
+  private isReservedTestDomain(email: string): boolean {
+    const [, domain = ''] = email.toLowerCase().split('@');
+    return RESERVED_TEST_DOMAINS.has(domain);
   }
 }
