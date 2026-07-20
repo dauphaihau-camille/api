@@ -2,19 +2,19 @@ import { Module } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import {
+  APP_JOB_RUNNER,
+  type AppJobRunner,
+} from './app/app-job-runner';
+import {
   QueueConfig,
   QUEUE_CONFIG,
   buildQueueConfig,
 } from '~/platform/config/queue.config';
-import { PermanentlyDeleteArchivedDocumentJob } from '~/domains/document/jobs/permanently-delete-archived-document.job';
-import { SendWelcomeEmailJob } from '~/domains/user/jobs/send-welcome-email.job';
-import { SendNotificationEmailJob } from '../notification/jobs/send-notification-email.job';
 import { MailModule } from '../mail/mail.module';
 import { ObservabilityModule } from '../../platform/observability/observability.module';
 import { ObservabilityService } from '../../platform/observability/observability.service';
 import Redis from 'ioredis';
 import { JobDispatcher } from './app/ports/job-dispatcher';
-import { AppJobRunner } from './infra/app-job-runner';
 import { BullMqConnectionManager } from './infra/bullmq-connection-manager';
 import { BullMqJobDispatcher } from './infra/bullmq-job-dispatcher';
 import { InlineJobDispatcher } from './infra/inline-job-dispatcher';
@@ -80,13 +80,9 @@ import { BULLMQ_CONNECTION, BULLMQ_QUEUE } from './infra/queue.constants';
       },
     },
     BullMqConnectionManager,
-    AppJobRunner,
-    PermanentlyDeleteArchivedDocumentJob,
-    SendNotificationEmailJob,
-    SendWelcomeEmailJob,
     {
       provide: JobDispatcher,
-      inject: [QUEUE_CONFIG, BULLMQ_CONNECTION, AppJobRunner],
+      inject: [QUEUE_CONFIG, BULLMQ_CONNECTION, APP_JOB_RUNNER],
       useFactory: (
         queueConfig: QueueConfig,
         connection: Redis | null,
@@ -106,6 +102,6 @@ import { BULLMQ_CONNECTION, BULLMQ_QUEUE } from './infra/queue.constants';
       },
     },
   ],
-  exports: [QUEUE_CONFIG, BULLMQ_CONNECTION, BULLMQ_QUEUE, JobDispatcher, AppJobRunner],
+  exports: [QUEUE_CONFIG, BULLMQ_CONNECTION, BULLMQ_QUEUE, JobDispatcher],
 })
 export class QueueModule {}

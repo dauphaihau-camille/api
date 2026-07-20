@@ -1,15 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  AppJobName,
-  type AppJobHandler,
-  AppJobPayloadMap,
-} from '../app/app-job.types';
 import { PermanentlyDeleteArchivedDocumentJob } from '~/domains/document/jobs/permanently-delete-archived-document.job';
 import { SendWelcomeEmailJob } from '~/domains/user/jobs/send-welcome-email.job';
+import type {
+  AppJobHandler,
+  AppJobName,
+  AppJobPayloadMap,
+} from '~/integrations/queue/app/app-job.types';
 import { SendNotificationEmailJob } from '~/integrations/notification/jobs/send-notification-email.job';
+import { APP_JOB_RUNNER, type AppJobRunner as AppJobRunnerPort } from '~/integrations/queue/app/app-job-runner';
 
 @Injectable()
-export class AppJobRunner {
+export class AppJobRunner implements AppJobRunnerPort {
   private readonly logger = new Logger(AppJobRunner.name);
   private readonly handlersByName: Map<AppJobName, AppJobHandler>;
 
@@ -39,3 +40,8 @@ export class AppJobRunner {
     await handler.run(payload as never);
   }
 }
+
+export const appJobRunnerProvider = {
+  provide: APP_JOB_RUNNER,
+  useExisting: AppJobRunner,
+};

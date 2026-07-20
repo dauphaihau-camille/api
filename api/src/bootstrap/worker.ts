@@ -5,10 +5,13 @@ import { validateAppEnv } from '../platform/config/app-env.config';
 
 async function bootstrap() {
   validateAppEnv(process.env);
+
   const app = await NestFactory.createApplicationContext(QueueWorkerModule, {
     bufferLogs: true,
   });
+
   app.useLogger(app.get(Logger));
+
   const bootstrapLogger = await app.resolve(PinoLogger);
 
   app.enableShutdownHooks();

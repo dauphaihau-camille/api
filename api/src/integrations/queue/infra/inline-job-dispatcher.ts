@@ -4,8 +4,8 @@ import type {
   AppJobPayloadMap,
   DispatchJobOptions,
 } from '../app/app-job.types';
+import type { AppJobRunner } from '../app/app-job-runner';
 import type { JobDispatcher } from '../app/ports/job-dispatcher';
-import type { AppJobRunner } from './app-job-runner';
 
 export class InlineJobDispatcher implements JobDispatcher {
   private readonly logger = new Logger(InlineJobDispatcher.name);

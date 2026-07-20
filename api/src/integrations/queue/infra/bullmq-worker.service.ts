@@ -11,11 +11,11 @@ import type { Job } from 'bullmq';
 import type { Redis } from 'ioredis';
 import { QUEUE_CONFIG } from '~/platform/config/queue.config';
 import type { QueueConfig } from '~/platform/config/queue.config';
+import { APP_JOB_RUNNER, type AppJobRunner } from '../app/app-job-runner';
 import type {
   AppJobName,
   AppJobPayloadMap,
 } from '../app/app-job.types';
-import { AppJobRunner } from './app-job-runner';
 import { BULLMQ_CONNECTION } from './queue.constants';
 
 type AppQueueJob = Job<AppJobPayloadMap[AppJobName], unknown, AppJobName>;
@@ -29,7 +29,7 @@ export class BullMqWorkerService
   constructor(
     @Inject(QUEUE_CONFIG) private readonly queueConfig: QueueConfig,
     @Inject(BULLMQ_CONNECTION) private readonly connection: Redis | null,
-    private readonly appJobRunner: AppJobRunner,
+    @Inject(APP_JOB_RUNNER) private readonly appJobRunner: AppJobRunner,
   ) {}
 
   onModuleInit(): void {

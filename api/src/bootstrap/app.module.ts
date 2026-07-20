@@ -35,6 +35,7 @@ import { RateLimitModule } from '../integrations/rate-limit/rate-limit.module';
 import { StorageModule } from '../integrations/storage/storage.module';
 import { SseModule } from '../platform/sse/sse.module';
 import { WsModule } from '../platform/ws/ws.module';
+import { AppJobRunnerModule } from './app-job-runner.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { WsModule } from '../platform/ws/ws.module';
     MailModule,
     NotificationModule,
     PaymentModule,
+    AppJobRunnerModule,
     QueueModule,
     RateLimitModule,
     StorageModule,
