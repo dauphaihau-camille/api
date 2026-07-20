@@ -16,6 +16,7 @@ implements AppJobHandler<typeof appJobName.permanentlyDeleteArchivedDocument> {
 
   async run(payload: PermanentlyDeleteArchivedDocumentPayload): Promise<void> {
     const entityManager = this.entityManager.fork();
+
     const rootDocument = await entityManager.findOne(DocumentEntity, {
       id: payload.documentId,
     }, {
