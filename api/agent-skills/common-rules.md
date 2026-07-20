@@ -31,6 +31,7 @@ Make correct, minimal, maintainable changes that follow the existing architectur
 - Do not use `any`, `@ts-ignore`, or non-null assertions to hide type errors.
 - Prefer explicit domain types over primitive strings and numbers where the distinction is important.
 - Do not leave floating promises unless they are intentionally detached and documented.
+- Do not use inline `import()` type annotations in type positions. Import types explicitly with `import type { ... }` or create local type aliases instead.
 
 ## Validation
 
