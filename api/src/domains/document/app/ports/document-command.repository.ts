@@ -1,4 +1,5 @@
 import type { DocumentSubdocReferenceRepository } from './document-subdoc-reference.repository';
+import type { DocumentCollaborationRepository } from './document-collaboration.repository';
 import type { DocumentEntity } from '../../infra/persistence/entities/document.entity';
 import type { DocumentTeamspaceRef } from '../contracts/document.contract';
 
@@ -17,6 +18,7 @@ export type CreateDocumentRecordInput = {
 
 export type DocumentCommandTransaction = {
   commandRepository: DocumentCommandRepository;
+  collaborationRepository: DocumentCollaborationRepository;
   subdocReferenceRepository: DocumentSubdocReferenceRepository;
 };
 

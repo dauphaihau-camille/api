@@ -1,5 +1,6 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import type { Socket } from 'socket.io';
+import { AUTH_CONFIG, type AuthConfig } from '../config/auth.config';
 import { resolveOrThrow } from '~/platform/application/result';
 import { mapAuthAppErrorToHttpException } from '../../domains/auth/api/rest/auth-error-mapper';
 import type { AuthenticatedUser } from '../../domains/auth/app/auth.types';
@@ -11,6 +12,7 @@ export class WsAuthService {
   constructor(
     private readonly authTokenService: AuthTokenService,
     private readonly loadAuthenticatedUserUseCase: LoadAuthenticatedUserUseCase,
+    @Inject(AUTH_CONFIG) private readonly authConfig: AuthConfig,
   ) {}
 
   async authenticate(socket: Socket): Promise<AuthenticatedUser> {
@@ -45,15 +47,40 @@ export class WsAuthService {
     const authorizationHeader = socket.handshake.headers.authorization;
 
     if (typeof authorizationHeader !== 'string') {
-      return undefined;
+      return this.extractCookieToken(socket.handshake.headers.cookie);
     }
 
     const [scheme, token] = authorizationHeader.split(' ');
 
     if (scheme?.toLowerCase() !== 'bearer' || !token?.trim()) {
-      return undefined;
+      return this.extractCookieToken(socket.handshake.headers.cookie);
     }
 
     return token.trim();
+  }
+
+  private extractCookieToken(cookieHeader?: string): string | undefined {
+    if (!cookieHeader) {
+      return undefined;
+    }
+
+    for (const segment of cookieHeader.split(';')) {
+      const separatorIndex = segment.indexOf('=');
+
+      if (separatorIndex <= 0) {
+        continue;
+      }
+
+      const name = decodeURIComponent(segment.slice(0, separatorIndex).trim());
+
+      if (name !== this.authConfig.accessCookieName) {
+        continue;
+      }
+
+      const value = decodeURIComponent(segment.slice(separatorIndex + 1).trim());
+      return value || undefined;
+    }
+
+    return undefined;
   }
 }

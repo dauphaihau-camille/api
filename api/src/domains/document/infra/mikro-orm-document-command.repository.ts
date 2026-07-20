@@ -8,6 +8,8 @@ import {
   type CreateDocumentRecordInput,
   type DocumentCommandTransaction,
 } from '../app/ports/document-command.repository';
+import { DocumentSubdocContentService } from '../app/services/document-subdoc-content.service';
+import { MikroOrmDocumentCollaborationRepository } from './mikro-orm-document-collaboration.repository';
 import { MikroOrmDocumentSubdocReferenceRepository } from './mikro-orm-document-subdoc-reference.repository';
 import { DocumentEntity } from './persistence/entities/document.entity';
 import { WorkspaceEntity } from '../../workspace/infra/persistence/entities/workspace.entity';
@@ -16,7 +18,10 @@ import { WorkspaceEntity } from '../../workspace/infra/persistence/entities/work
 export class MikroOrmDocumentCommandRepository implements DocumentCommandRepository {
   private readonly scopedEntityManager: EntityManager;
 
-  constructor(private readonly entityManager: EntityManager) {
+  constructor(
+    private readonly entityManager: EntityManager,
+    private readonly documentSubdocContentService: DocumentSubdocContentService,
+  ) {
     this.scopedEntityManager = entityManager.global ? entityManager.fork() : entityManager;
   }
 
@@ -91,7 +96,13 @@ export class MikroOrmDocumentCommandRepository implements DocumentCommandReposit
   async withTransaction<T>(callback: (repositories: DocumentCommandTransaction) => Promise<T>): Promise<T> {
     return this.scopedEntityManager.transactional(async (transactionalEntityManager) =>
       callback({
-        commandRepository: new MikroOrmDocumentCommandRepository(transactionalEntityManager),
+        commandRepository: new MikroOrmDocumentCommandRepository(
+          transactionalEntityManager,
+          this.documentSubdocContentService,
+        ),
+        collaborationRepository: new MikroOrmDocumentCollaborationRepository(
+          transactionalEntityManager,
+        ),
         subdocReferenceRepository: new MikroOrmDocumentSubdocReferenceRepository(transactionalEntityManager),
       }));
   }

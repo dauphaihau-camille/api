@@ -7,11 +7,13 @@ import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repo
 import type { DocumentSummary } from '../contracts/document.contract';
 import type { UpdateDocumentInput } from '../contracts/document.input';
 import { DocumentCommandRepository } from '../ports/document-command.repository';
+import { DocumentCollaborationRepository } from '../ports/document-collaboration.repository';
 import { toDocumentSummary } from '../mappers/document-summary.mapper';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
 import { extractDocumentSearchText } from '../utils/document-search-text.util';
 import {
   DocumentNotFoundError,
+  DocumentContentManagedByCollaborationError,
   DocumentPermissionDeniedError,
   DocumentVersionConflictError,
 } from '../errors/document-app.error';
@@ -26,6 +28,7 @@ export class UpdateDocumentUseCase {
     private readonly auditService: AuditService,
     private readonly workspaceRepository: WorkspaceRepository,
     private readonly documentCommandRepository: DocumentCommandRepository,
+    private readonly documentCollaborationRepository: DocumentCollaborationRepository,
     private readonly syncDocumentSubdocReferencesUseCase: SyncDocumentSubdocReferencesUseCase,
     private readonly syncReferencedSubdocTitlesUseCase: SyncReferencedSubdocTitlesUseCase,
   ) {}
@@ -42,6 +45,13 @@ export class UpdateDocumentUseCase {
     const workspace = await resolveWorkspaceForUser(this.workspaceRepository, document.workspace.id, currentUser);
     if (!canEditWorkspace(workspace.currentUserRole)) {
       throw new DocumentPermissionDeniedError();
+    }
+
+    if (
+      input.content !== undefined
+      && await this.documentCollaborationRepository.loadState(document.id)
+    ) {
+      throw new DocumentContentManagedByCollaborationError();
     }
 
     try {

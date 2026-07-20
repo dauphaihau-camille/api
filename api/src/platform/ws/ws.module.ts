@@ -7,6 +7,6 @@ import { WsService } from './ws.service';
 @Module({
   imports: [AuthModule],
   providers: [WsAuthService, WsGateway, WsService],
-  exports: [WsService],
+  exports: [WsAuthService, WsService],
 })
 export class WsModule {}

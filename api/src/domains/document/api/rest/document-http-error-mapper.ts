@@ -9,6 +9,7 @@ import {
 import {
   ArchivedDocumentDuplicationError,
   DocumentAppError,
+  DocumentContentManagedByCollaborationError,
   DocumentDuplicationInvariantError,
   DocumentDescendantMoveError,
   DocumentNotFoundError,
@@ -39,7 +40,10 @@ export function mapDocumentAppErrorToHttpException(error: DocumentAppError): Htt
     return new ForbiddenException(error.message);
   }
 
-  if (error instanceof DocumentVersionConflictError) {
+  if (
+    error instanceof DocumentVersionConflictError
+    || error instanceof DocumentContentManagedByCollaborationError
+  ) {
     return new ConflictException(error.message);
   }
 

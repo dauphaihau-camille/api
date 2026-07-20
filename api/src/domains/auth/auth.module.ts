@@ -189,6 +189,7 @@ const authEntities = [
     PermissionsGuard,
   ],
   exports: [
+    AUTH_CONFIG,
     AuthTokenService,
     JwtAuthGuard,
     LoadAuthenticatedUserUseCase,

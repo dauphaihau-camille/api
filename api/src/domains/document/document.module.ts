@@ -3,6 +3,7 @@ import { forwardRef, Module } from '@nestjs/common';
 import { CurrentUserEntity } from '../auth/infra/persistence/entities/current-user.entity';
 import { AuditModule } from '../../integrations/audit/audit.module';
 import { ObservabilityModule } from '../../platform/observability/observability.module';
+import { WsModule } from '../../platform/ws/ws.module';
 import { QueueModule } from '../../integrations/queue/queue.module';
 import { PublishRepository } from '../publish/app/ports/publish.repository';
 import { MikroOrmPublishRepository } from '../publish/infra/mikro-orm-publish.repository';
@@ -47,12 +48,25 @@ import { DocumentEntity } from './infra/persistence/entities/document.entity';
 import { DocumentSubdocReferenceEntity } from './infra/persistence/entities/document-subdoc-reference.entity';
 import { DocumentVisitEntity } from './infra/persistence/entities/document-visit.entity';
 import { DocumentFavoriteEntity } from '../favorite/infra/persistence/entities/document-favorite.entity';
+import { DocumentCollaborationGateway } from './api/ws/document-collaboration.gateway';
+import { DocumentCollaborationProjector } from './app/ports/document-collaboration-projector';
+import { DocumentCollaborationRepository } from './app/ports/document-collaboration.repository';
+import { DocumentCollaborationTransactionRunner } from './app/ports/document-collaboration-transaction-runner';
+import { DocumentBlockNoteProjectorService } from './app/services/document-blocknote-projector.service';
+import { DocumentCollaborationReferenceSyncService } from './app/services/document-collaboration-reference-sync.service';
+import { DocumentCollaborationService } from './app/services/document-collaboration.service';
+import { DocumentSubdocReferenceSyncService } from './app/services/document-subdoc-reference-sync.service';
+import { MikroOrmDocumentCollaborationRepository } from './infra/mikro-orm-document-collaboration.repository';
+import { MikroOrmDocumentCollaborationTransactionRunner } from './infra/mikro-orm-document-collaboration-transaction.runner';
+import { DocumentCollaborationSnapshotEntity } from './infra/persistence/entities/document-collaboration-snapshot.entity';
+import { DocumentCollaborationUpdateEntity } from './infra/persistence/entities/document-collaboration-update.entity';
 
 @Module({
   imports: [
     AuditModule,
     ObservabilityModule,
     QueueModule,
+    WsModule,
     forwardRef(() => WorkspaceModule),
     MikroOrmModule.forFeature([
       CurrentUserEntity,
@@ -63,6 +77,8 @@ import { DocumentFavoriteEntity } from '../favorite/infra/persistence/entities/d
       DocumentVisitEntity,
       DocumentFavoriteEntity,
       PublishedDocumentEntity,
+      DocumentCollaborationSnapshotEntity,
+      DocumentCollaborationUpdateEntity,
     ]),
   ],
   controllers: [DocumentController],
@@ -95,6 +111,22 @@ import { DocumentFavoriteEntity } from '../favorite/infra/persistence/entities/d
       provide: WorkspaceDefaultDocumentProvisioner,
       useClass: WorkspaceDefaultDocumentProvisionerService,
     },
+    {
+      provide: DocumentCollaborationProjector,
+      useClass: DocumentBlockNoteProjectorService,
+    },
+    {
+      provide: DocumentCollaborationRepository,
+      useClass: MikroOrmDocumentCollaborationRepository,
+    },
+    {
+      provide: DocumentCollaborationTransactionRunner,
+      useClass: MikroOrmDocumentCollaborationTransactionRunner,
+    },
+    DocumentCollaborationGateway,
+    DocumentCollaborationReferenceSyncService,
+    DocumentCollaborationService,
+    DocumentSubdocReferenceSyncService,
     DocumentTreeService,
     DocumentSubdocContentService,
     DocumentObservabilityService,

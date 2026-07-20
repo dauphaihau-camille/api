@@ -54,6 +54,12 @@ export class DocumentVersionConflictError extends DocumentAppError {
   }
 }
 
+export class DocumentContentManagedByCollaborationError extends DocumentAppError {
+  constructor() {
+    super('Document content must be updated through the collaboration channel.');
+  }
+}
+
 export class DocumentDescendantMoveError extends DocumentAppError {
   constructor() {
     super('Document cannot be moved into one of its descendants.');
