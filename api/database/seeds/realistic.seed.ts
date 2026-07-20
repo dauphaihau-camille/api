@@ -19,6 +19,15 @@ import { WorkspaceEntity } from '../../src/domains/workspace/infra/persistence/e
 import { WorkspaceMemberEntity } from '../../src/domains/workspace/infra/persistence/entities/workspace-member.entity';
 import { WorkspacePreferenceEntity } from '../../src/domains/workspace-preference/infra/persistence/entities/workspace-preference.entity';
 import { seedAuth, seedAuthReferenceData } from './auth.seed';
+import {
+  REALISTIC_USER_FIXTURES,
+  REALISTIC_WORKSPACE_TEMPLATES,
+} from './fixtures/realistic.fixtures';
+import type {
+  DocumentBlueprint,
+  TeamspaceTemplate,
+  WorkspaceTemplate,
+} from './fixtures/realistic.types';
 
 type RealisticSeedConfig = {
   workspaceReplicas: number;
@@ -39,30 +48,6 @@ type SeedDocumentSummary = {
   workspaceId: string;
   parentId?: string;
   teamspaceId?: string;
-};
-
-type TeamspaceTemplate = {
-  key: string;
-  name: string;
-  description: string;
-};
-
-type DocumentBlueprint = {
-  key: string;
-  title: string;
-  kind: 'landing' | 'hub' | 'spec' | 'notes' | 'runbook' | 'roadmap' | 'wiki' | 'tracker';
-  summary: string;
-  teamspaceKey?: string;
-  children?: DocumentBlueprint[];
-};
-
-type WorkspaceTemplate = {
-  key: string;
-  name: string;
-  description: string;
-  memberEmails: string[];
-  teamspaces: TeamspaceTemplate[];
-  documents: DocumentBlueprint[];
 };
 
 type DocumentPayload = {
@@ -87,204 +72,6 @@ type TextBlock = {
   props?: Record<string, unknown>;
   content: Array<{ type: 'text'; text: string }>;
 };
-
-const REALISTIC_USER_FIXTURES = [
-  { email: 'maya.chen@example.com', displayName: 'Maya Chen', role: 'admin' },
-  { email: 'jordan.lee@example.com', displayName: 'Jordan Lee', role: 'member' },
-  { email: 'sofie.nguyen@example.com', displayName: 'Sofie Nguyen', role: 'member' },
-  { email: 'alex.rivera@example.com', displayName: 'Alex Rivera', role: 'member' },
-  { email: 'nina.patel@example.com', displayName: 'Nina Patel', role: 'member' },
-  { email: 'omar.hassan@example.com', displayName: 'Omar Hassan', role: 'member' },
-  { email: 'emily.tran@example.com', displayName: 'Emily Tran', role: 'member' },
-  { email: 'daniel.kim@example.com', displayName: 'Daniel Kim', role: 'member' },
-  { email: 'lucy.garcia@example.com', displayName: 'Lucy Garcia', role: 'member' },
-];
-
-const REALISTIC_WORKSPACE_TEMPLATES: WorkspaceTemplate[] = [
-  {
-    key: 'acme-product',
-    name: 'Acme Product',
-    description: 'Product, engineering, and go-to-market collaboration for the Acme workspace.',
-    memberEmails: [
-      'admin@example.com',
-      'maya.chen@example.com',
-      'jordan.lee@example.com',
-      'sofie.nguyen@example.com',
-      'alex.rivera@example.com',
-      'member@example.com',
-    ],
-    teamspaces: [
-      {
-        key: 'engineering',
-        name: 'Engineering',
-        description: 'Architecture notes, release checklists, and technical runbooks.',
-      },
-      {
-        key: 'product',
-        name: 'Product',
-        description: 'Specs, roadmap, and launch coordination documents.',
-      },
-    ],
-    documents: [
-      {
-        key: 'home',
-        title: 'Company Home',
-        kind: 'landing',
-        summary: 'Shared entry page with the most referenced planning docs.',
-        children: [
-          {
-            key: 'weekly-highlights',
-            title: 'Weekly Highlights',
-            kind: 'notes',
-            summary: 'Short summary of wins, risks, and decisions for the week.',
-          },
-          {
-            key: 'launch-calendar',
-            title: 'Launch Calendar',
-            kind: 'tracker',
-            summary: 'Milestones, launch owners, and current status by release.',
-          },
-        ],
-      },
-      {
-        key: 'engineering-hub',
-        title: 'Engineering Hub',
-        kind: 'hub',
-        summary: 'Starting point for architecture, incidents, and release operations.',
-        teamspaceKey: 'engineering',
-        children: [
-          {
-            key: 'architecture',
-            title: 'Architecture Decisions',
-            kind: 'wiki',
-            summary: 'Decision log for data model, auth, and workspace architecture.',
-          },
-          {
-            key: 'release-runbook',
-            title: 'Release Runbook',
-            kind: 'runbook',
-            summary: 'Checklist for staging validation, rollout, and rollback.',
-          },
-          {
-            key: 'incident-review',
-            title: 'Incident Review Template',
-            kind: 'notes',
-            summary: 'Template for capture, analysis, and follow-up after incidents.',
-          },
-        ],
-      },
-      {
-        key: 'product-hub',
-        title: 'Product Planning',
-        kind: 'hub',
-        summary: 'Specs, roadmap, and launch messaging for active initiatives.',
-        teamspaceKey: 'product',
-        children: [
-          {
-            key: 'roadmap',
-            title: 'Quarterly Roadmap',
-            kind: 'roadmap',
-            summary: 'Current quarter priorities with sequencing and dependencies.',
-          },
-          {
-            key: 'docs-search-spec',
-            title: 'Docs Search Spec',
-            kind: 'spec',
-            summary: 'Problem statement, goals, scope, and rollout plan for search.',
-          },
-          {
-            key: 'launch-brief',
-            title: 'Launch Brief',
-            kind: 'notes',
-            summary: 'Positioning, target audience, and readiness notes for launch.',
-          },
-        ],
-      },
-    ],
-  },
-  {
-    key: 'northwind-ops',
-    name: 'Northwind Operations',
-    description: 'Customer operations and delivery playbooks for a services team.',
-    memberEmails: [
-      'member@example.com',
-      'nina.patel@example.com',
-      'omar.hassan@example.com',
-      'emily.tran@example.com',
-      'lucy.garcia@example.com',
-    ],
-    teamspaces: [
-      {
-        key: 'success',
-        name: 'Customer Success',
-        description: 'Onboarding scripts, account plans, and risk reviews.',
-      },
-      {
-        key: 'delivery',
-        name: 'Delivery',
-        description: 'Implementation templates, project plans, and handoff docs.',
-      },
-    ],
-    documents: [
-      {
-        key: 'ops-home',
-        title: 'Operations Home',
-        kind: 'landing',
-        summary: 'Links to active accounts, templates, and current weekly focus.',
-        children: [
-          {
-            key: 'account-health',
-            title: 'Account Health Review',
-            kind: 'tracker',
-            summary: 'Weekly review of red accounts, churn risk, and executive follow-up.',
-          },
-        ],
-      },
-      {
-        key: 'success-playbook',
-        title: 'Success Playbook',
-        kind: 'hub',
-        summary: 'Core onboarding and renewal material used by the success team.',
-        teamspaceKey: 'success',
-        children: [
-          {
-            key: 'onboarding-plan',
-            title: 'Onboarding Plan Template',
-            kind: 'runbook',
-            summary: 'Standard week-by-week onboarding plan for new accounts.',
-          },
-          {
-            key: 'renewal-notes',
-            title: 'Renewal Preparation Notes',
-            kind: 'notes',
-            summary: 'Talking points, objections, and expansion opportunities before renewal.',
-          },
-        ],
-      },
-      {
-        key: 'delivery-handbook',
-        title: 'Delivery Handbook',
-        kind: 'hub',
-        summary: 'Implementation process, risk register, and project kickoff material.',
-        teamspaceKey: 'delivery',
-        children: [
-          {
-            key: 'kickoff-agenda',
-            title: 'Project Kickoff Agenda',
-            kind: 'notes',
-            summary: 'Agenda and outcomes expected during project kickoff.',
-          },
-          {
-            key: 'implementation-spec',
-            title: 'Implementation Scope',
-            kind: 'spec',
-            summary: 'Milestones, interfaces, and non-goals for a delivery project.',
-          },
-        ],
-      },
-    ],
-  },
-];
 
 function formatDuration(ms: number): string {
   if (ms < 1_000) {
@@ -614,31 +401,26 @@ async function upsertTeamspaces(
 async function upsertWorkspaceMembers(
   em: EntityManager,
   workspaceId: string,
-  memberUsers: SeedUserSummary[],
+  members: Array<{ user: SeedUserSummary; role: WorkspaceRole }>,
 ): Promise<void> {
   const existingMemberships = await em.find(WorkspaceMemberEntity, {
     workspace: workspaceId,
-    user: { $in: memberUsers.map((user) => user.id) },
+    user: { $in: members.map((member) => member.user.id) },
   }, {
     populate: ['user'],
   });
   const existingByUserId = new Map(existingMemberships.map((membership) => [membership.user.id, membership]));
 
-  for (const [index, memberUser] of memberUsers.entries()) {
-    const role = index === 0
-      ? WorkspaceRole.OWNER
-      : index === 1
-        ? WorkspaceRole.ADMIN
-        : WorkspaceRole.MEMBER;
-    const membership = existingByUserId.get(memberUser.id) ??
+  for (const member of members) {
+    const membership = existingByUserId.get(member.user.id) ??
       em.create(WorkspaceMemberEntity, {
         workspace: em.getReference(WorkspaceEntity, workspaceId),
-        user: em.getReference(CurrentUserEntity, memberUser.id),
-        role,
+        user: em.getReference(CurrentUserEntity, member.user.id),
+        role: member.role,
         joinedAt: new Date(),
       });
 
-    membership.role = role;
+    membership.role = member.role;
     em.persist(membership);
   }
 
@@ -911,10 +693,19 @@ async function seedWorkspaceScenario(
   const workspaceSlug = replicaIndex === 1 ? template.key : `${template.key}-${replicaIndex}`;
   const workspaceDescription = `${template.description} Replica ${replicaIndex}.`;
   const workspace = await upsertWorkspace(em, workspaceSlug, workspaceName, workspaceDescription);
-  const baseMembers = findUsersByEmail(state.users, template.memberEmails);
-  const takenUserIds = new Set(baseMembers.map((user) => user.id));
+  const baseMembers = template.members.flatMap((member) => {
+    const user = findUsersByEmail(state.users, [member.email])[0];
+
+    return user
+      ? [{ user, role: member.role }]
+      : [];
+  });
+  const takenUserIds = new Set(baseMembers.map((member) => member.user.id));
   const extraMembers = selectExtraMembers(state.users, takenUserIds, state.config.extraMembersPerWorkspace);
-  const memberUsers = [...baseMembers, ...extraMembers];
+  const memberUsers = [
+    ...baseMembers,
+    ...extraMembers.map((user) => ({ user, role: WorkspaceRole.MEMBER })),
+  ];
 
   await upsertWorkspaceMembers(em, workspace.id, memberUsers);
   const teamspacesByKey = await upsertTeamspaces(em, workspace.id, template.teamspaces);
@@ -927,7 +718,7 @@ async function seedWorkspaceScenario(
         em,
         workspace.id,
         teamspacesByKey,
-        memberUsers,
+        memberUsers.map((member) => member.user),
         rootDocument,
         replicaKey,
         index,
@@ -935,9 +726,10 @@ async function seedWorkspaceScenario(
     );
   }
 
-  await seedWorkspacePreferences(em, workspace.id, memberUsers, documents);
-  await seedFavoritesAndVisits(em, workspace.id, memberUsers, documents);
-  await seedPublishedDocs(em, workspace.id, memberUsers, documents);
+  const memberSummaries = memberUsers.map((member) => member.user);
+  await seedWorkspacePreferences(em, workspace.id, memberSummaries, documents);
+  await seedFavoritesAndVisits(em, workspace.id, memberSummaries, documents);
+  await seedPublishedDocs(em, workspace.id, memberSummaries, documents);
   await seedSubdocReferences(em, workspace.id, documents);
 }
 
