@@ -442,6 +442,7 @@ async function upsertDocument(
       searchText: extractDocumentSearchText(payload.contentJson),
       sortKey: payload.sortKey,
       createdBy: em.getReference(CurrentUserEntity, payload.createdById),
+      ownerUser: em.getReference(CurrentUserEntity, payload.createdById),
       updatedBy: em.getReference(CurrentUserEntity, payload.updatedById),
     });
 
@@ -459,6 +460,7 @@ async function upsertDocument(
   document.sortKey = payload.sortKey;
   document.archivedAt = undefined;
   document.createdBy = em.getReference(CurrentUserEntity, payload.createdById);
+  document.ownerUser = em.getReference(CurrentUserEntity, payload.createdById);
   document.updatedBy = em.getReference(CurrentUserEntity, payload.updatedById);
   em.persist(document);
   await em.flush();

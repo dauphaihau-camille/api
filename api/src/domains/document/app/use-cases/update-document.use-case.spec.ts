@@ -16,6 +16,7 @@ describe('UpdateDocumentUseCase collaboration boundary', () => {
   it('rejects REST content replacement after collaboration state exists', async () => {
     const document = {
       id: 'document-1',
+      ownerUser: { id: 'user-1' },
       workspace: { id: 'workspace-1' },
     };
     const workspaceRepository = {
@@ -65,6 +66,7 @@ describe('UpdateDocumentUseCase collaboration boundary', () => {
     const commandRepository = {
       findDocument: jest.fn().mockResolvedValue({
         id: 'document-1',
+        ownerUser: { id: 'another-user' },
         workspace: { id: 'workspace-1' },
       }),
       lockDocumentVersion: jest.fn(),
@@ -91,5 +93,67 @@ describe('UpdateDocumentUseCase collaboration boundary', () => {
 
     expect(commandRepository.lockDocumentVersion).not.toHaveBeenCalled();
     expect(collaborationRepository.loadState).not.toHaveBeenCalled();
+  });
+
+  it('allows a workspace member to edit their own private document', async () => {
+    const document = {
+      id: 'document-1',
+      ownerUser: { id: 'user-1' },
+      title: 'Old title',
+      version: 1,
+      workspace: { id: 'workspace-1' },
+      contentFormat: 'blocknote_v1',
+      contentJson: [],
+      sortKey: 0,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedBy: {
+        displayName: 'User One',
+        email: 'user@example.com',
+      },
+    };
+    const workspaceRepository = {
+      findAllForUser: jest.fn().mockResolvedValue([{
+        id: 'workspace-1',
+        currentUserRole: WorkspaceRole.MEMBER,
+      }]),
+    } as unknown as jest.Mocked<WorkspaceRepository>;
+    const commandRepository = {
+      assignUpdatedByUser: jest.fn(),
+      findDocument: jest.fn().mockResolvedValue(document),
+      lockDocumentVersion: jest.fn(),
+      saveDocument: jest.fn(),
+    } as unknown as jest.Mocked<DocumentCommandRepository>;
+    const collaborationRepository = {
+      loadState: jest.fn(),
+    } as unknown as jest.Mocked<DocumentCollaborationRepository>;
+    const auditService = {
+      record: jest.fn(),
+    } as unknown as jest.Mocked<AuditService>;
+    const syncReferencedSubdocTitlesUseCase = {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<SyncReferencedSubdocTitlesUseCase>;
+    const useCase = new UpdateDocumentUseCase(
+      auditService,
+      workspaceRepository,
+      new DocumentAccessResolver(),
+      commandRepository,
+      collaborationRepository,
+      {} as SyncDocumentSubdocReferencesUseCase,
+      syncReferencedSubdocTitlesUseCase,
+    );
+
+    await expect(useCase.execute('document-1', {
+      userId: 'user-1',
+    } as never, {
+      version: 1,
+      title: 'New title',
+    })).resolves.toMatchObject({
+      id: 'document-1',
+      ownerUserId: 'user-1',
+      title: 'New title',
+    });
+
+    expect(commandRepository.saveDocument).toHaveBeenCalledWith(document);
   });
 });

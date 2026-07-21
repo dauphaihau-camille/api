@@ -7,6 +7,7 @@ export function toDocumentSummary(document: DocumentEntity): DocumentSummary {
     publicId: document.publicId,
     version: document.version,
     workspaceId: document.workspace.id,
+    ownerUserId: document.ownerUser.id,
     teamspaceId: document.teamspace?.id,
     parentDocumentId: document.parentDocument?.id,
     title: document.title,

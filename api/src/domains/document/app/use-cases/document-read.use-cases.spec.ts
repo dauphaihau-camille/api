@@ -155,6 +155,7 @@ describe('Document read use cases', () => {
       contentJson: [],
       sortKey: 10,
       archivedAt: undefined,
+      ownerUser: { id: 'user-1' },
       createdAt: documentCreatedAt,
       updatedAt: documentUpdatedAt,
       updatedBy: {
@@ -184,6 +185,7 @@ describe('Document read use cases', () => {
       publicId: 'public-document-1',
       version: 3,
       workspaceId: 'workspace-1',
+      ownerUserId: 'user-1',
       teamspaceId: undefined,
       parentDocumentId: undefined,
       title: 'Document 1',
@@ -237,6 +239,7 @@ describe('Document read use cases', () => {
       sortKey: 1,
       archivedAt: undefined,
       createdBy: { id: 'another-user' },
+      ownerUser: { id: 'another-user' },
       updatedBy: {
         displayName: 'Another user',
         email: 'another@example.com',

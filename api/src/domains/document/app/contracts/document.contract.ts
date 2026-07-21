@@ -17,6 +17,7 @@ export interface DocumentSummary {
   publicId: string;
   version: number;
   workspaceId: string;
+  ownerUserId: string;
   teamspaceId?: string;
   parentDocumentId?: string;
   title: string;

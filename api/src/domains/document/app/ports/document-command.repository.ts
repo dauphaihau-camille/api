@@ -13,6 +13,7 @@ export type CreateDocumentRecordInput = {
   searchText: string;
   sortKey: number;
   createdByUserId: string;
+  ownerUserId: string;
   updatedByUserId: string;
 };
 

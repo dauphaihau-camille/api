@@ -17,7 +17,7 @@ export class MikroOrmDocumentNavigationQueryRepository implements DocumentNaviga
     return this.entityManager.fork().findOne(DocumentEntity, {
       $or: [{ id: documentIdentifier }, { publicId: documentIdentifier }],
     }, {
-      populate: ['workspace', 'teamspace', 'parentDocument', 'createdBy', 'updatedBy'],
+      populate: ['workspace', 'teamspace', 'parentDocument', 'createdBy', 'ownerUser', 'updatedBy'],
     });
   }
 

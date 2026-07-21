@@ -75,6 +75,7 @@ describe('CreateDocumentUseCase', () => {
       searchText: '',
       sortKey: 17,
       createdBy: { id: 'user-1' },
+      ownerUser: { id: 'user-1' },
       updatedBy: { id: 'user-1' },
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
       updatedAt: new Date('2026-01-01T00:00:00.000Z'),

@@ -3,6 +3,8 @@ import type { WorkspaceRole } from '../../../workspace/domain/enums/workspace-ro
 export type DocumentCollaborationAccess = {
   content: unknown[];
   title: string;
+  documentOwnerUserId: string;
+  documentTeamspaceId?: string;
   workspaceId: string;
   workspaceRole: WorkspaceRole;
 };

@@ -40,7 +40,13 @@ export class DuplicateDocumentUseCase {
       throw new DocumentNotFoundError(documentId);
     }
     const workspace = await resolveWorkspaceForUser(this.workspaceRepository, sourceDocument.workspace.id, currentUser);
-    if (!this.documentAccessResolver.resolve(workspace.currentUserRole).canEdit) {
+
+    if (!this.documentAccessResolver.resolve({
+      actorUserId: currentUser.userId,
+      documentOwnerUserId: sourceDocument.ownerUser.id,
+      documentTeamspaceId: sourceDocument.teamspace?.id,
+      workspaceRole: workspace.currentUserRole,
+    }).canEdit) {
       throw new DocumentPermissionDeniedError();
     }
 
@@ -52,10 +58,12 @@ export class DuplicateDocumentUseCase {
       sourceDocument.id,
       sourceDocument.workspace.id,
     );
+
     if (!sourceSubtree) {
       throw new DocumentNotFoundError(sourceDocument.id);
     }
     const sourceRootDocument = sourceSubtree[0];
+
     if (!sourceRootDocument) {
       throw new DocumentDuplicationInvariantError(
         `missing subtree root for source document ${sourceDocument.id}`,
@@ -94,6 +102,7 @@ export class DuplicateDocumentUseCase {
             )
             : originalDocument.sortKey,
           createdByUserId: currentUser.userId,
+          ownerUserId: currentUser.userId,
           updatedByUserId: currentUser.userId,
         });
 

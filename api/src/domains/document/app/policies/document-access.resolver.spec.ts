@@ -24,4 +24,27 @@ describe('DocumentAccessResolver', () => {
       canView: true,
     });
   });
+
+  it('grants edit capabilities to the owner of a private document', () => {
+    expect(resolver.resolve({
+      actorUserId: 'user-1',
+      documentOwnerUserId: 'user-1',
+      workspaceRole: WorkspaceRole.MEMBER,
+    })).toEqual({
+      canEdit: true,
+      canView: true,
+    });
+  });
+
+  it('does not grant owner edit capabilities for a teamspace document yet', () => {
+    expect(resolver.resolve({
+      actorUserId: 'user-1',
+      documentOwnerUserId: 'user-1',
+      documentTeamspaceId: 'teamspace-1',
+      workspaceRole: WorkspaceRole.MEMBER,
+    })).toEqual({
+      canEdit: false,
+      canView: true,
+    });
+  });
 });

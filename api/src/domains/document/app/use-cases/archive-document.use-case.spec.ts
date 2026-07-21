@@ -80,6 +80,7 @@ describe('ArchiveDocumentUseCase', () => {
     const document = {
       id: 'document-1',
       title: 'Parent',
+      ownerUser: { id: 'user-1' },
       workspace: { id: 'workspace-1' },
     };
     const descendant = {

@@ -26,7 +26,7 @@ export class MikroOrmDocumentCollaborationRepository extends DocumentCollaborati
     const entityManager = this.entityManager.fork();
 
     const document = await entityManager.findOne(DocumentEntity, documentId, {
-      populate: ['workspace'],
+      populate: ['workspace', 'teamspace', 'ownerUser'],
     });
 
     if (!document) {
@@ -45,6 +45,8 @@ export class MikroOrmDocumentCollaborationRepository extends DocumentCollaborati
     return {
       content: document.contentJson,
       title: document.title,
+      documentOwnerUserId: document.ownerUser.id,
+      documentTeamspaceId: document.teamspace?.id,
       workspaceId: document.workspace.id,
       workspaceRole: membership.role,
     };

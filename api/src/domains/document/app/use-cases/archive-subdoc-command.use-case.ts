@@ -62,7 +62,12 @@ export class ArchiveSubdocCommandUseCase {
       currentUser,
     );
 
-    if (!this.documentAccessResolver.resolve(workspace.currentUserRole).canEdit) {
+    if (!this.documentAccessResolver.resolve({
+      actorUserId: currentUser.userId,
+      documentOwnerUserId: existingParentDocument.ownerUser.id,
+      documentTeamspaceId: existingParentDocument.teamspace?.id,
+      workspaceRole: workspace.currentUserRole,
+    }).canEdit) {
       throw new DocumentPermissionDeniedError();
     }
 

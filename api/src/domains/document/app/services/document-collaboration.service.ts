@@ -45,7 +45,14 @@ export class DocumentCollaborationService {
   }> {
     const Yjs = await loadYjs();
     const access = await this.requireAccess(documentId, currentUser.userId);
-    const capabilities = this.documentAccessResolver.resolve(access.workspaceRole);
+
+    const capabilities = this.documentAccessResolver.resolve({
+      actorUserId: currentUser.userId,
+      documentOwnerUserId: access.documentOwnerUserId,
+      documentTeamspaceId: access.documentTeamspaceId,
+      workspaceRole: access.workspaceRole,
+    });
+
     const activeDocument = await this.getOrCreateActiveDocument(
       documentId,
       access.content,
@@ -69,7 +76,13 @@ export class DocumentCollaborationService {
   }> {
     const Yjs = await loadYjs();
     const access = await this.requireAccess(documentId, currentUser.userId);
-    const capabilities = this.documentAccessResolver.resolve(access.workspaceRole);
+
+    const capabilities = this.documentAccessResolver.resolve({
+      actorUserId: currentUser.userId,
+      documentOwnerUserId: access.documentOwnerUserId,
+      documentTeamspaceId: access.documentTeamspaceId,
+      workspaceRole: access.workspaceRole,
+    });
 
     if (!capabilities.canEdit) {
       throw new DocumentCollaborationPermissionDeniedError();

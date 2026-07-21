@@ -42,7 +42,12 @@ export class PermanentlyDeleteDocumentUseCase {
       existingDocument.workspace.id,
       currentUser,
     );
-    if (!this.documentAccessResolver.resolve(workspace.currentUserRole).canEdit) {
+    if (!this.documentAccessResolver.resolve({
+      actorUserId: currentUser.userId,
+      documentOwnerUserId: existingDocument.ownerUser.id,
+      documentTeamspaceId: existingDocument.teamspace?.id,
+      workspaceRole: workspace.currentUserRole,
+    }).canEdit) {
       throw new DocumentPermissionDeniedError();
     }
 

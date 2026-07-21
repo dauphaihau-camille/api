@@ -29,7 +29,7 @@ export class MikroOrmDocumentCommandRepository implements DocumentCommandReposit
     return this.scopedEntityManager.findOne(DocumentEntity, {
       $or: [{ id: documentIdentifier }, { publicId: documentIdentifier }],
     }, {
-      populate: ['workspace', 'teamspace', 'parentDocument', 'createdBy', 'updatedBy'],
+      populate: ['workspace', 'teamspace', 'parentDocument', 'createdBy', 'ownerUser', 'updatedBy'],
     });
   }
 
@@ -65,6 +65,7 @@ export class MikroOrmDocumentCommandRepository implements DocumentCommandReposit
       searchText: input.searchText,
       sortKey: input.sortKey,
       createdBy: this.scopedEntityManager.getReference(CurrentUserEntity, input.createdByUserId),
+      ownerUser: this.scopedEntityManager.getReference(CurrentUserEntity, input.ownerUserId),
       updatedBy: this.scopedEntityManager.getReference(CurrentUserEntity, input.updatedByUserId),
     });
   }

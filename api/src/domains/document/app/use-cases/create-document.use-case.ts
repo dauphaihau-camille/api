@@ -58,6 +58,7 @@ export class CreateDocumentUseCase {
           teamspace?.id,
         ),
         createdByUserId: currentUser.userId,
+        ownerUserId: currentUser.userId,
         updatedByUserId: currentUser.userId,
       });
 

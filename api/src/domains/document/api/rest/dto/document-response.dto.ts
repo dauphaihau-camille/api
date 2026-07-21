@@ -36,6 +36,9 @@ export class DocumentResponseDto {
   @ApiProperty()
   workspace_id!: string;
 
+  @ApiProperty()
+  owner_user_id!: string;
+
   @ApiPropertyOptional()
   teamspace_id?: string;
 
@@ -90,6 +93,7 @@ export class DocumentResponseDto {
       public_id: document.publicId,
       version: document.version,
       workspace_id: document.workspaceId,
+      owner_user_id: document.ownerUserId,
       teamspace_id: document.teamspaceId,
       parent_document_id: document.parentDocumentId,
       title: document.title,

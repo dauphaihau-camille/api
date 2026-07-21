@@ -65,6 +65,7 @@ implements WorkspaceDefaultDocumentProvisioner {
       searchText: extractDocumentSearchText(contentJson),
       sortKey: 0,
       createdBy: owner,
+      ownerUser: owner,
       updatedBy: owner,
     });
   }

@@ -18,7 +18,7 @@ export class MikroOrmDocumentSubdocReferenceRepository implements DocumentSubdoc
       archivedAt: null,
       id: { $ne: excludeDocumentId },
     }, {
-      populate: ['workspace', 'teamspace', 'parentDocument', 'createdBy', 'updatedBy'],
+      populate: ['workspace', 'teamspace', 'parentDocument', 'createdBy', 'ownerUser', 'updatedBy'],
     });
   }
 
@@ -34,7 +34,7 @@ export class MikroOrmDocumentSubdocReferenceRepository implements DocumentSubdoc
     return this.scopedEntityManager.find(DocumentSubdocReferenceEntity, {
       targetDocument: targetDocumentId,
     }, {
-      populate: ['sourceDocument', 'sourceDocument.workspace', 'sourceDocument.teamspace', 'sourceDocument.parentDocument', 'sourceDocument.createdBy', 'sourceDocument.updatedBy'],
+      populate: ['sourceDocument', 'sourceDocument.workspace', 'sourceDocument.teamspace', 'sourceDocument.parentDocument', 'sourceDocument.createdBy', 'sourceDocument.ownerUser', 'sourceDocument.updatedBy'],
     });
   }
 

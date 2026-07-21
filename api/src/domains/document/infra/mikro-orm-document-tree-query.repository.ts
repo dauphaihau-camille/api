@@ -17,7 +17,7 @@ export class MikroOrmDocumentTreeQueryRepository implements DocumentTreeQueryRep
         workspace: workspaceId,
         parentDocument: { $in: parentDocumentIds },
       }, {
-        populate: ['parentDocument', 'workspace', 'teamspace', 'createdBy', 'updatedBy'],
+        populate: ['parentDocument', 'workspace', 'teamspace', 'createdBy', 'ownerUser', 'updatedBy'],
         orderBy: { sortKey: 'asc', createdAt: 'asc' },
       });
 
@@ -39,7 +39,7 @@ export class MikroOrmDocumentTreeQueryRepository implements DocumentTreeQueryRep
       workspace: workspaceId,
       archivedAt: null,
     }, {
-      populate: ['parentDocument', 'workspace', 'teamspace', 'createdBy', 'updatedBy'],
+      populate: ['parentDocument', 'workspace', 'teamspace', 'createdBy', 'ownerUser', 'updatedBy'],
     });
 
     if (!rootDocument) {
@@ -55,7 +55,7 @@ export class MikroOrmDocumentTreeQueryRepository implements DocumentTreeQueryRep
         archivedAt: null,
         parentDocument: { $in: parentDocumentIds },
       }, {
-        populate: ['parentDocument', 'workspace', 'teamspace', 'createdBy', 'updatedBy'],
+        populate: ['parentDocument', 'workspace', 'teamspace', 'createdBy', 'ownerUser', 'updatedBy'],
         orderBy: { sortKey: 'asc', createdAt: 'asc' },
       });
 

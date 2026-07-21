@@ -44,12 +44,19 @@ export class ArchiveDocumentUseCase {
     if (!existingDocument) {
       throw new DocumentNotFoundError(documentId);
     }
+
     const workspace = await resolveWorkspaceForUser(
       this.workspaceRepository,
       existingDocument.workspace.id,
       currentUser,
     );
-    if (!this.documentAccessResolver.resolve(workspace.currentUserRole).canEdit) {
+
+    if (!this.documentAccessResolver.resolve({
+      actorUserId: currentUser.userId,
+      documentOwnerUserId: existingDocument.ownerUser.id,
+      documentTeamspaceId: existingDocument.teamspace?.id,
+      workspaceRole: workspace.currentUserRole,
+    }).canEdit) {
       throw new DocumentPermissionDeniedError();
     }
 

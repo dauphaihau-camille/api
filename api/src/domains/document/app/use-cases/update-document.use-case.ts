@@ -44,7 +44,12 @@ export class UpdateDocumentUseCase {
       throw new DocumentNotFoundError(documentId);
     }
     const workspace = await resolveWorkspaceForUser(this.workspaceRepository, document.workspace.id, currentUser);
-    if (!this.documentAccessResolver.resolve(workspace.currentUserRole).canEdit) {
+    if (!this.documentAccessResolver.resolve({
+      actorUserId: currentUser.userId,
+      documentOwnerUserId: document.ownerUser.id,
+      documentTeamspaceId: document.teamspace?.id,
+      workspaceRole: workspace.currentUserRole,
+    }).canEdit) {
       throw new DocumentPermissionDeniedError();
     }
 

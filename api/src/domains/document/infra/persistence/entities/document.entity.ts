@@ -53,6 +53,9 @@ export class DocumentEntity extends AbstractWorkspaceEntity {
   @ManyToOne(() => CurrentUserEntity, { fieldName: 'created_by' })
   createdBy!: CurrentUserEntity;
 
+  @ManyToOne(() => CurrentUserEntity, { fieldName: 'owner_user_id' })
+  ownerUser!: CurrentUserEntity;
+
   @ManyToOne(() => CurrentUserEntity, { fieldName: 'updated_by' })
   updatedBy!: CurrentUserEntity;
 }

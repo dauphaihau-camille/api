@@ -36,7 +36,7 @@ describe('MikroOrmDocumentCollaborationRepository', () => {
     expect(scopedEntityManager.findOne).toHaveBeenCalledWith(
       DocumentEntity,
       'missing-document',
-      { populate: ['workspace'] },
+      { populate: ['workspace', 'teamspace', 'ownerUser'] },
     );
   });
 
@@ -68,7 +68,7 @@ describe('MikroOrmDocumentCollaborationRepository', () => {
     async (role) => {
       const document = {
         contentJson: [{ type: 'paragraph' }],
-        createdBy: { id: 'another-user' },
+        ownerUser: { id: 'another-user' },
         teamspace: undefined,
         title: 'Private document',
         workspace: { id: 'workspace-1' },
@@ -77,6 +77,8 @@ describe('MikroOrmDocumentCollaborationRepository', () => {
 
       await expect(repository.getAccess('document-1', 'user-1')).resolves.toEqual({
         content: document.contentJson,
+        documentOwnerUserId: document.ownerUser.id,
+        documentTeamspaceId: undefined,
         title: document.title,
         workspaceId: document.workspace.id,
         workspaceRole: role,

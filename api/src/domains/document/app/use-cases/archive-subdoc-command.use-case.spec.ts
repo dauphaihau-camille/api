@@ -111,6 +111,7 @@ describe('ArchiveSubdocCommandUseCase', () => {
       }],
       searchText: '',
       sortKey: 9,
+      ownerUser: { id: 'user-1' },
       updatedBy: { id: 'user-0' },
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
       updatedAt: new Date('2026-01-01T00:00:00.000Z'),
@@ -127,6 +128,7 @@ describe('ArchiveSubdocCommandUseCase', () => {
       contentJson: [],
       searchText: '',
       sortKey: 17,
+      ownerUser: { id: 'user-1' },
       updatedBy: { id: 'user-0' },
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
       updatedAt: new Date('2026-01-01T00:00:00.000Z'),
@@ -135,6 +137,7 @@ describe('ArchiveSubdocCommandUseCase', () => {
       id: 'child-2',
       workspace: { id: 'workspace-1' },
       parentDocument: { id: 'child-1' },
+      ownerUser: { id: 'user-1' },
       updatedBy: { id: 'user-0' },
     };
     const nextParentContent = [{

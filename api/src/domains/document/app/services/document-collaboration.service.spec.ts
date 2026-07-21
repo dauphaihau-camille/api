@@ -331,6 +331,7 @@ describe('DocumentCollaborationService', () => {
     repository.getAccess.mockResolvedValue({
       content: [],
       title: 'Untitled',
+      documentOwnerUserId: 'another-user',
       workspaceId: 'workspace-1',
       workspaceRole: WorkspaceRole.MEMBER,
     });

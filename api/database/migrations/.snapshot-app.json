@@ -1501,6 +1501,22 @@
           "comment": null,
           "enumItems": [],
           "mappedType": "text"
+        },
+        "owner_user_id": {
+          "name": "owner_user_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
         }
       },
       "name": "documents",
@@ -1513,6 +1529,16 @@
           "composite": false,
           "constraint": false,
           "keyName": "documents_archived_at_index",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "owner_user_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "documents_owner_user_id_index",
           "unique": false,
           "primary": false
         },
@@ -1592,6 +1618,19 @@
             "created_by"
           ],
           "constraintName": "documents_created_by_foreign",
+          "localTableName": "public.documents",
+          "referencedTableName": "public.users",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "restrict"
+        },
+        "documents_owner_user_id_foreign": {
+          "columnNames": [
+            "owner_user_id"
+          ],
+          "constraintName": "documents_owner_user_id_foreign",
           "localTableName": "public.documents",
           "referencedTableName": "public.users",
           "referencedColumnNames": [
