@@ -31,9 +31,16 @@ export class DocumentAccessResolver {
       && !context.documentTeamspaceId
       && context.actorUserId === context.documentOwnerUserId;
 
+    const isTeamspaceDocument =
+      'documentTeamspaceId' in context
+      && Boolean(context.documentTeamspaceId);
+
     return {
       canEdit: isWorkspaceAdministrator || isPrivateOwner,
-      canView: true,
+      canView: !('actorUserId' in context)
+        || isWorkspaceAdministrator
+        || isTeamspaceDocument
+        || isPrivateOwner,
     };
   }
 }

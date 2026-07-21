@@ -8,6 +8,7 @@ import { DocumentNotFoundError } from '../errors/document-app.error';
 import { toDocumentSummary } from '../mappers/document-summary.mapper';
 import { DocumentNavigationQueryRepository } from '../ports/document-navigation-query.repository';
 import { DocumentVisitRepository } from '../ports/document-visit.repository';
+import { DocumentAccessResolver } from '../policies/document-access.resolver';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
 
 @Injectable()
@@ -18,6 +19,7 @@ export class GetDocumentUseCase {
     private readonly documentVisitRepository: DocumentVisitRepository,
     private readonly publishRepository: PublishRepository,
     private readonly documentObservabilityService: DocumentObservabilityService,
+    private readonly documentAccessResolver: DocumentAccessResolver,
   ) {}
 
   async execute(
@@ -32,7 +34,18 @@ export class GetDocumentUseCase {
     }
 
     const accessStartedAt = Date.now();
-    await resolveWorkspaceForUser(this.workspaceRepository, document.workspace.id, currentUser);
+    const workspace = await resolveWorkspaceForUser(this.workspaceRepository, document.workspace.id, currentUser);
+
+    const capabilities = this.documentAccessResolver.resolve({
+      actorUserId: currentUser.userId,
+      documentOwnerUserId: document.ownerUser.id,
+      documentTeamspaceId: document.teamspace?.id,
+      workspaceRole: workspace.currentUserRole,
+    });
+
+    if (!capabilities.canView) {
+      throw new DocumentNotFoundError(documentId);
+    }
     const accessDurationMs = Date.now() - accessStartedAt;
     this.documentObservabilityService.recordDocumentReadDuration('workspace_access', accessDurationMs);
 

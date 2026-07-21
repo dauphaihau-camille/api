@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
+import { DocumentAccessResolver } from '~/domains/document/app/policies/document-access.resolver';
 import { AuditService } from '~/integrations/audit/audit.service';
-import { canEditWorkspace } from '../../../workspace/app/workspace-permissions';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import type { PublishedDocumentSummary } from '../publish.types';
 import {
@@ -18,6 +18,7 @@ export class PublishDocumentUseCase {
     private readonly workspaceRepository: WorkspaceRepository,
     private readonly publishRepository: PublishRepository,
     private readonly auditService: AuditService,
+    private readonly documentAccessResolver: DocumentAccessResolver,
   ) {}
 
   async execute(
@@ -36,7 +37,12 @@ export class PublishDocumentUseCase {
       currentUser,
     );
 
-    if (!canEditWorkspace(workspace.currentUserRole)) {
+    if (!this.documentAccessResolver.resolve({
+      actorUserId: currentUser.userId,
+      documentOwnerUserId: document.ownerUserId,
+      documentTeamspaceId: document.teamspaceId,
+      workspaceRole: workspace.currentUserRole,
+    }).canEdit) {
       throw new PublishPermissionDeniedError();
     }
 

@@ -1,6 +1,7 @@
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { UserStatus } from '~/domains/auth/domain/enums/user-status.enum';
 import type { DocumentNavigationQueryRepository } from '~/domains/document/app/ports/document-navigation-query.repository';
+import { DocumentAccessResolver } from '~/domains/document/app/policies/document-access.resolver';
 import type { WorkspaceRepository } from '~/domains/workspace/app/ports/workspace.repository';
 import { WorkspaceRole } from '~/domains/workspace/domain/enums/workspace-role.enum';
 import type { FavoriteRepository } from '../ports/favorite.repository';
@@ -61,6 +62,7 @@ describe('ListWorkspaceFavoritesUseCase', () => {
           parentDocument: undefined,
           title: 'Parent favorite',
           sortKey: 7,
+          ownerUser: { id: 'user-1' },
           contentJson: [
             {
               id: 'paragraph-1',
@@ -78,6 +80,7 @@ describe('ListWorkspaceFavoritesUseCase', () => {
       favoriteRepository,
       workspaceRepository,
       navigationRepository,
+      new DocumentAccessResolver(),
     );
 
     await expect(

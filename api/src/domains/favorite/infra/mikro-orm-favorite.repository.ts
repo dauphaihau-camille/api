@@ -20,7 +20,7 @@ export class MikroOrmFavoriteRepository implements FavoriteRepository {
         archivedAt: null,
       },
     }, {
-      populate: ['document', 'document.teamspace', 'document.parentDocument'],
+      populate: ['document', 'document.teamspace', 'document.parentDocument', 'document.ownerUser'],
       orderBy: {
         createdAt: 'desc',
       },
@@ -32,7 +32,7 @@ export class MikroOrmFavoriteRepository implements FavoriteRepository {
       id: documentId,
       archivedAt: null,
     }, {
-      populate: ['workspace', 'teamspace', 'parentDocument'],
+      populate: ['workspace', 'teamspace', 'parentDocument', 'ownerUser'],
     });
   }
 

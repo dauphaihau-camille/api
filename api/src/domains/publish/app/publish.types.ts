@@ -8,6 +8,8 @@ export interface PublishedDocumentSummary {
 export interface PublishableDocument {
   id: string;
   workspaceId: string;
+  ownerUserId: string;
+  teamspaceId?: string;
 }
 
 export interface PublishedDocumentRecord {

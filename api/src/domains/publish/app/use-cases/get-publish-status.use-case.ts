@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
+import { DocumentAccessResolver } from '~/domains/document/app/policies/document-access.resolver';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import type { PublishedDocumentSummary } from '../publish.types';
 import { PublishDocumentNotFoundError } from '../errors/publish-app.error';
@@ -12,6 +13,7 @@ export class GetPublishStatusUseCase {
   constructor(
     private readonly workspaceRepository: WorkspaceRepository,
     private readonly publishRepository: PublishRepository,
+    private readonly documentAccessResolver: DocumentAccessResolver,
   ) {}
 
   async execute(
@@ -24,11 +26,20 @@ export class GetPublishStatusUseCase {
       throw new PublishDocumentNotFoundError(documentId);
     }
 
-    await resolveWorkspaceForUser(
+    const workspace = await resolveWorkspaceForUser(
       this.workspaceRepository,
       document.workspaceId,
       currentUser,
     );
+
+    if (!this.documentAccessResolver.resolve({
+      actorUserId: currentUser.userId,
+      documentOwnerUserId: document.ownerUserId,
+      documentTeamspaceId: document.teamspaceId,
+      workspaceRole: workspace.currentUserRole,
+    }).canView) {
+      throw new PublishDocumentNotFoundError(documentId);
+    }
 
     const publishedDocument = await this.publishRepository.findPublishedDocumentByDocumentId(
       document.id,

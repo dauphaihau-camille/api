@@ -8,6 +8,7 @@ import {
   InvalidDocumentCursorError,
 } from '../errors/document-app.error';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
+import { DocumentAccessResolver } from '../policies/document-access.resolver';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
 import { DocumentEntity } from '../../infra/persistence/entities/document.entity';
 import { hasMeaningfulContent } from '../utils/document-content.util';
@@ -17,6 +18,7 @@ export class ListArchivedWorkspaceDocumentsUseCase {
   constructor(
     private readonly workspaceRepository: WorkspaceRepository,
     private readonly documentNavigationQueryRepository: DocumentNavigationQueryRepository,
+    private readonly documentAccessResolver: DocumentAccessResolver,
   ) {}
 
   async execute(
@@ -34,7 +36,13 @@ export class ListArchivedWorkspaceDocumentsUseCase {
       query: input.query,
     });
     const topLevelArchivedDocuments = documents.filter((document) =>
-      !document.parentDocument || !document.parentDocument.archivedAt);
+      (!document.parentDocument || !document.parentDocument.archivedAt)
+      && this.documentAccessResolver.resolve({
+        actorUserId: currentUser.userId,
+        documentOwnerUserId: document.ownerUser.id,
+        documentTeamspaceId: document.teamspace?.id,
+        workspaceRole: workspace.currentUserRole,
+      }).canView);
     const cursor = input.cursor
       ? this.decodeCursor(input.cursor)
       : undefined;

@@ -7,9 +7,11 @@ import type { DocumentObservabilityService } from '../../observability/document-
 import type { DocumentNavigationQueryRepository } from '../ports/document-navigation-query.repository';
 import type { DocumentTreeQueryRepository } from '../ports/document-tree-query.repository';
 import type { DocumentVisitRepository } from '../ports/document-visit.repository';
+import { DocumentAccessResolver } from '../policies/document-access.resolver';
 import { GetDefaultWorkspaceDocumentUseCase } from './get-default-workspace-document.use-case';
 import { GetDocumentUseCase } from './get-document.use-case';
 import { ListWorkspaceDocumentsUseCase } from './list-workspace-documents.use-case';
+import { DocumentNotFoundError } from '../errors/document-app.error';
 
 describe('Document read use cases', () => {
   const currentUser: AuthenticatedUser = {
@@ -91,7 +93,11 @@ describe('Document read use cases', () => {
     navigationRepository.countActiveChildren.mockResolvedValue(0);
     navigationRepository.findFavoriteDocumentIds.mockResolvedValue([]);
 
-    const useCase = new ListWorkspaceDocumentsUseCase(workspaceRepository, navigationRepository);
+    const useCase = new ListWorkspaceDocumentsUseCase(
+      workspaceRepository,
+      navigationRepository,
+      new DocumentAccessResolver(),
+    );
 
     await useCase.execute('workspace-1', currentUser, {
       limit: 50,
@@ -122,6 +128,7 @@ describe('Document read use cases', () => {
       navigationRepository,
       visitRepository,
       treeRepository,
+      new DocumentAccessResolver(),
     );
 
     const result = await useCase.execute('workspace-1', currentUser, 'document-recent');
@@ -176,6 +183,7 @@ describe('Document read use cases', () => {
       visitRepository,
       publishRepository,
       observabilityService,
+      new DocumentAccessResolver(),
     );
 
     const result = await useCase.execute('document-1', currentUser);
@@ -220,7 +228,7 @@ describe('Document read use cases', () => {
     );
   });
 
-  it('allows a workspace member to read a private document created by another user', async () => {
+  it('hides another user private document from a workspace member', async () => {
     const workspaceRepository = createWorkspaceRepository(WorkspaceRole.MEMBER);
     const navigationRepository = createNavigationRepository();
     const visitRepository = createVisitRepository();
@@ -260,15 +268,12 @@ describe('Document read use cases', () => {
       visitRepository,
       publishRepository,
       observabilityService,
+      new DocumentAccessResolver(),
     );
 
-    await expect(useCase.execute(document.id, currentUser)).resolves.toEqual(
-      expect.objectContaining({
-        id: document.id,
-        teamspaceId: undefined,
-      }),
-    );
+    await expect(useCase.execute(document.id, currentUser)).rejects.toBeInstanceOf(DocumentNotFoundError);
 
     expect(workspaceRepository.findAllForUser).toHaveBeenCalledWith(currentUser.userId);
+    expect(visitRepository.recordVisit).not.toHaveBeenCalled();
   });
 });

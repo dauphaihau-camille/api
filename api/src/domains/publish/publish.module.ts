@@ -1,6 +1,7 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { Module } from '@nestjs/common';
 import { CurrentUserEntity } from '../auth/infra/persistence/entities/current-user.entity';
+import { DocumentAccessResolver } from '../document/app/policies/document-access.resolver';
 import { DocumentEntity } from '../document/infra/persistence/entities/document.entity';
 import { WorkspaceEntity } from '../workspace/infra/persistence/entities/workspace.entity';
 import { AuditModule } from '../../integrations/audit/audit.module';
@@ -35,6 +36,7 @@ import { PublishedDocumentEntity } from './infra/persistence/entities/published-
     GetPublishStatusUseCase,
     PublishDocumentUseCase,
     UnpublishDocumentUseCase,
+    DocumentAccessResolver,
   ],
 })
 export class PublishModule {}

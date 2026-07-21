@@ -4,6 +4,7 @@ import { CurrentUserEntity } from '../auth/infra/persistence/entities/current-us
 import { DocumentEntity } from '../document/infra/persistence/entities/document.entity';
 import { DocumentNavigationQueryRepository } from '../document/app/ports/document-navigation-query.repository';
 import { MikroOrmDocumentNavigationQueryRepository } from '../document/infra/mikro-orm-document-navigation-query.repository';
+import { DocumentAccessResolver } from '../document/app/policies/document-access.resolver';
 import { WorkspaceEntity } from '../workspace/infra/persistence/entities/workspace.entity';
 import { AuditModule } from '../../integrations/audit/audit.module';
 import { WorkspaceModule } from '../workspace/workspace.module';
@@ -33,6 +34,7 @@ import { DocumentFavoriteEntity } from './infra/persistence/entities/document-fa
     GetFavoriteStatusUseCase,
     AddDocumentFavoriteUseCase,
     RemoveDocumentFavoriteUseCase,
+    DocumentAccessResolver,
     {
       provide: FavoriteRepository,
       useClass: MikroOrmFavoriteRepository,

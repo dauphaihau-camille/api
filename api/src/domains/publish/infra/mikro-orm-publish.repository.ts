@@ -19,7 +19,7 @@ export class MikroOrmPublishRepository implements PublishRepository {
 
   async findDocument(documentId: string): Promise<PublishableDocument | null> {
     const document = await this.entityManager.fork().findOne(DocumentEntity, { id: documentId }, {
-      populate: ['workspace', 'parentDocument'],
+      populate: ['workspace', 'teamspace', 'parentDocument', 'ownerUser'],
     });
 
     return document ? this.toPublishableDocument(document) : null;
@@ -285,6 +285,8 @@ export class MikroOrmPublishRepository implements PublishRepository {
     return {
       id: document.id,
       workspaceId: document.workspace.id,
+      ownerUserId: document.ownerUser.id,
+      teamspaceId: document.teamspace?.id,
     };
   }
 

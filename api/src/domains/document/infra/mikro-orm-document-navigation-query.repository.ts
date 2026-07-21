@@ -30,6 +30,8 @@ export class MikroOrmDocumentNavigationQueryRepository implements DocumentNaviga
       id: input.documentId,
       workspace: input.workspaceId,
       ...(input.archivedAt === null ? { archivedAt: null } : {}),
+    }, {
+      populate: ['workspace', 'teamspace', 'parentDocument', 'ownerUser'],
     });
   }
 
@@ -64,7 +66,7 @@ export class MikroOrmDocumentNavigationQueryRepository implements DocumentNaviga
         }
         : {}),
     }, {
-      populate: ['teamspace', 'parentDocument'],
+      populate: ['teamspace', 'parentDocument', 'ownerUser'],
       orderBy: { sortKey: 'asc', id: 'asc' },
     });
   }
@@ -84,7 +86,7 @@ export class MikroOrmDocumentNavigationQueryRepository implements DocumentNaviga
         }
         : {}),
     }, {
-      populate: ['teamspace', 'parentDocument'],
+      populate: ['teamspace', 'parentDocument', 'ownerUser'],
       orderBy: { archivedAt: 'desc', id: 'desc' },
     });
   }
@@ -127,7 +129,7 @@ export class MikroOrmDocumentNavigationQueryRepository implements DocumentNaviga
       parentDocument: input.parentDocumentId,
       archivedAt: null,
     }, {
-      populate: ['teamspace', 'parentDocument'],
+      populate: ['teamspace', 'parentDocument', 'ownerUser'],
       orderBy: { sortKey: 'asc', createdAt: 'asc' },
     });
   }

@@ -13,5 +13,6 @@ export abstract class DocumentTreeQueryRepository {
     workspaceId: string;
     parentDocumentId?: string | null;
     teamspaceId?: string | null;
+    ownerUserId?: string | null;
   }): Promise<DocumentEntity | null>;
 }

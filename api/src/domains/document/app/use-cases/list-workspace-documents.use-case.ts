@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
+import type { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.enum';
 import type {
   DocumentNavigationNode,
   DocumentNavigationPage,
@@ -13,6 +14,7 @@ import {
   DocumentNotFoundError,
   InvalidDocumentCursorError,
 } from '../errors/document-app.error';
+import { DocumentAccessResolver } from '../policies/document-access.resolver';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
 import { hasMeaningfulContent } from '../utils/document-content.util';
 
@@ -21,6 +23,7 @@ export class ListWorkspaceDocumentsUseCase {
   constructor(
     private readonly workspaceRepository: WorkspaceRepository,
     private readonly documentNavigationQueryRepository: DocumentNavigationQueryRepository,
+    private readonly documentAccessResolver: DocumentAccessResolver,
   ) {}
 
   async execute(
@@ -37,7 +40,19 @@ export class ListWorkspaceDocumentsUseCase {
         throw new DocumentNotFoundError(input.parentDocumentId);
       }
 
+      const parentCapabilities = this.documentAccessResolver.resolve({
+        actorUserId: currentUser.userId,
+        documentOwnerUserId: parentDocument.ownerUser.id,
+        documentTeamspaceId: parentDocument.teamspace?.id,
+        workspaceRole: workspace.currentUserRole,
+      });
+
+      if (!parentCapabilities.canView) {
+        throw new DocumentNotFoundError(input.parentDocumentId);
+      }
+
       return this.listDocumentNavigationPage(workspace.id, {
+        workspaceRole: workspace.currentUserRole,
         userId: currentUser.userId,
         parentDocumentId: input.parentDocumentId,
         limit: input.limit,
@@ -50,6 +65,7 @@ export class ListWorkspaceDocumentsUseCase {
 
     const [privateDocuments, teamspaceDocuments] = await Promise.all([
       this.listDocumentNavigationPage(workspace.id, {
+        workspaceRole: workspace.currentUserRole,
         userId: currentUser.userId,
         teamspaceId: null,
         parentDocumentId: null,
@@ -62,6 +78,7 @@ export class ListWorkspaceDocumentsUseCase {
         name: teamspace.name,
         description: teamspace.description,
         documents: await this.listDocumentNavigationPage(workspace.id, {
+          workspaceRole: workspace.currentUserRole,
           userId: currentUser.userId,
           teamspaceId: teamspace.id,
           parentDocumentId: null,
@@ -82,6 +99,7 @@ export class ListWorkspaceDocumentsUseCase {
     workspaceId: string,
     input: {
       userId: string;
+      workspaceRole: WorkspaceRole;
       teamspaceId?: string | null;
       parentDocumentId?: string | null;
       limit: number;
@@ -98,11 +116,17 @@ export class ListWorkspaceDocumentsUseCase {
     const cursor = input.cursor
       ? this.decodeDocumentListCursor(input.cursor)
       : undefined;
+    const accessFilteredDocuments = documents.filter((document) => this.documentAccessResolver.resolve({
+      actorUserId: input.userId,
+      documentOwnerUserId: document.ownerUser.id,
+      documentTeamspaceId: document.teamspace?.id,
+      workspaceRole: input.workspaceRole,
+    }).canView);
     const visibleDocuments = cursor
-      ? documents.filter((document) =>
+      ? accessFilteredDocuments.filter((document) =>
         document.sortKey > cursor.sortKey
             || (document.sortKey === cursor.sortKey && document.id > cursor.id))
-      : documents;
+      : accessFilteredDocuments;
     const pagedDocuments = visibleDocuments.slice(0, input.limit + 1);
     const hasMore = pagedDocuments.length > input.limit;
     const items = pagedDocuments.slice(0, input.limit);

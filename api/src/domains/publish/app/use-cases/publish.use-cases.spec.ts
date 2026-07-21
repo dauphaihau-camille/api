@@ -1,4 +1,5 @@
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
+import { DocumentAccessResolver } from '~/domains/document/app/policies/document-access.resolver';
 import { UserStatus } from '~/domains/auth/domain/enums/user-status.enum';
 import { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.enum';
 import type { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
@@ -80,6 +81,7 @@ describe('Publish use cases', () => {
       workspaceRepository,
       publishRepository,
       auditService,
+      new DocumentAccessResolver(),
     );
 
     const result = await useCase.execute('document-1', currentUser);
@@ -110,6 +112,7 @@ describe('Publish use cases', () => {
       workspaceRepository,
       publishRepository,
       auditService,
+      new DocumentAccessResolver(),
     );
 
     await expect(useCase.execute('document-1', currentUser))

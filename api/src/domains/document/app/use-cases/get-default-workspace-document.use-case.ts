@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
+import { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.enum';
 import { DocumentNavigationQueryRepository } from '../ports/document-navigation-query.repository';
 import { DocumentTreeQueryRepository } from '../ports/document-tree-query.repository';
 import { DocumentVisitRepository } from '../ports/document-visit.repository';
+import { DocumentAccessResolver } from '../policies/document-access.resolver';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
 
 @Injectable()
@@ -13,6 +15,7 @@ export class GetDefaultWorkspaceDocumentUseCase {
     private readonly documentNavigationQueryRepository: DocumentNavigationQueryRepository,
     private readonly documentVisitRepository: DocumentVisitRepository,
     private readonly documentTreeQueryRepository: DocumentTreeQueryRepository,
+    private readonly documentAccessResolver: DocumentAccessResolver,
   ) {}
 
   async execute(
@@ -29,7 +32,12 @@ export class GetDefaultWorkspaceDocumentUseCase {
         archivedAt: null,
       });
 
-      if (recentDocument) {
+      if (recentDocument && this.documentAccessResolver.resolve({
+        actorUserId: currentUser.userId,
+        documentOwnerUserId: recentDocument.ownerUser.id,
+        documentTeamspaceId: recentDocument.teamspace?.id,
+        workspaceRole: workspace.currentUserRole,
+      }).canView) {
         return { documentId: recentDocument.id };
       }
     }
@@ -40,13 +48,29 @@ export class GetDefaultWorkspaceDocumentUseCase {
     });
 
     if (recentVisit?.documentId) {
-      return { documentId: recentVisit.documentId };
+      const recentVisitedDocument = await this.documentNavigationQueryRepository.findDocumentByIdInWorkspace({
+        documentId: recentVisit.documentId,
+        workspaceId: workspace.id,
+        archivedAt: null,
+      });
+
+      if (recentVisitedDocument && this.documentAccessResolver.resolve({
+        actorUserId: currentUser.userId,
+        documentOwnerUserId: recentVisitedDocument.ownerUser.id,
+        documentTeamspaceId: recentVisitedDocument.teamspace?.id,
+        workspaceRole: workspace.currentUserRole,
+      }).canView) {
+        return { documentId: recentVisit.documentId };
+      }
     }
 
     const firstPrivateRoot = await this.documentTreeQueryRepository.findFirstSibling({
       workspaceId: workspace.id,
       parentDocumentId: null,
       teamspaceId: null,
+      ownerUserId: workspace.currentUserRole === WorkspaceRole.OWNER || workspace.currentUserRole === WorkspaceRole.ADMIN
+        ? undefined
+        : currentUser.userId,
     });
 
     if (firstPrivateRoot) {

@@ -47,4 +47,15 @@ describe('DocumentAccessResolver', () => {
       canView: true,
     });
   });
+
+  it('hides private documents from workspace members who do not own them', () => {
+    expect(resolver.resolve({
+      actorUserId: 'user-1',
+      documentOwnerUserId: 'user-2',
+      workspaceRole: WorkspaceRole.MEMBER,
+    })).toEqual({
+      canEdit: false,
+      canView: false,
+    });
+  });
 });

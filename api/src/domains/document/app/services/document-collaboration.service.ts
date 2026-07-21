@@ -53,6 +53,10 @@ export class DocumentCollaborationService {
       workspaceRole: access.workspaceRole,
     });
 
+    if (!capabilities.canView) {
+      throw new DocumentCollaborationNotFoundError(documentId);
+    }
+
     const activeDocument = await this.getOrCreateActiveDocument(
       documentId,
       access.content,
@@ -83,6 +87,10 @@ export class DocumentCollaborationService {
       documentTeamspaceId: access.documentTeamspaceId,
       workspaceRole: access.workspaceRole,
     });
+
+    if (!capabilities.canView) {
+      throw new DocumentCollaborationNotFoundError(documentId);
+    }
 
     if (!capabilities.canEdit) {
       throw new DocumentCollaborationPermissionDeniedError();

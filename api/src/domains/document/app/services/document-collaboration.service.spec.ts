@@ -332,6 +332,7 @@ describe('DocumentCollaborationService', () => {
       content: [],
       title: 'Untitled',
       documentOwnerUserId: 'another-user',
+      documentTeamspaceId: 'teamspace-1',
       workspaceId: 'workspace-1',
       workspaceRole: WorkspaceRole.MEMBER,
     });

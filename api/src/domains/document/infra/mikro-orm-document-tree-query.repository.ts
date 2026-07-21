@@ -90,13 +90,16 @@ export class MikroOrmDocumentTreeQueryRepository implements DocumentTreeQueryRep
     workspaceId: string;
     parentDocumentId?: string | null;
     teamspaceId?: string | null;
+    ownerUserId?: string | null;
   }): Promise<DocumentEntity | null> {
     return this.entityManager.fork().findOne(DocumentEntity, {
       workspace: input.workspaceId,
       parentDocument: input.parentDocumentId ?? null,
       teamspace: input.teamspaceId ?? null,
+      ...(input.ownerUserId ? { ownerUser: input.ownerUserId } : {}),
       archivedAt: null,
     }, {
+      populate: ['workspace', 'teamspace', 'parentDocument', 'ownerUser'],
       orderBy: { sortKey: 'asc', createdAt: 'asc' },
     });
   }
