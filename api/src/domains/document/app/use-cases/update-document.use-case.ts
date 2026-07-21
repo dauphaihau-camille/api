@@ -2,7 +2,6 @@ import { OptimisticLockError } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { AuditService } from '~/integrations/audit/audit.service';
-import { canEditWorkspace } from '../../../workspace/app/workspace-permissions';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import type { DocumentSummary } from '../contracts/document.contract';
 import type { UpdateDocumentInput } from '../contracts/document.input';
@@ -10,6 +9,7 @@ import { DocumentCommandRepository } from '../ports/document-command.repository'
 import { DocumentCollaborationRepository } from '../ports/document-collaboration.repository';
 import { toDocumentSummary } from '../mappers/document-summary.mapper';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
+import { DocumentAccessResolver } from '../policies/document-access.resolver';
 import { extractDocumentSearchText } from '../utils/document-search-text.util';
 import {
   DocumentNotFoundError,
@@ -27,6 +27,7 @@ export class UpdateDocumentUseCase {
   constructor(
     private readonly auditService: AuditService,
     private readonly workspaceRepository: WorkspaceRepository,
+    private readonly documentAccessResolver: DocumentAccessResolver,
     private readonly documentCommandRepository: DocumentCommandRepository,
     private readonly documentCollaborationRepository: DocumentCollaborationRepository,
     private readonly syncDocumentSubdocReferencesUseCase: SyncDocumentSubdocReferencesUseCase,
@@ -43,7 +44,7 @@ export class UpdateDocumentUseCase {
       throw new DocumentNotFoundError(documentId);
     }
     const workspace = await resolveWorkspaceForUser(this.workspaceRepository, document.workspace.id, currentUser);
-    if (!canEditWorkspace(workspace.currentUserRole)) {
+    if (!this.documentAccessResolver.resolve(workspace.currentUserRole).canEdit) {
       throw new DocumentPermissionDeniedError();
     }
 

@@ -9,6 +9,7 @@ import {
 } from '../errors/document-collaboration.error';
 import { DocumentCollaborationProjector } from '../ports/document-collaboration-projector';
 import { DocumentCollaborationRepository } from '../ports/document-collaboration.repository';
+import { DocumentAccessResolver } from '../policies/document-access.resolver';
 import { normalizeTitle } from '../utils/document-title.util';
 import { loadYjs } from '../utils/yjs-runtime';
 import { DocumentCollaborationReferenceSyncService } from './document-collaboration-reference-sync.service';
@@ -27,6 +28,7 @@ export class DocumentCollaborationService {
 
   constructor(
     private readonly repository: DocumentCollaborationRepository,
+    private readonly documentAccessResolver: DocumentAccessResolver,
     private readonly projector: DocumentCollaborationProjector,
     private readonly subdocContentService: DocumentSubdocContentService,
     private readonly referenceSyncService: DocumentCollaborationReferenceSyncService,
@@ -43,6 +45,7 @@ export class DocumentCollaborationService {
   }> {
     const Yjs = await loadYjs();
     const access = await this.requireAccess(documentId, currentUser.userId);
+    const capabilities = this.documentAccessResolver.resolve(access.workspaceRole);
     const activeDocument = await this.getOrCreateActiveDocument(
       documentId,
       access.content,
@@ -50,7 +53,7 @@ export class DocumentCollaborationService {
     );
 
     return {
-      canEdit: access.canEdit,
+      canEdit: capabilities.canEdit,
       serverStateVector: Yjs.encodeStateVector(activeDocument.document),
       update: Yjs.encodeStateAsUpdate(activeDocument.document, clientStateVector),
     };
@@ -66,8 +69,9 @@ export class DocumentCollaborationService {
   }> {
     const Yjs = await loadYjs();
     const access = await this.requireAccess(documentId, currentUser.userId);
+    const capabilities = this.documentAccessResolver.resolve(access.workspaceRole);
 
-    if (!access.canEdit) {
+    if (!capabilities.canEdit) {
       throw new DocumentCollaborationPermissionDeniedError();
     }
 

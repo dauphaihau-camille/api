@@ -5,6 +5,7 @@ import { WsAuthService } from '../../../../platform/ws/ws-auth.service';
 import { DocumentCollaborationProjector } from '../../app/ports/document-collaboration-projector';
 import { DocumentCollaborationRepository } from '../../app/ports/document-collaboration.repository';
 import { DocumentCollaborationTransactionRunner } from '../../app/ports/document-collaboration-transaction-runner';
+import { DocumentAccessResolver } from '../../app/policies/document-access.resolver';
 import { DocumentCommandRepository } from '../../app/ports/document-command.repository';
 import { DocumentCollaborationReferenceSyncService } from '../../app/services/document-collaboration-reference-sync.service';
 import { DocumentCollaborationService } from '../../app/services/document-collaboration.service';
@@ -205,6 +206,7 @@ describe('DocumentCollaborationGateway', () => {
     const module = await Test.createTestingModule({
       providers: [
         DocumentCollaborationGateway,
+        DocumentAccessResolver,
         DocumentCollaborationReferenceSyncService,
         DocumentCollaborationService,
         DocumentSubdocReferenceSyncService,

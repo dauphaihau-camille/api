@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import * as Yjs from 'yjs';
 import type { AuthenticatedUser } from '../../../auth/app/auth.types';
+import { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.enum';
 import {
   DocumentCollaborationPermissionDeniedError,
 } from '../errors/document-collaboration.error';
@@ -9,6 +10,7 @@ import type {
   PersistedDocumentCollaborationState,
 } from '../ports/document-collaboration.repository';
 import type { DocumentCollaborationProjector } from '../ports/document-collaboration-projector';
+import { DocumentAccessResolver } from '../policies/document-access.resolver';
 import type { DocumentCollaborationReferenceSyncService } from './document-collaboration-reference-sync.service';
 import { DocumentCollaborationService } from './document-collaboration.service';
 import { DocumentSubdocContentService } from './document-subdoc-content.service';
@@ -28,10 +30,10 @@ describe('DocumentCollaborationService', () => {
 
     const repository: jest.Mocked<DocumentCollaborationRepository> = {
       getAccess: jest.fn().mockResolvedValue({
-        canEdit: true,
         content: [{ type: 'paragraph', content: 'Initial content' }],
         title: 'Initial title',
         workspaceId: 'workspace-1',
+        workspaceRole: WorkspaceRole.OWNER,
       }),
       loadState: jest.fn(async (_documentId: string) => state),
       initializeState: jest.fn(async (_documentId, snapshot) => {
@@ -93,6 +95,7 @@ describe('DocumentCollaborationService', () => {
     const projector = createProjector();
     const service = new DocumentCollaborationService(
       repository,
+      new DocumentAccessResolver(),
       projector,
       new DocumentSubdocContentService(),
       createReferenceSyncService(),
@@ -120,6 +123,7 @@ describe('DocumentCollaborationService', () => {
     const projector = createProjector();
     const service = new DocumentCollaborationService(
       repository,
+      new DocumentAccessResolver(),
       projector,
       new DocumentSubdocContentService(),
       createReferenceSyncService(),
@@ -163,6 +167,7 @@ describe('DocumentCollaborationService', () => {
     const referenceSyncService = createReferenceSyncService();
     const service = new DocumentCollaborationService(
       repository,
+      new DocumentAccessResolver(),
       projector,
       new DocumentSubdocContentService(),
       referenceSyncService,
@@ -195,6 +200,7 @@ describe('DocumentCollaborationService', () => {
     const repository = createRepository();
     const service = new DocumentCollaborationService(
       repository,
+      new DocumentAccessResolver(),
       createProjector(),
       new DocumentSubdocContentService(),
       createReferenceSyncService(),
@@ -237,6 +243,7 @@ describe('DocumentCollaborationService', () => {
     projector.project.mockRejectedValueOnce(new Error('invalid ydoc'));
     const service = new DocumentCollaborationService(
       repository,
+      new DocumentAccessResolver(),
       projector,
       new DocumentSubdocContentService(),
       createReferenceSyncService(),
@@ -275,6 +282,7 @@ describe('DocumentCollaborationService', () => {
 
     const service = new DocumentCollaborationService(
       repository,
+      new DocumentAccessResolver(),
       projector,
       new DocumentSubdocContentService(),
       createReferenceSyncService(),
@@ -302,6 +310,7 @@ describe('DocumentCollaborationService', () => {
 
     const service = new DocumentCollaborationService(
       repository,
+      new DocumentAccessResolver(),
       projector,
       new DocumentSubdocContentService(),
       createReferenceSyncService(),
@@ -320,13 +329,14 @@ describe('DocumentCollaborationService', () => {
   it('rejects updates from users without edit access', async () => {
     const repository = createRepository();
     repository.getAccess.mockResolvedValue({
-      canEdit: false,
       content: [],
       title: 'Untitled',
       workspaceId: 'workspace-1',
+      workspaceRole: WorkspaceRole.MEMBER,
     });
     const service = new DocumentCollaborationService(
       repository,
+      new DocumentAccessResolver(),
       createProjector(),
       new DocumentSubdocContentService(),
       createReferenceSyncService(),

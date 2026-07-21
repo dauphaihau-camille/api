@@ -5,7 +5,6 @@ import { AuditService } from '~/integrations/audit/audit.service';
 import { JobDispatcher } from '~/integrations/queue/app/ports/job-dispatcher';
 import { appJobName } from '~/integrations/queue/app/app-job.types';
 import { PublishRepository } from '../../../publish/app/ports/publish.repository';
-import { canEditWorkspace } from '../../../workspace/app/workspace-permissions';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import { DocumentCommandRepository } from '../ports/document-command.repository';
 import {
@@ -18,6 +17,7 @@ import { toDocumentSummary } from '../mappers/document-summary.mapper';
 import { DocumentSubdocContentService } from '../services/document-subdoc-content.service';
 import { DocumentTreeService } from '../services/document-tree.service';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
+import { DocumentAccessResolver } from '../policies/document-access.resolver';
 import { extractDocumentSearchText } from '../utils/document-search-text.util';
 import { normalizeContent } from '../utils/document-content.util';
 import { RemoveArchivedSubdocReferencesUseCase } from './remove-archived-subdoc-references.use-case';
@@ -32,6 +32,7 @@ export class ArchiveSubdocCommandUseCase {
     private readonly auditService: AuditService,
     private readonly jobDispatcher: JobDispatcher,
     private readonly workspaceRepository: WorkspaceRepository,
+    private readonly documentAccessResolver: DocumentAccessResolver,
     private readonly publishRepository: PublishRepository,
     private readonly documentCommandRepository: DocumentCommandRepository,
     private readonly documentTreeService: DocumentTreeService,
@@ -61,7 +62,7 @@ export class ArchiveSubdocCommandUseCase {
       currentUser,
     );
 
-    if (!canEditWorkspace(workspace.currentUserRole)) {
+    if (!this.documentAccessResolver.resolve(workspace.currentUserRole).canEdit) {
       throw new DocumentPermissionDeniedError();
     }
 

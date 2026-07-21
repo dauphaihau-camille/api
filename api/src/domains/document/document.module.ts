@@ -60,6 +60,7 @@ import { MikroOrmDocumentCollaborationRepository } from './infra/mikro-orm-docum
 import { MikroOrmDocumentCollaborationTransactionRunner } from './infra/mikro-orm-document-collaboration-transaction.runner';
 import { DocumentCollaborationSnapshotEntity } from './infra/persistence/entities/document-collaboration-snapshot.entity';
 import { DocumentCollaborationUpdateEntity } from './infra/persistence/entities/document-collaboration-update.entity';
+import { DocumentAccessResolver } from './app/policies/document-access.resolver';
 
 @Module({
   imports: [
@@ -124,6 +125,7 @@ import { DocumentCollaborationUpdateEntity } from './infra/persistence/entities/
       useClass: MikroOrmDocumentCollaborationTransactionRunner,
     },
     DocumentCollaborationGateway,
+    DocumentAccessResolver,
     DocumentCollaborationReferenceSyncService,
     DocumentCollaborationService,
     DocumentSubdocReferenceSyncService,
@@ -148,6 +150,9 @@ import { DocumentCollaborationUpdateEntity } from './infra/persistence/entities/
     RestoreDocumentUseCase,
     PermanentlyDeleteDocumentUseCase,
   ],
-  exports: [WorkspaceDefaultDocumentProvisioner],
+  exports: [
+    DocumentAccessResolver,
+    WorkspaceDefaultDocumentProvisioner,
+  ],
 })
 export class DocumentModule {}

@@ -1,8 +1,10 @@
+import type { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.enum';
+
 export type DocumentCollaborationAccess = {
-  canEdit: boolean;
   content: unknown[];
   title: string;
   workspaceId: string;
+  workspaceRole: WorkspaceRole;
 };
 
 export type PersistedDocumentCollaborationState = {

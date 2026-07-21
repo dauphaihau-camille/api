@@ -2,7 +2,6 @@ import { OptimisticLockError } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { AuditService } from '~/integrations/audit/audit.service';
-import { canEditWorkspace } from '../../../workspace/app/workspace-permissions';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import { DocumentCommandRepository } from '../ports/document-command.repository';
 import {
@@ -14,12 +13,14 @@ import { DocumentTreeService } from '../services/document-tree.service';
 import type { DocumentSummary } from '../contracts/document.contract';
 import { toDocumentSummary } from '../mappers/document-summary.mapper';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
+import { DocumentAccessResolver } from '../policies/document-access.resolver';
 
 @Injectable()
 export class RestoreDocumentUseCase {
   constructor(
     private readonly auditService: AuditService,
     private readonly workspaceRepository: WorkspaceRepository,
+    private readonly documentAccessResolver: DocumentAccessResolver,
     private readonly documentCommandRepository: DocumentCommandRepository,
     private readonly documentTreeService: DocumentTreeService,
   ) {}
@@ -34,7 +35,7 @@ export class RestoreDocumentUseCase {
       throw new DocumentNotFoundError(documentId);
     }
     const workspace = await resolveWorkspaceForUser(this.workspaceRepository, document.workspace.id, currentUser);
-    if (!canEditWorkspace(workspace.currentUserRole)) {
+    if (!this.documentAccessResolver.resolve(workspace.currentUserRole).canEdit) {
       throw new DocumentPermissionDeniedError();
     }
 

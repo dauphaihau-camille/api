@@ -60,12 +60,12 @@ describe('MikroOrmDocumentCollaborationRepository', () => {
   });
 
   it.each([
-    [WorkspaceRole.OWNER, true],
-    [WorkspaceRole.ADMIN, true],
-    [WorkspaceRole.MEMBER, false],
+    WorkspaceRole.OWNER,
+    WorkspaceRole.ADMIN,
+    WorkspaceRole.MEMBER,
   ])(
-    'derives edit access only from the %s workspace role',
-    async (role, canEdit) => {
+    'returns the %s workspace role for capability resolution',
+    async (role) => {
       const document = {
         contentJson: [{ type: 'paragraph' }],
         createdBy: { id: 'another-user' },
@@ -76,10 +76,10 @@ describe('MikroOrmDocumentCollaborationRepository', () => {
       const { repository } = createRepository(document, { role });
 
       await expect(repository.getAccess('document-1', 'user-1')).resolves.toEqual({
-        canEdit,
         content: document.contentJson,
         title: document.title,
         workspaceId: document.workspace.id,
+        workspaceRole: role,
       });
     },
   );

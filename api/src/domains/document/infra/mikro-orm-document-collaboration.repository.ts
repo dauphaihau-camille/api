@@ -1,7 +1,6 @@
 import { LockMode } from '@mikro-orm/core';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
-import { canEditWorkspace } from '../../workspace/app/workspace-permissions';
 import { WorkspaceMemberEntity } from '../../workspace/infra/persistence/entities/workspace-member.entity';
 import type {
   DocumentCollaborationAccess,
@@ -44,10 +43,10 @@ export class MikroOrmDocumentCollaborationRepository extends DocumentCollaborati
     }
 
     return {
-      canEdit: canEditWorkspace(membership.role),
       content: document.contentJson,
       title: document.title,
       workspaceId: document.workspace.id,
+      workspaceRole: membership.role,
     };
   }
 

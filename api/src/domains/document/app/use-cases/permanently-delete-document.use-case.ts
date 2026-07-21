@@ -2,7 +2,6 @@ import { OptimisticLockError } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { AuditService } from '~/integrations/audit/audit.service';
-import { canEditWorkspace } from '../../../workspace/app/workspace-permissions';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import { DocumentCommandRepository } from '../ports/document-command.repository';
 import {
@@ -13,12 +12,14 @@ import {
 } from '../errors/document-app.error';
 import { DocumentTreeService } from '../services/document-tree.service';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
+import { DocumentAccessResolver } from '../policies/document-access.resolver';
 
 @Injectable()
 export class PermanentlyDeleteDocumentUseCase {
   constructor(
     private readonly auditService: AuditService,
     private readonly workspaceRepository: WorkspaceRepository,
+    private readonly documentAccessResolver: DocumentAccessResolver,
     private readonly documentCommandRepository: DocumentCommandRepository,
     private readonly documentTreeService: DocumentTreeService,
   ) {}
@@ -41,7 +42,7 @@ export class PermanentlyDeleteDocumentUseCase {
       existingDocument.workspace.id,
       currentUser,
     );
-    if (!canEditWorkspace(workspace.currentUserRole)) {
+    if (!this.documentAccessResolver.resolve(workspace.currentUserRole).canEdit) {
       throw new DocumentPermissionDeniedError();
     }
 

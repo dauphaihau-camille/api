@@ -4,6 +4,7 @@ import type { PublishRepository } from '../../../publish/app/ports/publish.repos
 import { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.enum';
 import type { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import type { DocumentCommandRepository } from '../ports/document-command.repository';
+import { DocumentAccessResolver } from '../policies/document-access.resolver';
 import type { DocumentTreeService } from '../services/document-tree.service';
 import type { DocumentSubdocContentService } from '../services/document-subdoc-content.service';
 import { ArchiveSubdocCommandUseCase } from './archive-subdoc-command.use-case';
@@ -174,6 +175,7 @@ describe('ArchiveSubdocCommandUseCase', () => {
       auditService as never,
       jobDispatcher as never,
       workspaceRepository,
+      new DocumentAccessResolver(),
       publishRepository,
       commandRepository,
       treeService,
