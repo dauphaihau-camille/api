@@ -113,6 +113,94 @@ describe('DocumentCollaborationGateway', () => {
     );
   });
 
+  it('joins a workspace member read-only when synchronization grants view access', async () => {
+    const synchronize = jest.fn().mockResolvedValue({
+      canEdit: false,
+      serverStateVector: new Uint8Array([0]),
+      update: new Uint8Array([0]),
+    });
+    const gateway = new DocumentCollaborationGateway(
+      {} as WsAuthService,
+      { synchronize } as unknown as DocumentCollaborationService,
+    );
+    const socket = {
+      data: {
+        collaborationDocumentIds: new Set<string>(),
+        user,
+      },
+      join: jest.fn().mockResolvedValue(undefined),
+    };
+
+    await expect(gateway.join(socket as never, {
+      documentId: 'document-1',
+      stateVector: new Uint8Array([0]),
+    })).resolves.toEqual({
+      ok: true,
+      data: {
+        canEdit: false,
+        serverStateVector: Buffer.from([0]),
+        update: Buffer.from([0]),
+      },
+    });
+
+    expect(socket.join).toHaveBeenCalledWith('document:document-1');
+    expect(socket.data.collaborationDocumentIds).toContain('document-1');
+  });
+
+  it('rejects document updates until the socket has joined that document room', async () => {
+    const applyUpdate = jest.fn();
+    const gateway = new DocumentCollaborationGateway(
+      {} as WsAuthService,
+      { applyUpdate } as unknown as DocumentCollaborationService,
+    );
+    const socket = {
+      data: {
+        collaborationDocumentIds: new Set<string>(),
+        user,
+      },
+      to: jest.fn(),
+    };
+
+    await expect(gateway.update(socket as never, {
+      documentId: 'document-1',
+      update: new Uint8Array([1]),
+    })).resolves.toEqual({
+      ok: false,
+      error: {
+        code: 'DOCUMENT_COLLABORATION_PERMISSION_DENIED',
+        message: 'You do not have permission to edit this document',
+      },
+    });
+
+    expect(applyUpdate).not.toHaveBeenCalled();
+    expect(socket.to).not.toHaveBeenCalled();
+  });
+
+  it('relays awareness for any socket that has joined the document room', () => {
+    const emit = jest.fn();
+    const gateway = new DocumentCollaborationGateway(
+      {} as WsAuthService,
+      {} as DocumentCollaborationService,
+    );
+    const socket = {
+      data: {
+        collaborationDocumentIds: new Set(['document-1']),
+        user,
+      },
+      to: jest.fn().mockReturnValue({ emit }),
+    };
+
+    expect(gateway.awareness(socket as never, {
+      documentId: 'document-1',
+      update: new Uint8Array([1]),
+    })).toEqual({ ok: true, data: {} });
+
+    expect(emit).toHaveBeenCalledWith('collab:awareness', {
+      documentId: 'document-1',
+      update: Buffer.from([1]),
+    });
+  });
+
   it('stays singleton when document command providers are request scoped', async () => {
     const module = await Test.createTestingModule({
       providers: [

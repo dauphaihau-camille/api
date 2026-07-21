@@ -21,7 +21,9 @@ describe('Document read use cases', () => {
     permissions: [],
   };
 
-  function createWorkspaceRepository() {
+  function createWorkspaceRepository(
+    currentUserRole: WorkspaceRole = WorkspaceRole.OWNER,
+  ) {
     return {
       findAllForUser: jest.fn().mockResolvedValue([
         {
@@ -30,7 +32,7 @@ describe('Document read use cases', () => {
           slug: 'workspace-1',
           name: 'Workspace 1',
           description: undefined,
-          currentUserRole: WorkspaceRole.OWNER,
+          currentUserRole,
           createdAt: new Date('2026-01-01T00:00:00.000Z'),
           updatedAt: new Date('2026-01-01T00:00:00.000Z'),
         },
@@ -214,5 +216,56 @@ describe('Document read use cases', () => {
       'total',
       expect.any(Number),
     );
+  });
+
+  it('allows a workspace member to read a private document created by another user', async () => {
+    const workspaceRepository = createWorkspaceRepository(WorkspaceRole.MEMBER);
+    const navigationRepository = createNavigationRepository();
+    const visitRepository = createVisitRepository();
+    const publishRepository = createPublishRepository();
+    const observabilityService = createObservabilityService();
+    const document = {
+      id: 'private-document',
+      publicId: 'private-document-public-id',
+      version: 1,
+      workspace: { id: 'workspace-1' },
+      teamspace: undefined,
+      parentDocument: undefined,
+      title: 'Another user private document',
+      contentFormat: 'blocknote_v1',
+      contentJson: [],
+      sortKey: 1,
+      archivedAt: undefined,
+      createdBy: { id: 'another-user' },
+      updatedBy: {
+        displayName: 'Another user',
+        email: 'another@example.com',
+      },
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    };
+
+    navigationRepository.findDocument.mockResolvedValue(document as never);
+    navigationRepository.findFavoriteDocumentIds.mockResolvedValue([]);
+    navigationRepository.findAncestors.mockResolvedValue([]);
+    publishRepository.findPublishedDocumentByDocumentId.mockResolvedValue(null);
+    visitRepository.recordVisit.mockResolvedValue(undefined);
+
+    const useCase = new GetDocumentUseCase(
+      workspaceRepository,
+      navigationRepository,
+      visitRepository,
+      publishRepository,
+      observabilityService,
+    );
+
+    await expect(useCase.execute(document.id, currentUser)).resolves.toEqual(
+      expect.objectContaining({
+        id: document.id,
+        teamspaceId: undefined,
+      }),
+    );
+
+    expect(workspaceRepository.findAllForUser).toHaveBeenCalledWith(currentUser.userId);
   });
 });
