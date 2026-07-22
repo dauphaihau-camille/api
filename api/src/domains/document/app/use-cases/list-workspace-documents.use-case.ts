@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
+import type { TeamspaceMemberRole } from '~/domains/teamspace/domain/enums/teamspace-member-role.enum';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import type { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.enum';
 import type {
@@ -40,10 +41,16 @@ export class ListWorkspaceDocumentsUseCase {
         throw new DocumentNotFoundError(input.parentDocumentId);
       }
 
+      const parentTeamspaceMemberRole = await this.findTeamspaceMemberRole(
+        currentUser.userId,
+        parentDocument.teamspace?.id,
+      );
       const parentCapabilities = this.documentAccessResolver.resolve({
         actorUserId: currentUser.userId,
         documentOwnerUserId: parentDocument.ownerUser.id,
         documentTeamspaceId: parentDocument.teamspace?.id,
+        teamspaceAccessMode: parentDocument.teamspace?.accessMode,
+        teamspaceMemberRole: parentTeamspaceMemberRole,
         workspaceRole: workspace.currentUserRole,
       });
 
@@ -116,10 +123,18 @@ export class ListWorkspaceDocumentsUseCase {
     const cursor = input.cursor
       ? this.decodeDocumentListCursor(input.cursor)
       : undefined;
+    const teamspaceMemberRolesByTeamspaceId = await this.findTeamspaceMemberRolesByTeamspaceId(
+      input.userId,
+      documents,
+    );
     const accessFilteredDocuments = documents.filter((document) => this.documentAccessResolver.resolve({
       actorUserId: input.userId,
       documentOwnerUserId: document.ownerUser.id,
       documentTeamspaceId: document.teamspace?.id,
+      teamspaceAccessMode: document.teamspace?.accessMode,
+      teamspaceMemberRole: document.teamspace?.id
+        ? teamspaceMemberRolesByTeamspaceId.get(document.teamspace.id)
+        : undefined,
       workspaceRole: input.workspaceRole,
     }).canView);
     const visibleDocuments = cursor
@@ -135,6 +150,42 @@ export class ListWorkspaceDocumentsUseCase {
       items: await this.toDocumentNavigationNodes(items, workspaceId, input.userId),
       nextCursor: hasMore ? this.encodeDocumentListCursor(items[items.length - 1]!) : undefined,
     };
+  }
+
+  private async findTeamspaceMemberRole(
+    userId: string,
+    teamspaceId?: string,
+  ): Promise<TeamspaceMemberRole | undefined> {
+    if (!teamspaceId) {
+      return undefined;
+    }
+
+    const rolesByTeamspaceId = await this.documentNavigationQueryRepository.findTeamspaceMemberRolesByTeamspaceId({
+      teamspaceIds: [teamspaceId],
+      userId,
+    });
+
+    return rolesByTeamspaceId.get(teamspaceId);
+  }
+
+  private async findTeamspaceMemberRolesByTeamspaceId(
+    userId: string,
+    documents: DocumentEntity[],
+  ): Promise<Map<string, TeamspaceMemberRole>> {
+    const teamspaceIds = Array.from(new Set(
+      documents
+        .map((document) => document.teamspace?.id)
+        .filter((teamspaceId): teamspaceId is string => Boolean(teamspaceId)),
+    ));
+
+    if (teamspaceIds.length === 0) {
+      return new Map();
+    }
+
+    return this.documentNavigationQueryRepository.findTeamspaceMemberRolesByTeamspaceId({
+      teamspaceIds,
+      userId,
+    });
   }
 
   private async toDocumentNavigationNodes(

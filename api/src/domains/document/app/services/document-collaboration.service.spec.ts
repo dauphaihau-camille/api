@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 import * as Yjs from 'yjs';
+import { TeamspaceAccessMode } from '../../../teamspace/domain/enums/teamspace-access-mode.enum';
+import { TeamspaceMemberRole } from '../../../teamspace/domain/enums/teamspace-member-role.enum';
 import type { AuthenticatedUser } from '../../../auth/app/auth.types';
 import { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.enum';
 import {
@@ -31,6 +33,7 @@ describe('DocumentCollaborationService', () => {
     const repository: jest.Mocked<DocumentCollaborationRepository> = {
       getAccess: jest.fn().mockResolvedValue({
         content: [{ type: 'paragraph', content: 'Initial content' }],
+        documentOwnerUserId: 'user-1',
         title: 'Initial title',
         workspaceId: 'workspace-1',
         workspaceRole: WorkspaceRole.OWNER,
@@ -333,6 +336,7 @@ describe('DocumentCollaborationService', () => {
       title: 'Untitled',
       documentOwnerUserId: 'another-user',
       documentTeamspaceId: 'teamspace-1',
+      teamspaceAccessMode: TeamspaceAccessMode.OPEN,
       workspaceId: 'workspace-1',
       workspaceRole: WorkspaceRole.MEMBER,
     });
@@ -347,5 +351,43 @@ describe('DocumentCollaborationService', () => {
     await expect(
       service.applyUpdate('document-1', user, new Uint8Array([0])),
     ).rejects.toBeInstanceOf(DocumentCollaborationPermissionDeniedError);
+  });
+
+  it('allows updates from restricted teamspace editors', async () => {
+    const repository = createRepository();
+    repository.getAccess.mockResolvedValue({
+      content: [{ type: 'paragraph', content: 'Initial content' }],
+      documentOwnerUserId: 'another-user',
+      documentTeamspaceId: 'teamspace-1',
+      teamspaceAccessMode: TeamspaceAccessMode.RESTRICTED,
+      teamspaceMemberRole: TeamspaceMemberRole.EDITOR,
+      title: 'Initial title',
+      workspaceId: 'workspace-1',
+      workspaceRole: WorkspaceRole.MEMBER,
+    });
+    const service = new DocumentCollaborationService(
+      repository,
+      new DocumentAccessResolver(),
+      createProjector(),
+      new DocumentSubdocContentService(),
+      createReferenceSyncService(),
+    );
+    const clientDocument = new Yjs.Doc();
+    const synchronized = await service.synchronize(
+      'document-1',
+      user,
+      Yjs.encodeStateVector(clientDocument),
+    );
+    Yjs.applyUpdate(clientDocument, synchronized.update);
+    const stateVector = Yjs.encodeStateVector(clientDocument);
+    clientDocument.getText('content').insert(0, 'Updated content');
+
+    await expect(
+      service.applyUpdate(
+        'document-1',
+        user,
+        Yjs.encodeStateAsUpdate(clientDocument, stateVector),
+      ),
+    ).resolves.toMatchObject({ sequence: 1 });
   });
 });

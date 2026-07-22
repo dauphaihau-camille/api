@@ -1,6 +1,7 @@
 import { LockMode } from '@mikro-orm/core';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
+import { TeamspaceMemberEntity } from '../../teamspace/infra/persistence/entities/teamspace-member.entity';
 import { WorkspaceMemberEntity } from '../../workspace/infra/persistence/entities/workspace-member.entity';
 import type {
   DocumentCollaborationAccess,
@@ -42,11 +43,20 @@ export class MikroOrmDocumentCollaborationRepository extends DocumentCollaborati
       return null;
     }
 
+    const teamspaceMembership = document.teamspace
+      ? await entityManager.findOne(TeamspaceMemberEntity, {
+        teamspace: document.teamspace.id,
+        user: userId,
+      })
+      : null;
+
     return {
       content: document.contentJson,
       title: document.title,
       documentOwnerUserId: document.ownerUser.id,
       documentTeamspaceId: document.teamspace?.id,
+      teamspaceAccessMode: document.teamspace?.accessMode,
+      teamspaceMemberRole: teamspaceMembership?.role,
       workspaceId: document.workspace.id,
       workspaceRole: membership.role,
     };

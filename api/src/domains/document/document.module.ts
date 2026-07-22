@@ -10,6 +10,7 @@ import { MikroOrmPublishRepository } from '../publish/infra/mikro-orm-publish.re
 import { PublishedDocumentEntity } from '../publish/infra/persistence/entities/published-document.entity';
 import { WorkspaceDefaultDocumentProvisioner } from '../workspace/app/ports/workspace-default-document-provisioner';
 import { WorkspaceModule } from '../workspace/workspace.module';
+import { TeamspaceMemberEntity } from '../teamspace/infra/persistence/entities/teamspace-member.entity';
 import { TeamspaceEntity } from '../teamspace/infra/persistence/entities/teamspace.entity';
 import { WorkspaceEntity } from '../workspace/infra/persistence/entities/workspace.entity';
 import { DocumentController } from './api/rest/document.controller';
@@ -73,6 +74,7 @@ import { DocumentAccessResolver } from './app/policies/document-access.resolver'
       CurrentUserEntity,
       WorkspaceEntity,
       TeamspaceEntity,
+      TeamspaceMemberEntity,
       DocumentEntity,
       DocumentSubdocReferenceEntity,
       DocumentVisitEntity,

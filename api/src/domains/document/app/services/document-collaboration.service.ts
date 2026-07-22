@@ -50,6 +50,8 @@ export class DocumentCollaborationService {
       actorUserId: currentUser.userId,
       documentOwnerUserId: access.documentOwnerUserId,
       documentTeamspaceId: access.documentTeamspaceId,
+      teamspaceAccessMode: access.teamspaceAccessMode,
+      teamspaceMemberRole: access.teamspaceMemberRole,
       workspaceRole: access.workspaceRole,
     });
 
@@ -85,6 +87,8 @@ export class DocumentCollaborationService {
       actorUserId: currentUser.userId,
       documentOwnerUserId: access.documentOwnerUserId,
       documentTeamspaceId: access.documentTeamspaceId,
+      teamspaceAccessMode: access.teamspaceAccessMode,
+      teamspaceMemberRole: access.teamspaceMemberRole,
       workspaceRole: access.workspaceRole,
     });
 

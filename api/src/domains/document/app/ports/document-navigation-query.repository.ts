@@ -1,4 +1,5 @@
 import type { DocumentEntity } from '../../infra/persistence/entities/document.entity';
+import type { TeamspaceMemberRole } from '../../../teamspace/domain/enums/teamspace-member-role.enum';
 import type {
   DocumentBreadcrumbItem,
   DocumentTeamspaceRef,
@@ -14,6 +15,10 @@ export abstract class DocumentNavigationQueryRepository {
     archivedAt?: null;
   }): Promise<DocumentEntity | null>;
   abstract findTeamspaces(workspaceId: string): Promise<DocumentTeamspaceRef[]>;
+  abstract findTeamspaceMemberRolesByTeamspaceId(input: {
+    teamspaceIds: string[];
+    userId: string;
+  }): Promise<Map<string, TeamspaceMemberRole>>;
   abstract findRootDocuments(input: {
     workspaceId: string;
     teamspaceId?: string | null;

@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { DocumentFavoriteEntity } from '../../favorite/infra/persistence/entities/document-favorite.entity';
+import type { TeamspaceMemberRole } from '../../teamspace/domain/enums/teamspace-member-role.enum';
 import { TeamspaceEntity } from '../../teamspace/infra/persistence/entities/teamspace.entity';
+import { TeamspaceMemberEntity } from '../../teamspace/infra/persistence/entities/teamspace-member.entity';
 import type {
   DocumentBreadcrumbItem,
   DocumentTeamspaceRef,
@@ -45,6 +47,33 @@ export class MikroOrmDocumentNavigationQueryRepository implements DocumentNaviga
       name: teamspace.name,
       description: teamspace.description,
     }));
+  }
+
+  async findTeamspaceMemberRolesByTeamspaceId(input: {
+    teamspaceIds: string[];
+    userId: string;
+  }): Promise<Map<string, TeamspaceMemberRole>> {
+    if (input.teamspaceIds.length === 0) {
+      return new Map();
+    }
+
+    const teamspaceMembers = await this.entityManager.fork().find(
+      TeamspaceMemberEntity,
+      {
+        teamspace: { $in: input.teamspaceIds },
+        user: input.userId,
+      },
+      {
+        populate: ['teamspace'],
+      },
+    );
+
+    return new Map(
+      teamspaceMembers.map((teamspaceMember) => [
+        teamspaceMember.teamspace.id,
+        teamspaceMember.role,
+      ]),
+    );
   }
 
   async findRootDocuments(input: {

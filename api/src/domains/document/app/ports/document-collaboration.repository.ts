@@ -1,3 +1,5 @@
+import type { TeamspaceAccessMode } from '../../../teamspace/domain/enums/teamspace-access-mode.enum';
+import type { TeamspaceMemberRole } from '../../../teamspace/domain/enums/teamspace-member-role.enum';
 import type { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.enum';
 
 export type DocumentCollaborationAccess = {
@@ -5,6 +7,8 @@ export type DocumentCollaborationAccess = {
   title: string;
   documentOwnerUserId: string;
   documentTeamspaceId?: string;
+  teamspaceAccessMode?: TeamspaceAccessMode;
+  teamspaceMemberRole?: TeamspaceMemberRole;
   workspaceId: string;
   workspaceRole: WorkspaceRole;
 };

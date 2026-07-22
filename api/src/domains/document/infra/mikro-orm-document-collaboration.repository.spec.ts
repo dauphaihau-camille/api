@@ -1,4 +1,7 @@
 import type { EntityManager } from '@mikro-orm/postgresql';
+import { TeamspaceAccessMode } from '../../teamspace/domain/enums/teamspace-access-mode.enum';
+import { TeamspaceMemberRole } from '../../teamspace/domain/enums/teamspace-member-role.enum';
+import { TeamspaceMemberEntity } from '../../teamspace/infra/persistence/entities/teamspace-member.entity';
 import { WorkspaceRole } from '../../workspace/domain/enums/workspace-role.enum';
 import { WorkspaceMemberEntity } from '../../workspace/infra/persistence/entities/workspace-member.entity';
 import { MikroOrmDocumentCollaborationRepository } from './mikro-orm-document-collaboration.repository';
@@ -8,11 +11,13 @@ describe('MikroOrmDocumentCollaborationRepository', () => {
   function createRepository(
     document: Record<string, unknown> | null,
     membership?: Record<string, unknown> | null,
+    teamspaceMembership?: Record<string, unknown> | null,
   ) {
     const scopedEntityManager = {
       findOne: jest.fn()
         .mockResolvedValueOnce(document)
-        .mockResolvedValueOnce(membership),
+        .mockResolvedValueOnce(membership)
+        .mockResolvedValueOnce(teamspaceMembership),
     };
     const entityManager = {
       fork: jest.fn().mockReturnValue(scopedEntityManager),
@@ -79,10 +84,50 @@ describe('MikroOrmDocumentCollaborationRepository', () => {
         content: document.contentJson,
         documentOwnerUserId: document.ownerUser.id,
         documentTeamspaceId: undefined,
+        teamspaceAccessMode: undefined,
+        teamspaceMemberRole: undefined,
         title: document.title,
         workspaceId: document.workspace.id,
         workspaceRole: role,
       });
     },
   );
+
+  it('returns teamspace access mode and member role for teamspace documents', async () => {
+    const document = {
+      contentJson: [],
+      ownerUser: { id: 'another-user' },
+      teamspace: {
+        id: 'teamspace-1',
+        accessMode: TeamspaceAccessMode.RESTRICTED,
+      },
+      title: 'Restricted teamspace document',
+      workspace: { id: 'workspace-1' },
+    };
+    const { repository, scopedEntityManager } = createRepository(
+      document,
+      { role: WorkspaceRole.MEMBER },
+      { role: TeamspaceMemberRole.EDITOR },
+    );
+
+    await expect(repository.getAccess('document-1', 'user-1')).resolves.toEqual({
+      content: document.contentJson,
+      documentOwnerUserId: document.ownerUser.id,
+      documentTeamspaceId: document.teamspace.id,
+      teamspaceAccessMode: TeamspaceAccessMode.RESTRICTED,
+      teamspaceMemberRole: TeamspaceMemberRole.EDITOR,
+      title: document.title,
+      workspaceId: document.workspace.id,
+      workspaceRole: WorkspaceRole.MEMBER,
+    });
+
+    expect(scopedEntityManager.findOne).toHaveBeenNthCalledWith(
+      3,
+      TeamspaceMemberEntity,
+      {
+        teamspace: 'teamspace-1',
+        user: 'user-1',
+      },
+    );
+  });
 });
