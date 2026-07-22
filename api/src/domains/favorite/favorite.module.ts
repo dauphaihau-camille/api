@@ -5,6 +5,7 @@ import { DocumentEntity } from '../document/infra/persistence/entities/document.
 import { DocumentNavigationQueryRepository } from '../document/app/ports/document-navigation-query.repository';
 import { MikroOrmDocumentNavigationQueryRepository } from '../document/infra/mikro-orm-document-navigation-query.repository';
 import { DocumentAccessResolver } from '../document/app/policies/document-access.resolver';
+import { TeamspaceMemberEntity } from '../teamspace/infra/persistence/entities/teamspace-member.entity';
 import { WorkspaceEntity } from '../workspace/infra/persistence/entities/workspace.entity';
 import { AuditModule } from '../../integrations/audit/audit.module';
 import { WorkspaceModule } from '../workspace/workspace.module';
@@ -26,6 +27,7 @@ import { DocumentFavoriteEntity } from './infra/persistence/entities/document-fa
       WorkspaceEntity,
       DocumentEntity,
       DocumentFavoriteEntity,
+      TeamspaceMemberEntity,
     ]),
   ],
   controllers: [FavoriteController],

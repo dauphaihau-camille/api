@@ -1,9 +1,13 @@
 import type { DocumentFavoriteEntity } from '../../infra/persistence/entities/document-favorite.entity';
-import type { FavoriteDocumentSummary } from '../contracts/favorite.contract';
+import type {
+  FavoriteDocumentAccessSummary,
+  FavoriteDocumentSummary,
+} from '../contracts/favorite.contract';
 
 export function toFavoriteDocumentSummary(
   favorite: DocumentFavoriteEntity,
   input: {
+    access: FavoriteDocumentAccessSummary;
     hasChildren: boolean;
     hasContent: boolean;
   },
@@ -19,5 +23,6 @@ export function toFavoriteDocumentSummary(
     hasChildren: input.hasChildren,
     hasContent: input.hasContent,
     favoritedAt: favorite.createdAt,
+    access: input.access,
   };
 }

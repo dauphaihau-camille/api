@@ -1,8 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
+import { DocumentAccessResolver } from '~/domains/document/app/policies/document-access.resolver';
 import { hasMeaningfulContent } from '~/domains/document/app/utils/document-content.util';
 import { DocumentEntity } from '~/domains/document/infra/persistence/entities/document.entity';
+import type { TeamspaceMemberRole } from '~/domains/teamspace/domain/enums/teamspace-member-role.enum';
 import { WorkspaceRepository } from '~/domains/workspace/app/ports/workspace.repository';
+import type { WorkspaceRole } from '~/domains/workspace/domain/enums/workspace-role.enum';
 import type { SearchDocumentSummary } from '../contracts/search.contract';
 import { resolveSearchWorkspaceForUser } from '../policies/resolve-search-workspace-for-user';
 import { SearchRepository } from '../ports/search.repository';
@@ -12,6 +15,7 @@ export class SearchWorkspaceDocumentsUseCase {
   constructor(
     private readonly searchRepository: SearchRepository,
     private readonly workspaceRepository: WorkspaceRepository,
+    private readonly documentAccessResolver: DocumentAccessResolver,
   ) {}
 
   async execute(
@@ -25,25 +29,45 @@ export class SearchWorkspaceDocumentsUseCase {
       workspaceIdentifier,
       currentUser,
     );
+
     const normalizedQuery = query?.trim();
 
     if (!normalizedQuery) {
       return this.mapDocumentsToSummaries(
-        await this.searchRepository.findRecentVisitedDocuments({
+        this.filterViewableDocuments(await this.searchRepository.findRecentVisitedDocuments({
           workspaceId: workspace.id,
           userId: currentUser.userId,
           limit,
-        }),
+        }), currentUser.userId, workspace.currentUserRole),
       );
     }
 
     return this.mapDocumentsToSummaries(
-      await this.searchRepository.findMatchedDocuments({
+      this.filterViewableDocuments(await this.searchRepository.findMatchedDocuments({
         workspaceId: workspace.id,
+        userId: currentUser.userId,
         query: normalizedQuery,
         limit,
-      }),
+      }), currentUser.userId, workspace.currentUserRole),
     );
+  }
+
+  private filterViewableDocuments<T extends {
+    document: DocumentEntity;
+    teamspaceMemberRole?: TeamspaceMemberRole;
+  }>(
+    items: T[],
+    userId: string,
+    workspaceRole: WorkspaceRole,
+  ): T[] {
+    return items.filter((item) => this.documentAccessResolver.resolve({
+      actorUserId: userId,
+      documentOwnerUserId: item.document.ownerUser.id,
+      documentTeamspaceId: item.document.teamspace?.id,
+      teamspaceAccessMode: item.document.teamspace?.accessMode,
+      teamspaceMemberRole: item.teamspaceMemberRole,
+      workspaceRole,
+    }).canView);
   }
 
   private async mapDocumentsToSummaries(

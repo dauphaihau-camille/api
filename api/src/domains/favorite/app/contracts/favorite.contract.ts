@@ -1,3 +1,12 @@
+export type FavoriteDocumentPermission = 'view' | 'edit' | 'manage';
+
+export interface FavoriteDocumentAccessSummary {
+  permission: FavoriteDocumentPermission;
+  canView: boolean;
+  canEdit: boolean;
+  canManage: boolean;
+}
+
 export interface FavoriteDocumentSummary {
   documentId: string;
   publicId: string;
@@ -9,6 +18,7 @@ export interface FavoriteDocumentSummary {
   hasChildren: boolean;
   hasContent: boolean;
   favoritedAt: Date;
+  access: FavoriteDocumentAccessSummary;
 }
 
 export interface FavoriteStatusSummary {

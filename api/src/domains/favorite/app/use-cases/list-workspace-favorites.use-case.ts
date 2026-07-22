@@ -1,8 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
+import type { DocumentCapabilities } from '~/domains/document/app/policies/document-access.resolver';
 import { hasMeaningfulContent } from '~/domains/document/app/utils/document-content.util';
 import { DocumentNavigationQueryRepository } from '~/domains/document/app/ports/document-navigation-query.repository';
-import type { FavoriteDocumentSummary } from '../contracts/favorite.contract';
+import type {
+  FavoriteDocumentAccessSummary,
+  FavoriteDocumentSummary,
+} from '../contracts/favorite.contract';
 import { toFavoriteDocumentSummary } from '../mappers/favorite-summary.mapper';
 import { resolveFavoriteWorkspaceForUser } from '../policies/resolve-favorite-workspace-for-user';
 import { FavoriteRepository } from '../ports/favorite.repository';
@@ -27,19 +31,42 @@ export class ListWorkspaceFavoritesUseCase {
       workspaceIdentifier,
       currentUser,
     );
+
     const favorites = await this.favoriteRepository.findFavoritesForWorkspace({
       workspaceId: workspace.id,
       userId: currentUser.userId,
     });
-    const visibleFavorites = favorites.filter((favorite) => this.documentAccessResolver.resolve({
-      actorUserId: currentUser.userId,
-      documentOwnerUserId: favorite.document.ownerUser.id,
-      documentTeamspaceId: favorite.document.teamspace?.id,
-      workspaceRole: workspace.currentUserRole,
-    }).canView);
+
+    const teamspaceIds = Array.from(new Set(
+      favorites
+        .map((favorite) => favorite.document.teamspace?.id)
+        .filter((teamspaceId): teamspaceId is string => Boolean(teamspaceId)),
+    ));
+
+    const teamspaceMemberRolesByTeamspaceId =
+      await this.favoriteRepository.findTeamspaceMemberRolesForUser({
+        teamspaceIds,
+        userId: currentUser.userId,
+      });
+
+    const favoritesWithCapabilities = favorites.map((favorite) => ({
+      favorite,
+      capabilities: this.documentAccessResolver.resolve({
+        actorUserId: currentUser.userId,
+        documentOwnerUserId: favorite.document.ownerUser.id,
+        documentTeamspaceId: favorite.document.teamspace?.id,
+        teamspaceAccessMode: favorite.document.teamspace?.accessMode,
+        teamspaceMemberRole: favorite.document.teamspace?.id
+          ? teamspaceMemberRolesByTeamspaceId.get(favorite.document.teamspace.id)
+          : undefined,
+        workspaceRole: workspace.currentUserRole,
+      }),
+    }));
+
+    const visibleFavorites = favoritesWithCapabilities.filter(({ capabilities }) => capabilities.canView);
 
     const hasChildrenEntries = await Promise.all(
-      visibleFavorites.map(async (favorite) => ([
+      visibleFavorites.map(async ({ favorite }) => ([
         favorite.document.id,
         (await this.documentNavigationQueryRepository.countActiveChildren(
           workspace.id,
@@ -47,12 +74,25 @@ export class ListWorkspaceFavoritesUseCase {
         )) > 0,
       ] as const)),
     );
+
     const hasChildrenByDocumentId = new Map<string, boolean>(hasChildrenEntries);
 
-    return visibleFavorites.map((favorite) =>
+    return visibleFavorites.map(({ capabilities, favorite }) =>
       toFavoriteDocumentSummary(favorite, {
+        access: toFavoriteDocumentAccessSummary(capabilities),
         hasChildren: hasChildrenByDocumentId.get(favorite.document.id) ?? false,
         hasContent: hasMeaningfulContent(favorite.document.contentJson),
       }));
   }
+}
+
+function toFavoriteDocumentAccessSummary(
+  capabilities: DocumentCapabilities,
+): FavoriteDocumentAccessSummary {
+  return {
+    permission: capabilities.permission === 'none' ? 'view' : capabilities.permission,
+    canView: capabilities.canView,
+    canEdit: capabilities.canEdit,
+    canManage: capabilities.canManageAccess,
+  };
 }

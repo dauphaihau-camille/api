@@ -1,5 +1,8 @@
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { UserStatus } from '~/domains/auth/domain/enums/user-status.enum';
+import { DocumentAccessResolver } from '../../document/app/policies/document-access.resolver';
+import { TeamspaceAccessMode } from '../../teamspace/domain/enums/teamspace-access-mode.enum';
+import { TeamspaceMemberRole } from '../../teamspace/domain/enums/teamspace-member-role.enum';
 import { WorkspaceRole } from '../../workspace/domain/enums/workspace-role.enum';
 import type { WorkspaceRepository } from '../../workspace/app/ports/workspace.repository';
 import { SearchWorkspaceDocumentsUseCase } from './use-cases/search-workspace-documents.use-case';
@@ -15,7 +18,7 @@ describe('SearchWorkspaceDocumentsUseCase', () => {
     permissions: [],
   };
 
-  function createService() {
+  function createService(workspaceRole: WorkspaceRole = WorkspaceRole.OWNER) {
     const searchRepository = {
       findRecentVisitedDocuments: jest.fn(),
       findMatchedDocuments: jest.fn(),
@@ -29,7 +32,7 @@ describe('SearchWorkspaceDocumentsUseCase', () => {
           slug: 'workspace-1',
           name: 'Workspace 1',
           description: undefined,
-          currentUserRole: WorkspaceRole.OWNER,
+          currentUserRole: workspaceRole,
           createdAt: new Date('2026-01-01T00:00:00.000Z'),
           updatedAt: new Date('2026-01-01T00:00:00.000Z'),
         },
@@ -37,7 +40,11 @@ describe('SearchWorkspaceDocumentsUseCase', () => {
     } as unknown as jest.Mocked<WorkspaceRepository>;
 
     return {
-      service: new SearchWorkspaceDocumentsUseCase(searchRepository, workspaceRepository),
+      service: new SearchWorkspaceDocumentsUseCase(
+        searchRepository,
+        workspaceRepository,
+        new DocumentAccessResolver(),
+      ),
       searchRepository,
       workspaceRepository,
     };
@@ -56,6 +63,7 @@ describe('SearchWorkspaceDocumentsUseCase', () => {
           workspace: { id: 'workspace-1' },
           teamspace: { id: 'teamspace-1', name: 'Engineering' },
           parentDocument: { id: 'parent-1' },
+          ownerUser: { id: 'user-1' },
           title: 'Doc 1',
           contentJson: [{ type: 'paragraph', content: [] }],
           updatedBy: { displayName: 'User 1', email: 'user1@example.com' },
@@ -106,6 +114,7 @@ describe('SearchWorkspaceDocumentsUseCase', () => {
           workspace: { id: 'workspace-1' },
           teamspace: undefined,
           parentDocument: undefined,
+          ownerUser: { id: 'user-1' },
           title: 'Doc 2',
           contentJson: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hello' }] }],
           updatedBy: { displayName: undefined, email: 'user2@example.com' },
@@ -119,6 +128,7 @@ describe('SearchWorkspaceDocumentsUseCase', () => {
 
     expect(searchRepository.findMatchedDocuments).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',
+      userId: 'user-1',
       query: 'hello',
       limit: 5,
     });
@@ -139,6 +149,109 @@ describe('SearchWorkspaceDocumentsUseCase', () => {
         updatedAt,
         visitedAt: undefined,
       },
+    ]);
+  });
+
+  it('filters private search matches to documents owned by the current workspace member', async () => {
+    const { service, searchRepository } = createService(WorkspaceRole.MEMBER);
+    const updatedAt = new Date('2026-03-01T00:00:00.000Z');
+
+    searchRepository.findMatchedDocuments.mockResolvedValue([
+      {
+        document: {
+          id: 'owned-document',
+          publicId: 'owned-public',
+          workspace: { id: 'workspace-1' },
+          teamspace: undefined,
+          parentDocument: undefined,
+          ownerUser: { id: 'user-1' },
+          title: 'Owned private doc',
+          contentJson: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hello' }] }],
+          updatedBy: { displayName: undefined, email: 'user@example.com' },
+          updatedAt,
+        },
+        matchedText: 'Hello owned',
+      },
+      {
+        document: {
+          id: 'other-document',
+          publicId: 'other-public',
+          workspace: { id: 'workspace-1' },
+          teamspace: undefined,
+          parentDocument: undefined,
+          ownerUser: { id: 'other-user' },
+          title: 'Other private doc',
+          contentJson: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hello' }] }],
+          updatedBy: { displayName: undefined, email: 'other@example.com' },
+          updatedAt,
+        },
+        matchedText: 'Hello other',
+      },
+    ] as never);
+
+    const result = await service.execute('workspace-1', currentUser, 'hello');
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        documentId: 'owned-document',
+        title: 'Owned private doc',
+      }),
+    ]);
+  });
+
+  it('keeps restricted teamspace matches when the current user has a teamspace role', async () => {
+    const { service, searchRepository } = createService(WorkspaceRole.MEMBER);
+    const updatedAt = new Date('2026-03-01T00:00:00.000Z');
+
+    searchRepository.findMatchedDocuments.mockResolvedValue([
+      {
+        document: {
+          id: 'restricted-document',
+          publicId: 'restricted-public',
+          workspace: { id: 'workspace-1' },
+          teamspace: {
+            id: 'teamspace-1',
+            name: 'Engineering',
+            accessMode: TeamspaceAccessMode.RESTRICTED,
+          },
+          parentDocument: undefined,
+          ownerUser: { id: 'other-user' },
+          title: 'Restricted engineering doc',
+          contentJson: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hello' }] }],
+          updatedBy: { displayName: undefined, email: 'other@example.com' },
+          updatedAt,
+        },
+        matchedText: 'Hello restricted',
+        teamspaceMemberRole: TeamspaceMemberRole.VIEWER,
+      },
+      {
+        document: {
+          id: 'hidden-restricted-document',
+          publicId: 'hidden-restricted-public',
+          workspace: { id: 'workspace-1' },
+          teamspace: {
+            id: 'teamspace-2',
+            name: 'Leadership',
+            accessMode: TeamspaceAccessMode.RESTRICTED,
+          },
+          parentDocument: undefined,
+          ownerUser: { id: 'other-user' },
+          title: 'Hidden restricted doc',
+          contentJson: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hello' }] }],
+          updatedBy: { displayName: undefined, email: 'other@example.com' },
+          updatedAt,
+        },
+        matchedText: 'Hello hidden',
+      },
+    ] as never);
+
+    const result = await service.execute('workspace-1', currentUser, 'hello');
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        documentId: 'restricted-document',
+        title: 'Restricted engineering doc',
+      }),
     ]);
   });
 });

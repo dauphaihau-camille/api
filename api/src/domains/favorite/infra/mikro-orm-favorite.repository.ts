@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
 import { DocumentEntity } from '~/domains/document/infra/persistence/entities/document.entity';
+import type { TeamspaceMemberRole } from '~/domains/teamspace/domain/enums/teamspace-member-role.enum';
+import { TeamspaceMemberEntity } from '~/domains/teamspace/infra/persistence/entities/teamspace-member.entity';
 import { FavoriteRepository } from '../app/ports/favorite.repository';
 import { DocumentFavoriteEntity } from './persistence/entities/document-favorite.entity';
 
@@ -25,6 +27,33 @@ export class MikroOrmFavoriteRepository implements FavoriteRepository {
         createdAt: 'desc',
       },
     });
+  }
+
+  async findTeamspaceMemberRolesForUser(input: {
+    teamspaceIds: string[];
+    userId: string;
+  }): Promise<Map<string, TeamspaceMemberRole>> {
+    if (input.teamspaceIds.length === 0) {
+      return new Map();
+    }
+
+    const teamspaceMembers = await this.entityManager.fork().find(
+      TeamspaceMemberEntity,
+      {
+        teamspace: { $in: input.teamspaceIds },
+        user: input.userId,
+      },
+      {
+        populate: ['teamspace'],
+      },
+    );
+
+    return new Map(
+      teamspaceMembers.map((teamspaceMember) => [
+        teamspaceMember.teamspace.id,
+        teamspaceMember.role,
+      ]),
+    );
   }
 
   findActiveDocumentById(documentId: string): Promise<DocumentEntity | null> {

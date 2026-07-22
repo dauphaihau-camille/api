@@ -2,6 +2,8 @@ import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 import { DocumentEntity } from '../../document/infra/persistence/entities/document.entity';
 import { DocumentVisitEntity } from '../../document/infra/persistence/entities/document-visit.entity';
+import { TeamspaceMemberEntity } from '../../teamspace/infra/persistence/entities/teamspace-member.entity';
+import type { TeamspaceMemberRole } from '../../teamspace/domain/enums/teamspace-member-role.enum';
 import {
   SearchRepository,
   type SearchMatchedDocumentRecord,
@@ -17,28 +19,39 @@ export class MikroOrmSearchRepository implements SearchRepository {
     userId: string;
     limit: number;
   }): Promise<SearchVisitedDocumentRecord[]> {
-    const visits = await this.entityManager.fork().find(DocumentVisitEntity, {
+    const entityManager = this.entityManager.fork();
+    const visits = await entityManager.find(DocumentVisitEntity, {
       workspace: input.workspaceId,
       user: input.userId,
       document: {
         archivedAt: null,
       },
     }, {
-      populate: ['document', 'document.workspace', 'document.teamspace', 'document.parentDocument', 'document.updatedBy'],
+      populate: ['document', 'document.workspace', 'document.teamspace', 'document.parentDocument', 'document.ownerUser', 'document.updatedBy'],
       orderBy: {
         lastVisitedAt: 'desc',
       },
       limit: input.limit,
     });
 
+    const teamspaceMemberRolesByTeamspaceId = await this.findTeamspaceMemberRolesByTeamspaceId(
+      input.userId,
+      visits.map((visit) => visit.document),
+      entityManager,
+    );
+
     return visits.map((visit) => ({
       document: visit.document,
+      teamspaceMemberRole: visit.document.teamspace?.id
+        ? teamspaceMemberRolesByTeamspaceId.get(visit.document.teamspace.id)
+        : undefined,
       visitedAt: visit.lastVisitedAt,
     }));
   }
 
   async findMatchedDocuments(input: {
     workspaceId: string;
+    userId: string;
     query: string;
     limit: number;
   }): Promise<SearchMatchedDocumentRecord[]> {
@@ -83,9 +96,15 @@ export class MikroOrmSearchRepository implements SearchRepository {
         $in: matches.map((match) => match.id),
       },
     }, {
-      populate: ['workspace', 'teamspace', 'parentDocument', 'updatedBy'],
+      populate: ['workspace', 'teamspace', 'parentDocument', 'ownerUser', 'updatedBy'],
     });
+
     const documentsById = new Map(documents.map((document) => [document.id, document]));
+    const teamspaceMemberRolesByTeamspaceId = await this.findTeamspaceMemberRolesByTeamspaceId(
+      input.userId,
+      documents,
+      entityManager,
+    );
 
     return matches.flatMap((match) => {
       const document = documentsById.get(match.id);
@@ -97,6 +116,9 @@ export class MikroOrmSearchRepository implements SearchRepository {
       return [{
         document,
         matchedText: this.buildMatchedTextSnippet(document.searchText, input.query),
+        teamspaceMemberRole: document.teamspace?.id
+          ? teamspaceMemberRolesByTeamspaceId.get(document.teamspace.id)
+          : undefined,
       }];
     });
   }
@@ -144,6 +166,34 @@ export class MikroOrmSearchRepository implements SearchRepository {
     cache.set(documentId, document ?? null);
 
     return document;
+  }
+
+  private async findTeamspaceMemberRolesByTeamspaceId(
+    userId: string,
+    documents: DocumentEntity[],
+    entityManager: EntityManager,
+  ): Promise<Map<string, TeamspaceMemberRole>> {
+    const teamspaceIds = Array.from(new Set(
+      documents
+        .map((document) => document.teamspace?.id)
+        .filter((teamspaceId): teamspaceId is string => Boolean(teamspaceId)),
+    ));
+
+    if (teamspaceIds.length === 0) {
+      return new Map();
+    }
+
+    const teamspaceMembers = await entityManager.find(TeamspaceMemberEntity, {
+      teamspace: { $in: teamspaceIds },
+      user: userId,
+    });
+
+    return new Map(
+      teamspaceMembers.map((teamspaceMember) => [
+        teamspaceMember.teamspace.id,
+        teamspaceMember.role,
+      ]),
+    );
   }
 
   private buildMatchedTextSnippet(searchText: string, query: string): string | undefined {

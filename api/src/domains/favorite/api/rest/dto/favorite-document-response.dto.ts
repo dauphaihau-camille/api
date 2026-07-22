@@ -1,5 +1,34 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import type { FavoriteDocumentSummary } from '../../../app/contracts/favorite.contract';
+import type {
+  FavoriteDocumentAccessSummary,
+  FavoriteDocumentSummary,
+  FavoriteDocumentPermission,
+} from '../../../app/contracts/favorite.contract';
+
+class FavoriteDocumentAccessResponseDto {
+  @ApiProperty({ enum: ['view', 'edit', 'manage'] })
+  permission!: FavoriteDocumentPermission;
+
+  @ApiProperty()
+  can_view!: boolean;
+
+  @ApiProperty()
+  can_edit!: boolean;
+
+  @ApiProperty()
+  can_manage!: boolean;
+
+  static fromSummary(
+    access: FavoriteDocumentAccessSummary,
+  ): FavoriteDocumentAccessResponseDto {
+    return {
+      permission: access.permission,
+      can_view: access.canView,
+      can_edit: access.canEdit,
+      can_manage: access.canManage,
+    };
+  }
+}
 
 export class FavoriteDocumentResponseDto {
   @ApiProperty()
@@ -32,6 +61,9 @@ export class FavoriteDocumentResponseDto {
   @ApiProperty()
   favorited_at!: string;
 
+  @ApiProperty({ type: () => FavoriteDocumentAccessResponseDto })
+  access!: FavoriteDocumentAccessResponseDto;
+
   static fromSummary(summary: FavoriteDocumentSummary): FavoriteDocumentResponseDto {
     return {
       document_id: summary.documentId,
@@ -44,6 +76,7 @@ export class FavoriteDocumentResponseDto {
       has_children: summary.hasChildren,
       has_content: summary.hasContent,
       favorited_at: summary.favoritedAt.toISOString(),
+      access: FavoriteDocumentAccessResponseDto.fromSummary(summary.access),
     };
   }
 }
