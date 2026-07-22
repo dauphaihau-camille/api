@@ -77,6 +77,7 @@ export class TeamspaceController {
       .execute(workspaceId, currentUser, {
         name: body.name,
         description: body.description,
+        accessMode: body.access_mode,
       })
       .then(TeamspaceResponseDto.fromSummary)
       .catch(this.rethrowTeamspaceLayeredError);
@@ -100,6 +101,7 @@ export class TeamspaceController {
         version: body.version,
         name: body.name,
         description: body.description,
+        accessMode: body.access_mode,
       })
       .then(TeamspaceResponseDto.fromSummary)
       .catch(this.rethrowTeamspaceLayeredError);

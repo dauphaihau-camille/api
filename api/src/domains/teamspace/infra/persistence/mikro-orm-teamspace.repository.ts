@@ -6,6 +6,9 @@ import {
   TeamspaceVersionConflictError,
 } from '../../app/ports/teamspace.repository';
 import type { TeamspaceSummary } from '../../app/teamspace.types';
+import { TeamspaceAccessMode } from '../../domain/enums/teamspace-access-mode.enum';
+import type { TeamspaceMemberRole } from '../../domain/enums/teamspace-member-role.enum';
+import { TeamspaceMemberEntity } from './entities/teamspace-member.entity';
 import { TeamspaceEntity } from './entities/teamspace.entity';
 
 @Injectable()
@@ -34,16 +37,33 @@ export class MikroOrmTeamspaceRepository implements TeamspaceRepository {
     return teamspace ? toSummary(teamspace) : null;
   }
 
+  async findMemberRole(
+    teamspaceId: string,
+    userId: string,
+  ): Promise<TeamspaceMemberRole | null> {
+    const teamspaceMember = await this.entityManager.fork().findOne(
+      TeamspaceMemberEntity,
+      {
+        teamspace: teamspaceId,
+        user: userId,
+      },
+    );
+
+    return teamspaceMember?.role ?? null;
+  }
+
   async create(input: {
     workspaceId: string;
     name: string;
     description?: string;
+    accessMode?: TeamspaceAccessMode;
   }): Promise<TeamspaceSummary> {
     const entityManager = this.entityManager.fork();
     const teamspace = entityManager.create(TeamspaceEntity, {
       workspace: input.workspaceId,
       name: input.name,
       description: input.description,
+      accessMode: input.accessMode ?? TeamspaceAccessMode.OPEN,
     });
 
     await entityManager.persist(teamspace).flush();
@@ -56,6 +76,7 @@ export class MikroOrmTeamspaceRepository implements TeamspaceRepository {
     version: number;
     name?: string;
     description?: string;
+    accessMode?: TeamspaceAccessMode;
   }): Promise<TeamspaceSummary | null> {
     const entityManager = this.entityManager.fork();
     const teamspace = await entityManager.findOne(
@@ -87,6 +108,10 @@ export class MikroOrmTeamspaceRepository implements TeamspaceRepository {
       teamspace.description = input.description;
     }
 
+    if (input.accessMode !== undefined) {
+      teamspace.accessMode = input.accessMode;
+    }
+
     await entityManager.persist(teamspace).flush();
 
     return toSummary(teamspace);
@@ -100,6 +125,7 @@ function toSummary(teamspace: TeamspaceEntity): TeamspaceSummary {
     workspaceId: teamspace.workspace.id,
     name: teamspace.name,
     description: teamspace.description,
+    accessMode: teamspace.accessMode,
     createdAt: teamspace.createdAt,
     updatedAt: teamspace.updatedAt,
   };

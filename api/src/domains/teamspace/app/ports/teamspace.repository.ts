@@ -1,4 +1,6 @@
 import type { TeamspaceSummary } from '../teamspace.types';
+import type { TeamspaceAccessMode } from '../../domain/enums/teamspace-access-mode.enum';
+import type { TeamspaceMemberRole } from '../../domain/enums/teamspace-member-role.enum';
 
 export class TeamspaceVersionConflictError extends Error {
   constructor() {
@@ -11,10 +13,16 @@ export abstract class TeamspaceRepository {
 
   abstract findById(teamspaceId: string): Promise<TeamspaceSummary | null>;
 
+  abstract findMemberRole(
+    teamspaceId: string,
+    userId: string,
+  ): Promise<TeamspaceMemberRole | null>;
+
   abstract create(input: {
     workspaceId: string;
     name: string;
     description?: string;
+    accessMode?: TeamspaceAccessMode;
   }): Promise<TeamspaceSummary>;
 
   abstract update(input: {
@@ -22,5 +30,6 @@ export abstract class TeamspaceRepository {
     version: number;
     name?: string;
     description?: string;
+    accessMode?: TeamspaceAccessMode;
   }): Promise<TeamspaceSummary | null>;
 }

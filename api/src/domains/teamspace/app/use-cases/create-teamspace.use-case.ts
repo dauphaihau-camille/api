@@ -43,6 +43,7 @@ export class CreateTeamspaceUseCase {
       workspaceId: workspace.id,
       name: normalizeTeamspaceName(input.name),
       description: normalizeTeamspaceDescription(input.description),
+      accessMode: input.accessMode,
     });
 
     await this.auditService.record({
@@ -52,6 +53,7 @@ export class CreateTeamspaceUseCase {
       metadata: {
         workspaceId: workspace.id,
         name: teamspace.name,
+        accessMode: teamspace.accessMode,
       },
     });
 

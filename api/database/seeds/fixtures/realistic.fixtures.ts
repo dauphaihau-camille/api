@@ -1,3 +1,5 @@
+import { TeamspaceAccessMode } from '../../../src/domains/teamspace/domain/enums/teamspace-access-mode.enum';
+import { TeamspaceMemberRole } from '../../../src/domains/teamspace/domain/enums/teamspace-member-role.enum';
 import { WorkspaceRole } from '../../../src/domains/workspace/domain/enums/workspace-role.enum';
 import type {
   SeedUserFixture,
@@ -34,11 +36,22 @@ export const REALISTIC_WORKSPACE_TEMPLATES: WorkspaceTemplate[] = [
         key: 'engineering',
         name: 'Engineering',
         description: 'Architecture notes, release checklists, and technical runbooks.',
+        accessMode: TeamspaceAccessMode.RESTRICTED,
+        members: [
+          { email: 'maya.chen@example.com', role: TeamspaceMemberRole.MANAGER },
+          { email: 'jordan.lee@example.com', role: TeamspaceMemberRole.EDITOR },
+          { email: 'sofie.nguyen@example.com', role: TeamspaceMemberRole.VIEWER },
+        ],
       },
       {
         key: 'product',
         name: 'Product',
         description: 'Specs, roadmap, and launch coordination documents.',
+        members: [
+          { email: 'maya.chen@example.com', role: TeamspaceMemberRole.MANAGER },
+          { email: 'jordan.lee@example.com', role: TeamspaceMemberRole.EDITOR },
+          { email: 'alex.rivera@example.com', role: TeamspaceMemberRole.VIEWER },
+        ],
       },
     ],
     documents: [
@@ -134,11 +147,22 @@ export const REALISTIC_WORKSPACE_TEMPLATES: WorkspaceTemplate[] = [
         key: 'success',
         name: 'Customer Success',
         description: 'Onboarding scripts, account plans, and risk reviews.',
+        accessMode: TeamspaceAccessMode.RESTRICTED,
+        members: [
+          { email: 'nina.patel@example.com', role: TeamspaceMemberRole.MANAGER },
+          { email: 'omar.hassan@example.com', role: TeamspaceMemberRole.EDITOR },
+          { email: 'emily.tran@example.com', role: TeamspaceMemberRole.VIEWER },
+        ],
       },
       {
         key: 'delivery',
         name: 'Delivery',
         description: 'Implementation templates, project plans, and handoff docs.',
+        members: [
+          { email: 'nina.patel@example.com', role: TeamspaceMemberRole.MANAGER },
+          { email: 'omar.hassan@example.com', role: TeamspaceMemberRole.EDITOR },
+          { email: 'lucy.garcia@example.com', role: TeamspaceMemberRole.VIEWER },
+        ],
       },
     ],
     documents: [

@@ -1,4 +1,6 @@
 import type { WorkspaceRole } from '../../../src/domains/workspace/domain/enums/workspace-role.enum';
+import type { TeamspaceAccessMode } from '../../../src/domains/teamspace/domain/enums/teamspace-access-mode.enum';
+import type { TeamspaceMemberRole } from '../../../src/domains/teamspace/domain/enums/teamspace-member-role.enum';
 
 export type SeedUserFixture = {
   email: string;
@@ -10,6 +12,13 @@ export type TeamspaceTemplate = {
   key: string;
   name: string;
   description: string;
+  accessMode?: TeamspaceAccessMode;
+  members?: TeamspaceMemberTemplate[];
+};
+
+export type TeamspaceMemberTemplate = {
+  email: string;
+  role: TeamspaceMemberRole;
 };
 
 export type WorkspaceMemberTemplate = {

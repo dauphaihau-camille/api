@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { TeamspaceAccessMode } from '../../../domain/enums/teamspace-access-mode.enum';
 import type { TeamspaceSummary } from '../../../app/teamspace.types';
 
 export class TeamspaceResponseDto {
@@ -17,6 +18,9 @@ export class TeamspaceResponseDto {
   @ApiPropertyOptional()
   description?: string;
 
+  @ApiProperty({ enum: TeamspaceAccessMode })
+  access_mode!: TeamspaceAccessMode;
+
   @ApiProperty()
   created_at!: string;
 
@@ -30,6 +34,7 @@ export class TeamspaceResponseDto {
       workspace_id: teamspace.workspaceId,
       name: teamspace.name,
       description: teamspace.description,
+      access_mode: teamspace.accessMode,
       created_at: teamspace.createdAt.toISOString(),
       updated_at: teamspace.updatedAt.toISOString(),
     };

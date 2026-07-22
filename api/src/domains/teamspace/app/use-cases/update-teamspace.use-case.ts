@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { canEditWorkspace } from '~/domains/workspace/app/workspace-permissions';
+import { WorkspaceRole } from '~/domains/workspace/domain/enums/workspace-role.enum';
 import { findWorkspaceByIdentifier } from '~/domains/workspace/app/utils/find-workspace-by-identifier.util';
 import { WorkspaceRepository } from '~/domains/workspace/app/ports/workspace.repository';
 import { AuditService } from '~/integrations/audit/audit.service';
+import { TeamspaceMemberRole } from '../../domain/enums/teamspace-member-role.enum';
 import type { TeamspaceSummary, UpdateTeamspaceInput } from '../teamspace.types';
 import {
   TeamspaceRepository,
@@ -46,7 +48,13 @@ export class UpdateTeamspaceUseCase {
       throw new TeamspaceWorkspaceNotFoundError(existingTeamspace.workspaceId);
     }
 
-    if (!canEditWorkspace(workspace.currentUserRole)) {
+    const canManageTeamspace = await this.canManageTeamspace(
+      teamspaceId,
+      currentUser.userId,
+      workspace.currentUserRole,
+    );
+
+    if (!canManageTeamspace) {
       throw new TeamspacePermissionDeniedError();
     }
 
@@ -60,6 +68,7 @@ export class UpdateTeamspaceUseCase {
         description: input.description === undefined
           ? undefined
           : normalizeTeamspaceDescription(input.description),
+        accessMode: input.accessMode,
       });
 
       if (!teamspace) {
@@ -73,6 +82,7 @@ export class UpdateTeamspaceUseCase {
         metadata: {
           workspaceId: workspace.id,
           name: teamspace.name,
+          accessMode: teamspace.accessMode,
         },
       });
 
@@ -85,5 +95,22 @@ export class UpdateTeamspaceUseCase {
 
       throw error;
     }
+  }
+
+  private async canManageTeamspace(
+    teamspaceId: string,
+    userId: string,
+    workspaceRole: WorkspaceRole,
+  ): Promise<boolean> {
+    if (canEditWorkspace(workspaceRole)) {
+      return true;
+    }
+
+    const teamspaceMemberRole = await this.teamspaceRepository.findMemberRole(
+      teamspaceId,
+      userId,
+    );
+
+    return teamspaceMemberRole === TeamspaceMemberRole.MANAGER;
   }
 }

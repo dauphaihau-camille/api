@@ -8,13 +8,14 @@ import { CreateTeamspaceUseCase } from './app/use-cases/create-teamspace.use-cas
 import { ListTeamspacesUseCase } from './app/use-cases/list-teamspaces.use-case';
 import { UpdateTeamspaceUseCase } from './app/use-cases/update-teamspace.use-case';
 import { MikroOrmTeamspaceRepository } from './infra/persistence/mikro-orm-teamspace.repository';
+import { TeamspaceMemberEntity } from './infra/persistence/entities/teamspace-member.entity';
 import { TeamspaceEntity } from './infra/persistence/entities/teamspace.entity';
 
 @Module({
   imports: [
     AuditModule,
     WorkspaceModule,
-    MikroOrmModule.forFeature([TeamspaceEntity]),
+    MikroOrmModule.forFeature([TeamspaceEntity, TeamspaceMemberEntity]),
   ],
   controllers: [TeamspaceController],
   providers: [

@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsEnum,
   IsInt,
   IsOptional,
   IsString,
@@ -8,6 +9,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+import { TeamspaceAccessMode } from '../../../domain/enums/teamspace-access-mode.enum';
 
 export class UpdateTeamspaceDto {
   @ApiProperty({
@@ -38,4 +40,9 @@ export class UpdateTeamspaceDto {
   @IsString()
   @MaxLength(280)
   description?: string;
+
+  @ApiPropertyOptional({ enum: TeamspaceAccessMode })
+  @IsOptional()
+  @IsEnum(TeamspaceAccessMode)
+  access_mode?: TeamspaceAccessMode;
 }
