@@ -30,6 +30,12 @@ export class DocumentPermissionDeniedError extends DocumentAppError {
   }
 }
 
+export class DocumentAccessGrantUserNotFoundError extends DocumentAppError {
+  constructor(userId: string) {
+    super(`Workspace user ${userId} was not found.`);
+  }
+}
+
 export class ParentDocumentWorkspaceMismatchError extends DocumentAppError {
   constructor() {
     super('Parent document does not belong to the selected workspace.');

@@ -10,10 +10,13 @@ import { MikroOrmPublishRepository } from '../publish/infra/mikro-orm-publish.re
 import { PublishedDocumentEntity } from '../publish/infra/persistence/entities/published-document.entity';
 import { WorkspaceDefaultDocumentProvisioner } from '../workspace/app/ports/workspace-default-document-provisioner';
 import { WorkspaceModule } from '../workspace/workspace.module';
+import { WorkspaceMemberEntity } from '../workspace/infra/persistence/entities/workspace-member.entity';
 import { TeamspaceMemberEntity } from '../teamspace/infra/persistence/entities/teamspace-member.entity';
 import { TeamspaceEntity } from '../teamspace/infra/persistence/entities/teamspace.entity';
 import { WorkspaceEntity } from '../workspace/infra/persistence/entities/workspace.entity';
 import { DocumentController } from './api/rest/document.controller';
+import { DocumentAccessGrantRepository } from './app/ports/document-access-grant.repository';
+import { DocumentAccessSettingRepository } from './app/ports/document-access-setting.repository';
 import { DocumentCommandRepository } from './app/ports/document-command.repository';
 import { DocumentNavigationQueryRepository } from './app/ports/document-navigation-query.repository';
 import { DocumentSubdocReferenceRepository } from './app/ports/document-subdoc-reference.repository';
@@ -25,19 +28,27 @@ import { CreateDocumentUseCase } from './app/use-cases/create-document.use-case'
 import { CreateSubdocCommandUseCase } from './app/use-cases/create-subdoc-command.use-case';
 import { DocumentSubdocContentService } from './app/services/document-subdoc-content.service';
 import { DocumentTreeService } from './app/services/document-tree.service';
+import { DocumentAccessCapabilityService } from './app/services/document-access-capability.service';
 import { DuplicateDocumentUseCase } from './app/use-cases/duplicate-document.use-case';
 import { GetDefaultWorkspaceDocumentUseCase } from './app/use-cases/get-default-workspace-document.use-case';
 import { GetDocumentUseCase } from './app/use-cases/get-document.use-case';
+import { GetDocumentAccessSettingsUseCase } from './app/use-cases/get-document-access-settings.use-case';
 import { ListDocumentChildrenUseCase } from './app/use-cases/list-document-children.use-case';
 import { ListArchivedWorkspaceDocumentsUseCase } from './app/use-cases/list-archived-workspace-documents.use-case';
+import { ListDocumentCollaboratorsUseCase } from './app/use-cases/list-document-collaborators.use-case';
 import { ListWorkspaceDocumentsUseCase } from './app/use-cases/list-workspace-documents.use-case';
 import { MoveDocumentUseCase } from './app/use-cases/move-document.use-case';
 import { PermanentlyDeleteDocumentUseCase } from './app/use-cases/permanently-delete-document.use-case';
+import { RevokeDocumentAccessUseCase } from './app/use-cases/revoke-document-access.use-case';
 import { RestoreDocumentUseCase } from './app/use-cases/restore-document.use-case';
 import { RemoveArchivedSubdocReferencesUseCase } from './app/use-cases/remove-archived-subdoc-references.use-case';
+import { ShareDocumentUseCase } from './app/use-cases/share-document.use-case';
 import { SyncDocumentSubdocReferencesUseCase } from './app/use-cases/sync-document-subdoc-references.use-case';
 import { SyncReferencedSubdocTitlesUseCase } from './app/use-cases/sync-referenced-subdoc-titles.use-case';
 import { UpdateDocumentUseCase } from './app/use-cases/update-document.use-case';
+import { UpdateDocumentAccessSettingsUseCase } from './app/use-cases/update-document-access-settings.use-case';
+import { MikroOrmDocumentAccessGrantRepository } from './infra/mikro-orm-document-access-grant.repository';
+import { MikroOrmDocumentAccessSettingRepository } from './infra/mikro-orm-document-access-setting.repository';
 import { MikroOrmDocumentCommandRepository } from './infra/mikro-orm-document-command.repository';
 import { MikroOrmDocumentNavigationQueryRepository } from './infra/mikro-orm-document-navigation-query.repository';
 import { MikroOrmDocumentSubdocReferenceRepository } from './infra/mikro-orm-document-subdoc-reference.repository';
@@ -45,6 +56,8 @@ import { MikroOrmDocumentTreeQueryRepository } from './infra/mikro-orm-document-
 import { MikroOrmDocumentVisitRepository } from './infra/mikro-orm-document-visit.repository';
 import { WorkspaceDefaultDocumentProvisionerService } from './app/services/workspace-default-document-provisioner.service';
 import { DocumentObservabilityService } from './observability/document-observability.service';
+import { DocumentAccessGrantEntity } from './infra/persistence/entities/document-access-grant.entity';
+import { DocumentAccessSettingEntity } from './infra/persistence/entities/document-access-setting.entity';
 import { DocumentEntity } from './infra/persistence/entities/document.entity';
 import { DocumentSubdocReferenceEntity } from './infra/persistence/entities/document-subdoc-reference.entity';
 import { DocumentVisitEntity } from './infra/persistence/entities/document-visit.entity';
@@ -73,9 +86,12 @@ import { DocumentAccessResolver } from './app/policies/document-access.resolver'
     MikroOrmModule.forFeature([
       CurrentUserEntity,
       WorkspaceEntity,
+      WorkspaceMemberEntity,
       TeamspaceEntity,
       TeamspaceMemberEntity,
       DocumentEntity,
+      DocumentAccessGrantEntity,
+      DocumentAccessSettingEntity,
       DocumentSubdocReferenceEntity,
       DocumentVisitEntity,
       DocumentFavoriteEntity,
@@ -86,6 +102,14 @@ import { DocumentAccessResolver } from './app/policies/document-access.resolver'
   ],
   controllers: [DocumentController],
   providers: [
+    {
+      provide: DocumentAccessGrantRepository,
+      useClass: MikroOrmDocumentAccessGrantRepository,
+    },
+    {
+      provide: DocumentAccessSettingRepository,
+      useClass: MikroOrmDocumentAccessSettingRepository,
+    },
     {
       provide: DocumentCommandRepository,
       useClass: MikroOrmDocumentCommandRepository,
@@ -128,6 +152,7 @@ import { DocumentAccessResolver } from './app/policies/document-access.resolver'
     },
     DocumentCollaborationGateway,
     DocumentAccessResolver,
+    DocumentAccessCapabilityService,
     DocumentCollaborationReferenceSyncService,
     DocumentCollaborationService,
     DocumentSubdocReferenceSyncService,
@@ -138,7 +163,9 @@ import { DocumentAccessResolver } from './app/policies/document-access.resolver'
     ListArchivedWorkspaceDocumentsUseCase,
     GetDefaultWorkspaceDocumentUseCase,
     GetDocumentUseCase,
+    GetDocumentAccessSettingsUseCase,
     ListDocumentChildrenUseCase,
+    ListDocumentCollaboratorsUseCase,
     CreateDocumentUseCase,
     CreateSubdocCommandUseCase,
     ArchiveSubdocCommandUseCase,
@@ -151,8 +178,13 @@ import { DocumentAccessResolver } from './app/policies/document-access.resolver'
     RemoveArchivedSubdocReferencesUseCase,
     RestoreDocumentUseCase,
     PermanentlyDeleteDocumentUseCase,
+    ShareDocumentUseCase,
+    RevokeDocumentAccessUseCase,
+    UpdateDocumentAccessSettingsUseCase,
   ],
   exports: [
+    DocumentAccessGrantRepository,
+    DocumentAccessSettingRepository,
     DocumentAccessResolver,
     WorkspaceDefaultDocumentProvisioner,
   ],

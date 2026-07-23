@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import {
   ArchivedDocumentDuplicationError,
+  DocumentAccessGrantUserNotFoundError,
   DocumentAppError,
   DocumentContentManagedByCollaborationError,
   DocumentDuplicationInvariantError,
@@ -32,6 +33,7 @@ export function mapDocumentAppErrorToHttpException(error: DocumentAppError): Htt
     error instanceof DocumentNotFoundError
     || error instanceof DocumentWorkspaceNotFoundError
     || error instanceof DocumentTeamspaceNotFoundError
+    || error instanceof DocumentAccessGrantUserNotFoundError
   ) {
     return new NotFoundException(error.message);
   }

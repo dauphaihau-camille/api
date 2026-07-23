@@ -30,13 +30,18 @@ import { CreateSubdocCommandUseCase } from '../../app/use-cases/create-subdoc-co
 import { DuplicateDocumentUseCase } from '../../app/use-cases/duplicate-document.use-case';
 import { GetDefaultWorkspaceDocumentUseCase } from '../../app/use-cases/get-default-workspace-document.use-case';
 import { GetDocumentUseCase } from '../../app/use-cases/get-document.use-case';
+import { GetDocumentAccessSettingsUseCase } from '../../app/use-cases/get-document-access-settings.use-case';
 import { ListDocumentChildrenUseCase } from '../../app/use-cases/list-document-children.use-case';
+import { ListDocumentCollaboratorsUseCase } from '../../app/use-cases/list-document-collaborators.use-case';
 import { ListArchivedWorkspaceDocumentsUseCase } from '../../app/use-cases/list-archived-workspace-documents.use-case';
 import { ListWorkspaceDocumentsUseCase } from '../../app/use-cases/list-workspace-documents.use-case';
 import { MoveDocumentUseCase } from '../../app/use-cases/move-document.use-case';
 import { PermanentlyDeleteDocumentUseCase } from '../../app/use-cases/permanently-delete-document.use-case';
+import { RevokeDocumentAccessUseCase } from '../../app/use-cases/revoke-document-access.use-case';
 import { RestoreDocumentUseCase } from '../../app/use-cases/restore-document.use-case';
+import { ShareDocumentUseCase } from '../../app/use-cases/share-document.use-case';
 import { UpdateDocumentUseCase } from '../../app/use-cases/update-document.use-case';
+import { UpdateDocumentAccessSettingsUseCase } from '../../app/use-cases/update-document-access-settings.use-case';
 import {
   isDocumentAppError,
   mapDocumentAppErrorToHttpException,
@@ -58,6 +63,13 @@ import { WorkspaceDefaultDocumentResponseDto } from './dto/workspace-default-doc
 import { ArchivedDocumentListPageResponseDto } from './dto/archived-document-list-response.dto';
 import { CreateSubdocCommandResponseDto } from './dto/create-subdoc-command-response.dto';
 import { ArchiveSubdocCommandResponseDto } from './dto/archive-subdoc-command-response.dto';
+import {
+  DocumentCollaboratorResponseDto,
+  ShareDocumentsResponseDto,
+} from './dto/document-collaborator-response.dto';
+import { ShareDocumentDto, ShareDocumentsDto } from './dto/share-document.dto';
+import { DocumentAccessSettingsResponseDto } from './dto/document-access-settings-response.dto';
+import { UpdateDocumentAccessSettingsDto } from './dto/update-document-access-settings.dto';
 
 @Controller()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -69,7 +81,9 @@ export class DocumentController {
     private readonly listArchivedWorkspaceDocumentsUseCase: ListArchivedWorkspaceDocumentsUseCase,
     private readonly getDefaultWorkspaceDocumentUseCase: GetDefaultWorkspaceDocumentUseCase,
     private readonly getDocumentUseCase: GetDocumentUseCase,
+    private readonly getDocumentAccessSettingsUseCase: GetDocumentAccessSettingsUseCase,
     private readonly listDocumentChildrenUseCase: ListDocumentChildrenUseCase,
+    private readonly listDocumentCollaboratorsUseCase: ListDocumentCollaboratorsUseCase,
     private readonly createDocumentUseCase: CreateDocumentUseCase,
     private readonly createSubdocCommandUseCase: CreateSubdocCommandUseCase,
     private readonly archiveSubdocCommandUseCase: ArchiveSubdocCommandUseCase,
@@ -79,6 +93,9 @@ export class DocumentController {
     private readonly restoreDocumentUseCase: RestoreDocumentUseCase,
     private readonly permanentlyDeleteDocumentUseCase: PermanentlyDeleteDocumentUseCase,
     private readonly moveDocumentUseCase: MoveDocumentUseCase,
+    private readonly shareDocumentUseCase: ShareDocumentUseCase,
+    private readonly revokeDocumentAccessUseCase: RevokeDocumentAccessUseCase,
+    private readonly updateDocumentAccessSettingsUseCase: UpdateDocumentAccessSettingsUseCase,
   ) {}
 
   @Get('workspaces/:workspaceId/documents/default')
@@ -339,6 +356,129 @@ export class DocumentController {
         content: body.content,
       })
       .then(DocumentResponseDto.fromSummary)
+      .catch(this.rethrowDocumentAppError);
+  }
+
+  @Get('documents/:documentId/collaborators')
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    summary: 'List document collaborators',
+  })
+  @ApiOkResponse({
+    type: DocumentCollaboratorResponseDto,
+    isArray: true,
+  })
+  async listCollaborators(
+    @Param('documentId') documentId: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ): Promise<DocumentCollaboratorResponseDto[]> {
+    return this.listDocumentCollaboratorsUseCase
+      .execute(documentId, currentUser)
+      .then((grants) => grants.map(DocumentCollaboratorResponseDto.fromSummary))
+      .catch(this.rethrowDocumentAppError);
+  }
+
+  @Post('documents/:documentId/share')
+  @HttpCode(200)
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    summary: 'Share document',
+  })
+  @ApiOkResponse({
+    type: DocumentCollaboratorResponseDto,
+  })
+  async shareDocument(
+    @Param('documentId') documentId: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Body() body: ShareDocumentDto,
+  ): Promise<DocumentCollaboratorResponseDto> {
+    return this.shareDocumentUseCase
+      .execute(documentId, currentUser, {
+        userId: body.user_id,
+        permission: body.permission,
+      })
+      .then(DocumentCollaboratorResponseDto.fromSummary)
+      .catch(this.rethrowDocumentAppError);
+  }
+
+  @Post('documents/:documentId/shares')
+  @HttpCode(200)
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    summary: 'Share document with multiple users',
+  })
+  @ApiOkResponse({
+    type: ShareDocumentsResponseDto,
+  })
+  async shareDocuments(
+    @Param('documentId') documentId: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Body() body: ShareDocumentsDto,
+  ): Promise<ShareDocumentsResponseDto> {
+    return this.shareDocumentUseCase
+      .executeMany(documentId, currentUser, {
+        grants: body.grants.map((grant) => ({
+          userId: grant.user_id,
+          permission: grant.permission,
+        })),
+      })
+      .then(ShareDocumentsResponseDto.fromSummary)
+      .catch(this.rethrowDocumentAppError);
+  }
+
+  @Get('documents/:documentId/access-settings')
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    summary: 'Get document access settings',
+  })
+  @ApiOkResponse({
+    type: DocumentAccessSettingsResponseDto,
+  })
+  async getAccessSettings(
+    @Param('documentId') documentId: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ): Promise<DocumentAccessSettingsResponseDto> {
+    const setting = await this.getDocumentAccessSettingsUseCase
+      .execute(documentId, currentUser)
+      .catch(this.rethrowDocumentAppError);
+
+    return DocumentAccessSettingsResponseDto.fromSummary(setting, documentId);
+  }
+
+  @Patch('documents/:documentId/access-settings')
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    summary: 'Update document access settings',
+  })
+  @ApiOkResponse({
+    type: DocumentAccessSettingsResponseDto,
+  })
+  async updateAccessSettings(
+    @Param('documentId') documentId: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Body() body: UpdateDocumentAccessSettingsDto,
+  ): Promise<DocumentAccessSettingsResponseDto> {
+    return this.updateDocumentAccessSettingsUseCase
+      .execute(documentId, currentUser, {
+        workspaceMemberPermission: body.workspace_member_permission ?? undefined,
+      })
+      .then(DocumentAccessSettingsResponseDto.fromSummary)
+      .catch(this.rethrowDocumentAppError);
+  }
+
+  @Delete('documents/:documentId/collaborators/:userId')
+  @HttpCode(204)
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    summary: 'Revoke document access',
+  })
+  async revokeDocumentAccess(
+    @Param('documentId') documentId: string,
+    @Param('userId') userId: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ): Promise<void> {
+    return this.revokeDocumentAccessUseCase
+      .execute(documentId, currentUser, userId)
       .catch(this.rethrowDocumentAppError);
   }
 
