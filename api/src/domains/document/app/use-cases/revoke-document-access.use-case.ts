@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
+import { DocumentAccessChangedEvent } from '../../events/document-access-changed.event';
 import { DocumentAccessGrantRepository } from '../ports/document-access-grant.repository';
 import { DocumentCommandRepository } from '../ports/document-command.repository';
 import { DocumentNotFoundError } from '../errors/document-app.error';
@@ -11,6 +13,7 @@ export class RevokeDocumentAccessUseCase {
     private readonly documentCommandRepository: DocumentCommandRepository,
     private readonly documentAccessGrantRepository: DocumentAccessGrantRepository,
     private readonly documentAccessCapabilityService: DocumentAccessCapabilityService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async execute(
@@ -23,11 +26,18 @@ export class RevokeDocumentAccessUseCase {
       throw new DocumentNotFoundError(documentId);
     }
 
-    await this.documentAccessCapabilityService.assertCanManageAccess(document, currentUser);
+    const { workspace } = await this.documentAccessCapabilityService.assertCanManageAccess(document, currentUser);
 
-    await this.documentAccessGrantRepository.revokeGrant({
+    const revokedGrant = await this.documentAccessGrantRepository.revokeGrant({
       documentId: document.id,
       userId,
     });
+
+    if (revokedGrant) {
+      this.eventEmitter.emit(
+        'document.access.changed',
+        new DocumentAccessChangedEvent(document.id, workspace.id),
+      );
+    }
   }
 }

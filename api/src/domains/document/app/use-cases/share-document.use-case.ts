@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { DocumentAccessGrantPermission } from '../../domain/enums/document-access-grant-permission.enum';
 import {
   DocumentAccessGrantRepository,
   type DocumentAccessGrantSummary,
 } from '../ports/document-access-grant.repository';
+import { DocumentAccessChangedEvent } from '../../events/document-access-changed.event';
 import { DocumentCommandRepository } from '../ports/document-command.repository';
 import {
   DocumentAccessGrantUserNotFoundError,
@@ -28,6 +30,7 @@ export class ShareDocumentUseCase {
     private readonly documentCommandRepository: DocumentCommandRepository,
     private readonly documentAccessGrantRepository: DocumentAccessGrantRepository,
     private readonly documentAccessCapabilityService: DocumentAccessCapabilityService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async execute(
@@ -54,13 +57,17 @@ export class ShareDocumentUseCase {
       throw new DocumentAccessGrantUserNotFoundError(input.userId);
     }
 
-    return this.documentAccessGrantRepository.upsertGrant({
+    const grant = await this.documentAccessGrantRepository.upsertGrant({
       workspaceId: workspace.id,
       documentId: document.id,
       userId: input.userId,
       permission: input.permission,
       grantedByUserId: currentUser.userId,
     });
+
+    this.emitAccessChanged(document.id, workspace.id);
+
+    return grant;
   }
 
   async executeMany(
@@ -96,11 +103,17 @@ export class ShareDocumentUseCase {
         })),
     );
 
-    const validGrants = grants.filter((_, index) => Boolean(recipients[index]));
+    const grantRecipientPairs = grants.map((grant, index) => ({
+      grant,
+      recipient: recipients[index],
+    }));
+    const validGrants = grantRecipientPairs
+      .filter(({ recipient }) => Boolean(recipient))
+      .map(({ grant }) => grant);
 
-    const failed = grants
-      .filter((_, index) => !recipients[index])
-      .map((grant) => ({
+    const failed = grantRecipientPairs
+      .filter(({ recipient }) => !recipient)
+      .map(({ grant }) => ({
         userId: grant.userId,
         reason: 'workspace_user_not_found' as const,
       }));
@@ -116,9 +129,20 @@ export class ShareDocumentUseCase {
         })),
     );
 
+    if (collaborators.length > 0) {
+      this.emitAccessChanged(document.id, workspace.id);
+    }
+
     return {
       collaborators,
       failed,
     };
+  }
+
+  private emitAccessChanged(documentId: string, workspaceId: string): void {
+    this.eventEmitter.emit(
+      'document.access.changed',
+      new DocumentAccessChangedEvent(documentId, workspaceId),
+    );
   }
 }

@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
+import { DocumentAccessChangedEvent } from '../../events/document-access-changed.event';
 import { DocumentAccessGrantPermission } from '../../domain/enums/document-access-grant-permission.enum';
 import { DocumentNotFoundError } from '../errors/document-app.error';
 import {
@@ -15,6 +17,7 @@ export class UpdateDocumentAccessSettingsUseCase {
     private readonly documentCommandRepository: DocumentCommandRepository,
     private readonly documentAccessSettingRepository: DocumentAccessSettingRepository,
     private readonly documentAccessCapabilityService: DocumentAccessCapabilityService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async execute(
@@ -31,11 +34,18 @@ export class UpdateDocumentAccessSettingsUseCase {
 
     const { workspace } = await this.documentAccessCapabilityService.assertCanManageAccess(document, currentUser);
 
-    return this.documentAccessSettingRepository.upsertWorkspaceMemberPermission({
+    const setting = await this.documentAccessSettingRepository.upsertWorkspaceMemberPermission({
       workspaceId: workspace.id,
       documentId: document.id,
       permission: input.workspaceMemberPermission,
       updatedByUserId: currentUser.userId,
     });
+
+    this.eventEmitter.emit(
+      'document.access.changed',
+      new DocumentAccessChangedEvent(document.id, workspace.id),
+    );
+
+    return setting;
   }
 }

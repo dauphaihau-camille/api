@@ -1,4 +1,5 @@
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
+import type { EventEmitter2 } from '@nestjs/event-emitter';
 import { UserStatus } from '~/domains/auth/domain/enums/user-status.enum';
 import type { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.enum';
@@ -13,6 +14,7 @@ import type { DocumentCommandRepository } from '../ports/document-command.reposi
 import type { DocumentNavigationQueryRepository } from '../ports/document-navigation-query.repository';
 import { DocumentAccessResolver } from '../policies/document-access.resolver';
 import { DocumentAccessCapabilityService } from '../services/document-access-capability.service';
+import { DocumentAccessChangedEvent } from '../../events/document-access-changed.event';
 import { ListDocumentCollaboratorsUseCase } from './list-document-collaborators.use-case';
 import { RevokeDocumentAccessUseCase } from './revoke-document-access.use-case';
 import { ShareDocumentUseCase } from './share-document.use-case';
@@ -72,7 +74,12 @@ describe('document access grant use cases', () => {
   function createGrantRepository() {
     return {
       findActiveGrant: jest.fn().mockResolvedValue(null),
+      findStrongestActiveGrantInAncestors: jest.fn().mockResolvedValue(null),
+      findActiveGrantPermissionsByDocumentId: jest.fn().mockResolvedValue(new Map()),
+      findStrongestActiveGrantPermissionsInAncestorsByDocumentId: jest.fn().mockResolvedValue(new Map()),
       hasActiveGrants: jest.fn().mockResolvedValue(false),
+      hasActiveGrantsIncludingAncestors: jest.fn().mockResolvedValue(false),
+      findDocumentIdsWithActiveGrantsIncludingAncestors: jest.fn().mockResolvedValue(new Set()),
       findWorkspaceUser: jest.fn().mockResolvedValue({
         id: 'recipient-user',
         email: 'recipient@example.com',
@@ -91,6 +98,7 @@ describe('document access grant use cases', () => {
       }),
       revokeGrant: jest.fn().mockResolvedValue(null),
       listActiveGrants: jest.fn().mockResolvedValue([]),
+      listStrongestActiveGrantsInAncestors: jest.fn().mockResolvedValue([]),
     } as unknown as jest.Mocked<DocumentAccessGrantRepository>;
   }
 
@@ -105,6 +113,12 @@ describe('document access grant use cases', () => {
         updatedAt: new Date('2026-01-01T00:00:00.000Z'),
       }),
     } as unknown as jest.Mocked<DocumentAccessSettingRepository>;
+  }
+
+  function createEventEmitter() {
+    return {
+      emit: jest.fn(),
+    } as unknown as jest.Mocked<EventEmitter2>;
   }
 
   function createDocumentAccessCapabilityService(
@@ -124,10 +138,12 @@ describe('document access grant use cases', () => {
     const grantRepository = createGrantRepository();
     const workspaceRepository = createWorkspaceRepository();
     const accessSettingRepository = createAccessSettingRepository();
+    const eventEmitter = createEventEmitter();
     const useCase = new ShareDocumentUseCase(
       createCommandRepository(),
       grantRepository,
       createDocumentAccessCapabilityService(workspaceRepository, grantRepository, accessSettingRepository),
+      eventEmitter,
     );
 
     await expect(useCase.execute(document.id, currentUser, {
@@ -149,6 +165,10 @@ describe('document access grant use cases', () => {
       permission: DocumentAccessGrantPermission.EDIT,
       grantedByUserId: 'owner-user',
     });
+    expect(eventEmitter.emit).toHaveBeenCalledWith(
+      'document.access.changed',
+      new DocumentAccessChangedEvent('document-1', 'workspace-1'),
+    );
   });
 
   it('shares a private document with multiple workspace users and reports invalid recipients', async () => {
@@ -182,10 +202,12 @@ describe('document access grant use cases', () => {
     }));
     const workspaceRepository = createWorkspaceRepository();
     const accessSettingRepository = createAccessSettingRepository();
+    const eventEmitter = createEventEmitter();
     const useCase = new ShareDocumentUseCase(
       createCommandRepository(),
       grantRepository,
       createDocumentAccessCapabilityService(workspaceRepository, grantRepository, accessSettingRepository),
+      eventEmitter,
     );
 
     await expect(useCase.executeMany(document.id, currentUser, {
@@ -222,6 +244,11 @@ describe('document access grant use cases', () => {
       permission: DocumentAccessGrantPermission.EDIT,
       grantedByUserId: 'owner-user',
     });
+    expect(eventEmitter.emit).toHaveBeenCalledTimes(1);
+    expect(eventEmitter.emit).toHaveBeenCalledWith(
+      'document.access.changed',
+      new DocumentAccessChangedEvent('document-1', 'workspace-1'),
+    );
   });
 
   it('rejects sharing with a user outside the workspace', async () => {
@@ -233,6 +260,7 @@ describe('document access grant use cases', () => {
       createCommandRepository(),
       grantRepository,
       createDocumentAccessCapabilityService(workspaceRepository, grantRepository, accessSettingRepository),
+      createEventEmitter(),
     );
 
     await expect(useCase.execute(document.id, currentUser, {
@@ -267,6 +295,7 @@ describe('document access grant use cases', () => {
       createCommandRepository(),
       grantRepository,
       createDocumentAccessCapabilityService(workspaceRepository, grantRepository, accessSettingRepository),
+      createEventEmitter(),
     );
 
     await expect(listUseCase.execute(document.id, currentUser)).resolves.toEqual([]);
@@ -328,6 +357,55 @@ describe('document access grant use cases', () => {
     expect(grantRepository.listActiveGrants).toHaveBeenCalledWith('document-1');
   });
 
+  it('lists inherited collaborators from ancestor grants when child has no direct grant', async () => {
+    const commandRepository = createCommandRepository();
+    commandRepository.findDocument.mockResolvedValue({
+      ...document,
+      id: 'child-document',
+      parentDocument: { id: 'parent-document' },
+    } as never);
+    const grantRepository = createGrantRepository();
+    grantRepository.listStrongestActiveGrantsInAncestors.mockResolvedValue([{
+      id: 'parent-grant',
+      documentId: 'parent-document',
+      user: {
+        id: 'recipient-user',
+        email: 'recipient@example.com',
+      },
+      permission: DocumentAccessGrantPermission.VIEW,
+      grantedByUserId: 'owner-user',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      inheritedFromDocument: {
+        id: 'parent-document',
+        title: 'Parent',
+      },
+    }]);
+    const workspaceRepository = createWorkspaceRepository();
+    const accessSettingRepository = createAccessSettingRepository();
+    const useCase = new ListDocumentCollaboratorsUseCase(
+      commandRepository,
+      grantRepository,
+      createDocumentAccessCapabilityService(workspaceRepository, grantRepository, accessSettingRepository),
+    );
+
+    await expect(useCase.execute('child-document', currentUser)).resolves.toEqual([
+      expect.objectContaining({
+        accessSource: 'inherited',
+        documentId: 'parent-document',
+        inheritedFromDocument: {
+          id: 'parent-document',
+          title: 'Parent',
+        },
+        permission: DocumentAccessGrantPermission.VIEW,
+        user: {
+          id: 'recipient-user',
+          email: 'recipient@example.com',
+        },
+      }),
+    ]);
+  });
+
   it('rejects collaborator management without manage capability', async () => {
     const commandRepository = createCommandRepository();
     commandRepository.findDocument.mockResolvedValue({
@@ -341,6 +419,7 @@ describe('document access grant use cases', () => {
       commandRepository,
       grantRepository,
       createDocumentAccessCapabilityService(workspaceRepository, grantRepository, accessSettingRepository),
+      createEventEmitter(),
     );
 
     await expect(useCase.execute(document.id, currentUser, {
@@ -353,10 +432,12 @@ describe('document access grant use cases', () => {
     const accessSettingRepository = createAccessSettingRepository();
     const workspaceRepository = createWorkspaceRepository();
     const grantRepository = createGrantRepository();
+    const eventEmitter = createEventEmitter();
     const useCase = new UpdateDocumentAccessSettingsUseCase(
       createCommandRepository(),
       accessSettingRepository,
       createDocumentAccessCapabilityService(workspaceRepository, grantRepository, accessSettingRepository),
+      eventEmitter,
     );
 
     await expect(useCase.execute(document.id, currentUser, {
@@ -372,6 +453,10 @@ describe('document access grant use cases', () => {
       permission: DocumentAccessGrantPermission.VIEW,
       updatedByUserId: 'owner-user',
     });
+    expect(eventEmitter.emit).toHaveBeenCalledWith(
+      'document.access.changed',
+      new DocumentAccessChangedEvent('document-1', 'workspace-1'),
+    );
   });
 
   it('gets document access settings when the actor can manage access', async () => {

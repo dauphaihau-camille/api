@@ -202,6 +202,23 @@ describe('DocumentCollaborationGateway', () => {
     });
   });
 
+  it('notifies a document room that collaboration permissions changed', () => {
+    const emit = jest.fn();
+    const to = jest.fn().mockReturnValue({ emit });
+    const gateway = new DocumentCollaborationGateway(
+      {} as WsAuthService,
+      {} as DocumentCollaborationService,
+    );
+    gateway.server = { to } as never;
+
+    gateway.notifyPermissionsChanged('document-1');
+
+    expect(to).toHaveBeenCalledWith('document:document-1');
+    expect(emit).toHaveBeenCalledWith('collab:permissions-changed', {
+      documentId: 'document-1',
+    });
+  });
+
   it('stays singleton when document command providers are request scoped', async () => {
     const module = await Test.createTestingModule({
       providers: [

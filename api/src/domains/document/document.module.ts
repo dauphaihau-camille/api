@@ -75,6 +75,7 @@ import { MikroOrmDocumentCollaborationTransactionRunner } from './infra/mikro-or
 import { DocumentCollaborationSnapshotEntity } from './infra/persistence/entities/document-collaboration-snapshot.entity';
 import { DocumentCollaborationUpdateEntity } from './infra/persistence/entities/document-collaboration-update.entity';
 import { DocumentAccessResolver } from './app/policies/document-access.resolver';
+import { NotifyCollaborationPermissionsChangedListener } from './listeners/notify-collaboration-permissions-changed.listener';
 
 @Module({
   imports: [
@@ -181,6 +182,7 @@ import { DocumentAccessResolver } from './app/policies/document-access.resolver'
     ShareDocumentUseCase,
     RevokeDocumentAccessUseCase,
     UpdateDocumentAccessSettingsUseCase,
+    NotifyCollaborationPermissionsChangedListener,
   ],
   exports: [
     DocumentAccessGrantRepository,

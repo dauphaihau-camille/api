@@ -34,6 +34,7 @@ type CollaborationResponse<T> =
 type ServerToClientEvents = {
   'collab:awareness': (payload: { documentId: string; update: Buffer }) => void;
   'collab:error': (payload: CollaborationResponse<never>) => void;
+  'collab:permissions-changed': (payload: { documentId: string }) => void;
   'collab:update': (payload: { documentId: string; update: Buffer }) => void;
 };
 
@@ -74,6 +75,12 @@ implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleDisconnect(socket: CollaborationSocket): Promise<void> {
     socket.data.collaborationDocumentIds?.clear();
+  }
+
+  notifyPermissionsChanged(documentId: string): void {
+    this.server.to(this.room(documentId)).emit('collab:permissions-changed', {
+      documentId,
+    });
   }
 
   @SubscribeMessage('collab:join')
