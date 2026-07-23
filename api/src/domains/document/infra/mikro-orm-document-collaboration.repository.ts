@@ -9,6 +9,7 @@ import type {
 } from '../app/ports/document-collaboration.repository';
 import { DocumentCollaborationRepository } from '../app/ports/document-collaboration.repository';
 import { extractDocumentSearchText } from '../app/utils/document-search-text.util';
+import { DocumentAccessGrantPermission } from '../domain/enums/document-access-grant-permission.enum';
 import { DocumentCollaborationSnapshotEntity } from './persistence/entities/document-collaboration-snapshot.entity';
 import { DocumentCollaborationUpdateEntity } from './persistence/entities/document-collaboration-update.entity';
 import { DocumentAccessGrantEntity } from './persistence/entities/document-access-grant.entity';
@@ -57,6 +58,11 @@ export class MikroOrmDocumentCollaborationRepository extends DocumentCollaborati
       user: userId,
       revokedAt: null,
     });
+    const ancestorGrantPermission = await this.findStrongestActiveGrantPermissionInAncestors({
+      documentId: document.id,
+      entityManager,
+      userId,
+    });
 
     const accessSetting = await entityManager.findOne(DocumentAccessSettingEntity, {
       document: document.id,
@@ -70,6 +76,7 @@ export class MikroOrmDocumentCollaborationRepository extends DocumentCollaborati
       teamspaceAccessMode: document.teamspace?.accessMode,
       teamspaceMemberRole: teamspaceMembership?.role,
       directGrantPermission: directGrant?.permission,
+      ancestorGrantPermission,
       workspaceMemberPermission: accessSetting?.workspaceMemberPermission,
       workspaceId: document.workspace.id,
       workspaceRole: membership.role,
@@ -320,5 +327,52 @@ export class MikroOrmDocumentCollaborationRepository extends DocumentCollaborati
       );
       await transactionalEntityManager.flush();
     });
+  }
+
+  private async findStrongestActiveGrantPermissionInAncestors(input: {
+    documentId: string;
+    entityManager: EntityManager;
+    userId: string;
+  }): Promise<DocumentAccessGrantPermission | undefined> {
+    const ancestorIds: string[] = [];
+    let currentDocument = await input.entityManager.findOne(
+      DocumentEntity,
+      input.documentId,
+      { populate: ['parentDocument'] },
+    );
+
+    while (currentDocument?.parentDocument) {
+      ancestorIds.push(currentDocument.parentDocument.id);
+      currentDocument = await input.entityManager.findOne(
+        DocumentEntity,
+        currentDocument.parentDocument.id,
+        { populate: ['parentDocument'] },
+      );
+    }
+
+    if (ancestorIds.length === 0) {
+      return undefined;
+    }
+
+    const grants = await input.entityManager.find(DocumentAccessGrantEntity, {
+      document: { $in: ancestorIds },
+      user: input.userId,
+      revokedAt: null,
+    });
+
+    const rank: Record<DocumentAccessGrantPermission, number> = {
+      [DocumentAccessGrantPermission.VIEW]: 1,
+      [DocumentAccessGrantPermission.COMMENT]: 1,
+      [DocumentAccessGrantPermission.EDIT]: 2,
+      [DocumentAccessGrantPermission.MANAGE]: 3,
+    };
+
+    return grants.reduce<DocumentAccessGrantPermission | undefined>((strongest, grant) => {
+      if (!strongest || rank[grant.permission] > rank[strongest]) {
+        return grant.permission;
+      }
+
+      return strongest;
+    }, undefined);
   }
 }

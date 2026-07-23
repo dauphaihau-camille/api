@@ -216,4 +216,35 @@ describe('DocumentAccessResolver', () => {
       permission: 'manage',
     });
   });
+
+  it('derives shared document capabilities from an ancestor grant', () => {
+    expect(resolver.resolve({
+      actorUserId: 'user-1',
+      documentOwnerUserId: 'user-2',
+      ancestorGrantPermission: DocumentAccessGrantPermission.EDIT,
+      workspaceRole: WorkspaceRole.MEMBER,
+    })).toEqual({
+      accessScope: 'shared',
+      canEdit: true,
+      canManageAccess: false,
+      canView: true,
+      permission: 'edit',
+    });
+  });
+
+  it('uses the strongest permission when direct and ancestor grants both apply', () => {
+    expect(resolver.resolve({
+      actorUserId: 'user-1',
+      documentOwnerUserId: 'user-2',
+      directGrantPermission: DocumentAccessGrantPermission.VIEW,
+      ancestorGrantPermission: DocumentAccessGrantPermission.MANAGE,
+      workspaceRole: WorkspaceRole.MEMBER,
+    })).toEqual({
+      accessScope: 'shared',
+      canEdit: true,
+      canManageAccess: true,
+      canView: true,
+      permission: 'manage',
+    });
+  });
 });

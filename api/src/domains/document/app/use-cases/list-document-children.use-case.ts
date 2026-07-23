@@ -42,8 +42,13 @@ export class ListDocumentChildrenUseCase {
       documentId: document.id,
       userId: currentUser.userId,
     });
+    const parentAncestorGrant = await this.documentAccessGrantRepository.findStrongestActiveGrantInAncestors({
+      documentId: document.id,
+      userId: currentUser.userId,
+    });
     const parentAccessSetting =
       await this.documentAccessSettingRepository.findByDocumentId(document.id);
+
     const parentCapabilities = this.documentAccessResolver.resolve({
       actorUserId: currentUser.userId,
       documentOwnerUserId: document.ownerUser.id,
@@ -51,6 +56,7 @@ export class ListDocumentChildrenUseCase {
       teamspaceAccessMode: document.teamspace?.accessMode,
       teamspaceMemberRole: parentTeamspaceMemberRole,
       directGrantPermission: parentDirectGrant?.permission,
+      ancestorGrantPermission: parentAncestorGrant?.permission,
       workspaceMemberPermission: parentAccessSetting?.workspaceMemberPermission,
       workspaceRole: workspace.currentUserRole,
     });
@@ -72,6 +78,11 @@ export class ListDocumentChildrenUseCase {
         documentIds: children.map((child) => child.id),
         userId: currentUser.userId,
       });
+    const ancestorGrantPermissionsByDocumentId =
+      await this.documentAccessGrantRepository.findStrongestActiveGrantPermissionsInAncestorsByDocumentId({
+        documentIds: children.map((child) => child.id),
+        userId: currentUser.userId,
+      });
     const workspaceMemberPermissionsByDocumentId =
       await this.documentAccessSettingRepository.findWorkspaceMemberPermissionsByDocumentId({
         documentIds: children.map((child) => child.id),
@@ -86,6 +97,7 @@ export class ListDocumentChildrenUseCase {
         ? teamspaceMemberRolesByTeamspaceId.get(child.teamspace.id)
         : undefined,
       directGrantPermission: directGrantPermissionsByDocumentId.get(child.id),
+      ancestorGrantPermission: ancestorGrantPermissionsByDocumentId.get(child.id),
       workspaceMemberPermission: workspaceMemberPermissionsByDocumentId.get(child.id),
       workspaceRole: workspace.currentUserRole,
     }).canView);

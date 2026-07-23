@@ -56,6 +56,10 @@ export class ListWorkspaceDocumentsUseCase {
         documentId: parentDocument.id,
         userId: currentUser.userId,
       });
+      const parentAncestorGrant = await this.documentAccessGrantRepository.findStrongestActiveGrantInAncestors({
+        documentId: parentDocument.id,
+        userId: currentUser.userId,
+      });
 
       const parentAccessSetting =
         await this.documentAccessSettingRepository.findByDocumentId(parentDocument.id);
@@ -67,6 +71,7 @@ export class ListWorkspaceDocumentsUseCase {
         teamspaceAccessMode: parentDocument.teamspace?.accessMode,
         teamspaceMemberRole: parentTeamspaceMemberRole,
         directGrantPermission: parentDirectGrant?.permission,
+        ancestorGrantPermission: parentAncestorGrant?.permission,
         workspaceMemberPermission: parentAccessSetting?.workspaceMemberPermission,
         workspaceRole: workspace.currentUserRole,
       });
@@ -166,18 +171,20 @@ export class ListWorkspaceDocumentsUseCase {
         documentIds: documents.map((document) => document.id),
         userId: input.userId,
       });
+    const ancestorGrantPermissionsByDocumentId =
+      await this.documentAccessGrantRepository.findStrongestActiveGrantPermissionsInAncestorsByDocumentId({
+        documentIds: documents.map((document) => document.id),
+        userId: input.userId,
+      });
 
     const workspaceMemberPermissionsByDocumentId =
       await this.documentAccessSettingRepository.findWorkspaceMemberPermissionsByDocumentId({
         documentIds: documents.map((document) => document.id),
       });
-    const documentIdsWithActiveGrants = new Set(
-      (await Promise.all(documents.map(async (document) => (
-        await this.documentAccessGrantRepository.hasActiveGrants(document.id)
-          ? document.id
-          : undefined
-      )))).filter((documentId): documentId is string => Boolean(documentId)),
-    );
+    const documentIdsWithActiveGrants =
+      await this.documentAccessGrantRepository.findDocumentIdsWithActiveGrantsIncludingAncestors(
+        documents.map((document) => document.id),
+      );
 
     const documentsWithCapabilities = documents.map((document) => ({
       document,
@@ -190,6 +197,7 @@ export class ListWorkspaceDocumentsUseCase {
           ? teamspaceMemberRolesByTeamspaceId.get(document.teamspace.id)
           : undefined,
         directGrantPermission: directGrantPermissionsByDocumentId.get(document.id),
+        ancestorGrantPermission: ancestorGrantPermissionsByDocumentId.get(document.id),
         documentHasActiveGrants: documentIdsWithActiveGrants.has(document.id),
         workspaceMemberPermission: workspaceMemberPermissionsByDocumentId.get(document.id),
         workspaceRole: input.workspaceRole,

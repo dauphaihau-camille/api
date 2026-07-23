@@ -53,6 +53,7 @@ export class DocumentCollaborationService {
       teamspaceAccessMode: access.teamspaceAccessMode,
       teamspaceMemberRole: access.teamspaceMemberRole,
       directGrantPermission: access.directGrantPermission,
+      ancestorGrantPermission: access.ancestorGrantPermission,
       workspaceMemberPermission: access.workspaceMemberPermission,
       workspaceRole: access.workspaceRole,
     });
@@ -92,6 +93,7 @@ export class DocumentCollaborationService {
       teamspaceAccessMode: access.teamspaceAccessMode,
       teamspaceMemberRole: access.teamspaceMemberRole,
       directGrantPermission: access.directGrantPermission,
+      ancestorGrantPermission: access.ancestorGrantPermission,
       workspaceMemberPermission: access.workspaceMemberPermission,
       workspaceRole: access.workspaceRole,
     });

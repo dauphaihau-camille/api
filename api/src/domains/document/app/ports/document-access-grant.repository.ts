@@ -16,8 +16,20 @@ export type DocumentAccessGrantSummary = {
   updatedAt: Date;
 };
 
+export type InheritedDocumentAccessGrantSummary = DocumentAccessGrantSummary & {
+  inheritedFromDocument: {
+    id: string;
+    title: string;
+  };
+};
+
 export abstract class DocumentAccessGrantRepository {
   abstract findActiveGrant(input: {
+    documentId: string;
+    userId: string;
+  }): Promise<DocumentAccessGrantSummary | null>;
+
+  abstract findStrongestActiveGrantInAncestors(input: {
     documentId: string;
     userId: string;
   }): Promise<DocumentAccessGrantSummary | null>;
@@ -27,7 +39,18 @@ export abstract class DocumentAccessGrantRepository {
     userId: string;
   }): Promise<Map<string, DocumentAccessGrantPermission>>;
 
+  abstract findStrongestActiveGrantPermissionsInAncestorsByDocumentId(input: {
+    documentIds: string[];
+    userId: string;
+  }): Promise<Map<string, DocumentAccessGrantPermission>>;
+
   abstract hasActiveGrants(documentId: string): Promise<boolean>;
+
+  abstract hasActiveGrantsIncludingAncestors(documentId: string): Promise<boolean>;
+
+  abstract findDocumentIdsWithActiveGrantsIncludingAncestors(
+    documentIds: string[],
+  ): Promise<Set<string>>;
 
   abstract findWorkspaceUser(input: {
     workspaceId: string;
@@ -48,4 +71,8 @@ export abstract class DocumentAccessGrantRepository {
   }): Promise<DocumentAccessGrantSummary | null>;
 
   abstract listActiveGrants(documentId: string): Promise<DocumentAccessGrantSummary[]>;
+
+  abstract listStrongestActiveGrantsInAncestors(
+    documentId: string,
+  ): Promise<InheritedDocumentAccessGrantSummary[]>;
 }

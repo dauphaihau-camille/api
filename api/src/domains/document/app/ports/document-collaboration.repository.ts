@@ -11,6 +11,7 @@ export type DocumentCollaborationAccess = {
   teamspaceAccessMode?: TeamspaceAccessMode;
   teamspaceMemberRole?: TeamspaceMemberRole;
   directGrantPermission?: DocumentAccessGrantPermission;
+  ancestorGrantPermission?: DocumentAccessGrantPermission;
   workspaceMemberPermission?: DocumentAccessGrantPermission;
   workspaceId: string;
   workspaceRole: WorkspaceRole;

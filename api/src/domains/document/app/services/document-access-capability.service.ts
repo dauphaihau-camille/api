@@ -41,9 +41,13 @@ export class DocumentAccessCapabilityService {
         documentId: document.id,
         userId: currentUser.userId,
       }),
-      this.documentAccessGrantRepository.hasActiveGrants(document.id),
+      this.documentAccessGrantRepository.hasActiveGrantsIncludingAncestors(document.id),
       this.documentAccessSettingRepository.findByDocumentId(document.id),
     ]);
+    const ancestorGrant = await this.documentAccessGrantRepository.findStrongestActiveGrantInAncestors({
+      documentId: document.id,
+      userId: currentUser.userId,
+    });
 
     const capabilities = this.documentAccessResolver.resolve({
       actorUserId: currentUser.userId,
@@ -51,6 +55,7 @@ export class DocumentAccessCapabilityService {
       documentTeamspaceId: document.teamspace?.id,
       documentHasActiveGrants: hasActiveGrants,
       directGrantPermission: actorGrant?.permission,
+      ancestorGrantPermission: ancestorGrant?.permission,
       workspaceMemberPermission: setting?.workspaceMemberPermission,
       workspaceRole: workspace.currentUserRole,
     });

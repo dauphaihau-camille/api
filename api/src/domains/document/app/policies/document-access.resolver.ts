@@ -21,6 +21,7 @@ export type DocumentAccessContext = {
   documentTeamspaceId?: string;
   documentHasActiveGrants?: boolean;
   directGrantPermission?: DocumentAccessGrantPermission;
+  ancestorGrantPermission?: DocumentAccessGrantPermission;
   workspaceMemberPermission?: DocumentAccessGrantPermission;
   teamspaceAccessMode?: TeamspaceAccessMode;
   teamspaceMemberRole?: TeamspaceMemberRole;
@@ -54,6 +55,7 @@ export class DocumentAccessResolver {
 
     const teamspacePermission = this.resolveTeamspacePermission(input);
     const grantPermission = this.resolveGrantPermission(input.directGrantPermission);
+    const ancestorGrantPermission = this.resolveGrantPermission(input.ancestorGrantPermission);
     const workspaceMemberPermission = this.resolveGrantPermission(input.workspaceMemberPermission);
 
     const isTeamspaceDocument = Boolean(input.documentTeamspaceId);
@@ -61,6 +63,7 @@ export class DocumentAccessResolver {
     const effectivePermission = this.strongestPermission([
       teamspacePermission ? this.teamspaceRoleToPermission(teamspacePermission) : undefined,
       grantPermission,
+      ancestorGrantPermission,
       workspaceMemberPermission,
     ]);
 
@@ -98,6 +101,7 @@ export class DocumentAccessResolver {
     if (
       context.documentHasActiveGrants
       || context.directGrantPermission
+      || context.ancestorGrantPermission
       || context.workspaceMemberPermission
     ) {
       return 'shared';

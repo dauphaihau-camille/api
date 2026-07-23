@@ -19,7 +19,12 @@ describe('UpdateDocumentUseCase collaboration boundary', () => {
   function createAccessGrantRepository() {
     return {
       findActiveGrant: jest.fn().mockResolvedValue(null),
+      findStrongestActiveGrantInAncestors: jest.fn().mockResolvedValue(null),
+      findActiveGrantPermissionsByDocumentId: jest.fn().mockResolvedValue(new Map()),
+      findStrongestActiveGrantPermissionsInAncestorsByDocumentId: jest.fn().mockResolvedValue(new Map()),
       hasActiveGrants: jest.fn().mockResolvedValue(false),
+      hasActiveGrantsIncludingAncestors: jest.fn().mockResolvedValue(false),
+      findDocumentIdsWithActiveGrantsIncludingAncestors: jest.fn().mockResolvedValue(new Set()),
     } as unknown as jest.Mocked<DocumentAccessGrantRepository>;
   }
 

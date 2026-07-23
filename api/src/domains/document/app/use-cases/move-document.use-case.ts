@@ -10,22 +10,21 @@ import { DocumentNavigationQueryRepository } from '../ports/document-navigation-
 import {
   DocumentDescendantMoveError,
   DocumentNotFoundError,
-  DocumentPermissionDeniedError,
   DocumentTeamspaceNotFoundError,
   DocumentVersionConflictError,
   MoveParentDocumentWorkspaceMismatchError,
 } from '../errors/document-app.error';
 import { toDocumentSummary } from '../mappers/document-summary.mapper';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
-import { DocumentAccessResolver } from '../policies/document-access.resolver';
 import { DocumentTreeService } from '../services/document-tree.service';
+import { DocumentAccessCapabilityService } from '../services/document-access-capability.service';
 
 @Injectable()
 export class MoveDocumentUseCase {
   constructor(
     private readonly auditService: AuditService,
     private readonly workspaceRepository: WorkspaceRepository,
-    private readonly documentAccessResolver: DocumentAccessResolver,
+    private readonly documentAccessCapabilityService: DocumentAccessCapabilityService,
     private readonly documentCommandRepository: DocumentCommandRepository,
     private readonly documentNavigationQueryRepository: DocumentNavigationQueryRepository,
     private readonly documentTreeService: DocumentTreeService,
@@ -41,14 +40,7 @@ export class MoveDocumentUseCase {
       throw new DocumentNotFoundError(documentId);
     }
     const workspace = await resolveWorkspaceForUser(this.workspaceRepository, document.workspace.id, currentUser);
-    if (!this.documentAccessResolver.resolve({
-      actorUserId: currentUser.userId,
-      documentOwnerUserId: document.ownerUser.id,
-      documentTeamspaceId: document.teamspace?.id,
-      workspaceRole: workspace.currentUserRole,
-    }).canEdit) {
-      throw new DocumentPermissionDeniedError();
-    }
+    await this.documentAccessCapabilityService.assertCanEdit(document, currentUser);
 
     try {
       await this.documentCommandRepository.lockDocumentVersion(document, input.version);
@@ -87,8 +79,11 @@ export class MoveDocumentUseCase {
       throw new DocumentTeamspaceNotFoundError(nextTeamspaceId);
     }
 
+    const nextTeamspaceReference = nextTeamspaceId
+      ? { id: nextTeamspaceId } as typeof document.teamspace
+      : undefined;
     document.parentDocument = nextParent ?? undefined;
-    document.teamspace = nextTeamspaceId ? { id: nextTeamspaceId } as typeof document.teamspace : undefined;
+    document.teamspace = nextTeamspaceReference;
     document.sortKey = await this.documentTreeService.resolveSortKeyForMove(
       document.id,
       workspace.id,
@@ -98,7 +93,13 @@ export class MoveDocumentUseCase {
     );
     this.documentCommandRepository.assignUpdatedByUser(document, currentUser.userId);
 
-    await this.documentCommandRepository.saveDocument(document);
+    const descendants = await this.documentTreeService.findDescendants(document.id, workspace.id);
+    for (const descendant of descendants) {
+      descendant.teamspace = nextTeamspaceReference;
+      this.documentCommandRepository.assignUpdatedByUser(descendant, currentUser.userId);
+    }
+
+    await this.documentCommandRepository.saveDocuments([document, ...descendants]);
 
     await this.auditService.record({
       action: 'document.moved',

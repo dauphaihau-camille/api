@@ -96,8 +96,12 @@ describe('Document read use cases', () => {
   function createAccessGrantRepository() {
     return {
       findActiveGrant: jest.fn().mockResolvedValue(null),
+      findStrongestActiveGrantInAncestors: jest.fn().mockResolvedValue(null),
       findActiveGrantPermissionsByDocumentId: jest.fn().mockResolvedValue(new Map()),
+      findStrongestActiveGrantPermissionsInAncestorsByDocumentId: jest.fn().mockResolvedValue(new Map()),
       hasActiveGrants: jest.fn().mockResolvedValue(false),
+      hasActiveGrantsIncludingAncestors: jest.fn().mockResolvedValue(false),
+      findDocumentIdsWithActiveGrantsIncludingAncestors: jest.fn().mockResolvedValue(new Set()),
     } as unknown as jest.Mocked<DocumentAccessGrantRepository>;
   }
 
@@ -325,8 +329,9 @@ describe('Document read use cases', () => {
     navigationRepository.findRootDocuments.mockResolvedValue([sharedDocument] as never);
     navigationRepository.countActiveChildren.mockResolvedValue(0);
     navigationRepository.findFavoriteDocumentIds.mockResolvedValue([]);
-    accessGrantRepository.hasActiveGrants.mockImplementation(async (documentId) =>
-      documentId === 'owner-direct-shared-document');
+    accessGrantRepository.findDocumentIdsWithActiveGrantsIncludingAncestors.mockResolvedValue(
+      new Set(['owner-direct-shared-document']),
+    );
 
     const useCase = new ListWorkspaceDocumentsUseCase(
       workspaceRepository,
@@ -636,6 +641,12 @@ describe('Document read use cases', () => {
         canView: true,
         canEdit: true,
         canManage: true,
+        workspaceMemberPermission: undefined,
+      },
+      ownerUser: {
+        id: 'user-1',
+        email: undefined,
+        displayName: undefined,
       },
     });
     expect(visitRepository.recordVisit).toHaveBeenCalledWith({
@@ -707,6 +718,77 @@ describe('Document read use cases', () => {
     expect(visitRepository.recordVisit).not.toHaveBeenCalled();
   });
 
+  it('returns child document detail through an inherited parent grant', async () => {
+    const workspaceRepository = createWorkspaceRepository(WorkspaceRole.MEMBER);
+    const navigationRepository = createNavigationRepository();
+    const visitRepository = createVisitRepository();
+    const publishRepository = createPublishRepository();
+    const observabilityService = createObservabilityService();
+    const document = {
+      id: 'child-document',
+      publicId: 'child-document-public-id',
+      version: 1,
+      workspace: { id: 'workspace-1' },
+      teamspace: undefined,
+      parentDocument: { id: 'parent-document' },
+      title: 'Inherited document',
+      contentFormat: 'blocknote_v1',
+      contentJson: [],
+      sortKey: 1,
+      archivedAt: undefined,
+      ownerUser: { id: 'another-user' },
+      updatedBy: {
+        displayName: 'Another user',
+        email: 'another@example.com',
+      },
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    };
+
+    navigationRepository.findDocument.mockResolvedValue(document as never);
+    navigationRepository.findFavoriteDocumentIds.mockResolvedValue([]);
+    navigationRepository.findAncestors.mockResolvedValue([]);
+    publishRepository.findPublishedDocumentByDocumentId.mockResolvedValue(null);
+    visitRepository.recordVisit.mockResolvedValue(undefined);
+    const accessGrantRepository = createAccessGrantRepository();
+    accessGrantRepository.findStrongestActiveGrantInAncestors.mockResolvedValue({
+      id: 'parent-grant',
+      documentId: 'parent-document',
+      user: {
+        id: currentUser.userId,
+        email: currentUser.email,
+      },
+      permission: DocumentAccessGrantPermission.VIEW,
+      grantedByUserId: 'another-user',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    });
+    accessGrantRepository.hasActiveGrantsIncludingAncestors.mockResolvedValue(true);
+
+    const useCase = new GetDocumentUseCase(
+      navigationRepository,
+      visitRepository,
+      publishRepository,
+      observabilityService,
+      createDocumentAccessCapabilityService(
+        workspaceRepository,
+        accessGrantRepository,
+        createAccessSettingRepository(),
+      ),
+    );
+
+    await expect(useCase.execute(document.id, currentUser)).resolves.toMatchObject({
+      id: 'child-document',
+      access: {
+        scope: 'shared',
+        permission: 'view',
+        canView: true,
+        canEdit: false,
+        canManage: false,
+      },
+    });
+  });
+
   it('lists children for a workspace member under an open teamspace document', async () => {
     const workspaceRepository = createWorkspaceRepository(WorkspaceRole.MEMBER);
     const navigationRepository = createNavigationRepository();
@@ -766,5 +848,67 @@ describe('Document read use cases', () => {
       workspaceId: 'workspace-1',
       parentDocumentId: 'parent-document',
     });
+  });
+
+  it('lists children visible through an inherited parent grant', async () => {
+    const workspaceRepository = createWorkspaceRepository(WorkspaceRole.MEMBER);
+    const navigationRepository = createNavigationRepository();
+    const accessGrantRepository = createAccessGrantRepository();
+    const parentDocument = {
+      id: 'parent-document',
+      publicId: 'parent-public-id',
+      workspace: { id: 'workspace-1' },
+      teamspace: undefined,
+      ownerUser: { id: 'another-user' },
+      title: 'Shared parent',
+      contentJson: [],
+      sortKey: 1,
+    };
+    const childDocument = {
+      id: 'child-document',
+      publicId: 'child-public-id',
+      workspace: { id: 'workspace-1' },
+      teamspace: undefined,
+      parentDocument: { id: 'parent-document' },
+      ownerUser: { id: 'another-user' },
+      title: 'Inherited child',
+      contentJson: [],
+      sortKey: 1,
+    };
+
+    navigationRepository.findDocument.mockResolvedValue(parentDocument as never);
+    navigationRepository.findChildren.mockResolvedValue([childDocument] as never);
+    navigationRepository.countActiveChildren.mockResolvedValue(0);
+    navigationRepository.findFavoriteDocumentIds.mockResolvedValue([]);
+    accessGrantRepository.findActiveGrant.mockResolvedValue({
+      id: 'parent-grant',
+      documentId: 'parent-document',
+      user: {
+        id: currentUser.userId,
+        email: currentUser.email,
+      },
+      permission: DocumentAccessGrantPermission.VIEW,
+      grantedByUserId: 'another-user',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    });
+    accessGrantRepository.findStrongestActiveGrantPermissionsInAncestorsByDocumentId.mockResolvedValue(
+      new Map([['child-document', DocumentAccessGrantPermission.VIEW]]),
+    );
+
+    const useCase = new ListDocumentChildrenUseCase(
+      workspaceRepository,
+      navigationRepository,
+      new DocumentAccessResolver(),
+      accessGrantRepository,
+      createAccessSettingRepository(),
+    );
+
+    await expect(useCase.execute(parentDocument.id, currentUser)).resolves.toEqual([
+      expect.objectContaining({
+        id: 'child-document',
+        title: 'Inherited child',
+      }),
+    ]);
   });
 });
