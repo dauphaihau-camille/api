@@ -47,6 +47,7 @@ describe('realistic seed content builders', () => {
       kind: 'hub',
       childDocuments: [
         {
+          key: 'release-runbook',
           id: 'child-1',
           publicId: 'abcdefabcdefabcdefabcdefabcdefab',
           title: 'Release Runbook',

@@ -8,6 +8,8 @@ import { UserRoleEntity } from '../../src/domains/auth/infra/persistence/entitie
 import { BcryptPasswordHasher } from '../../src/domains/auth/infra/security/bcrypt-password-hasher';
 import { DEFAULT_CONTENT_FORMAT } from '../../src/domains/document/app/constants/document.constants';
 import { extractDocumentSearchText } from '../../src/domains/document/app/utils/document-search-text.util';
+import { DocumentAccessGrantEntity } from '../../src/domains/document/infra/persistence/entities/document-access-grant.entity';
+import { DocumentAccessSettingEntity } from '../../src/domains/document/infra/persistence/entities/document-access-setting.entity';
 import { DocumentEntity } from '../../src/domains/document/infra/persistence/entities/document.entity';
 import { DocumentSubdocReferenceEntity } from '../../src/domains/document/infra/persistence/entities/document-subdoc-reference.entity';
 import { DocumentVisitEntity } from '../../src/domains/document/infra/persistence/entities/document-visit.entity';
@@ -26,6 +28,8 @@ import {
   REALISTIC_WORKSPACE_TEMPLATES,
 } from './fixtures/realistic.fixtures';
 import type {
+  DocumentAccessGrantTemplate,
+  DocumentAccessSettingTemplate,
   DocumentBlueprint,
   TeamspaceTemplate,
   WorkspaceTemplate,
@@ -44,6 +48,7 @@ type SeedUserSummary = {
 };
 
 type SeedDocumentSummary = {
+  key: string;
   id: string;
   publicId: string;
   title: string;
@@ -53,6 +58,7 @@ type SeedDocumentSummary = {
 };
 
 type DocumentPayload = {
+  key: string;
   publicId: string;
   workspaceId: string;
   teamspaceId?: string;
@@ -523,6 +529,7 @@ async function upsertDocument(
   await em.flush();
 
   return {
+    key: payload.key,
     id: document.id,
     publicId: document.publicId,
     title: document.title,
@@ -545,6 +552,7 @@ async function seedDocumentTree(
   const owner = memberUsers[Math.abs(sortKey) % memberUsers.length]!;
   const publicId = buildSeededPublicId(`${replicaKey}:${blueprint.key}:${parentDocument?.id ?? 'root'}`);
   const summary = await upsertDocument(em, {
+    key: blueprint.key,
     publicId,
     workspaceId,
     teamspaceId: blueprint.teamspaceKey ? teamspacesByKey.get(blueprint.teamspaceKey)?.id : parentDocument?.teamspaceId,
@@ -622,6 +630,100 @@ async function seedWorkspacePreferences(
 
     preference.expandedDocumentIds = rootDocumentIds.slice(0, Math.max(1, 2 + (index % 2)));
     em.persist(preference);
+  }
+
+  await em.flush();
+}
+
+async function seedDocumentAccessGrants(
+  em: EntityManager,
+  workspaceId: string,
+  memberUsers: SeedUserSummary[],
+  documents: SeedDocumentSummary[],
+  grants: DocumentAccessGrantTemplate[] = [],
+): Promise<void> {
+  if (grants.length === 0) {
+    return;
+  }
+
+  const usersByEmail = new Map(memberUsers.map((user) => [user.email, user]));
+  const documentsByKey = new Map(documents.map((document) => [document.key, document]));
+
+  for (const grantTemplate of grants) {
+    const document = documentsByKey.get(grantTemplate.documentKey);
+    const user = usersByEmail.get(grantTemplate.userEmail);
+    const grantedBy = grantTemplate.grantedByEmail
+      ? usersByEmail.get(grantTemplate.grantedByEmail)
+      : memberUsers[0];
+
+    if (!document || !user || !grantedBy) {
+      continue;
+    }
+
+    const existingGrant = await em.findOne(DocumentAccessGrantEntity, {
+      document: document.id,
+      user: user.id,
+    });
+    const grant = existingGrant ??
+      em.create(DocumentAccessGrantEntity, {
+        workspace: em.getReference(WorkspaceEntity, workspaceId),
+        document: em.getReference(DocumentEntity, document.id),
+        user: em.getReference(CurrentUserEntity, user.id),
+        permission: grantTemplate.permission,
+        grantedBy: em.getReference(CurrentUserEntity, grantedBy.id),
+      });
+
+    grant.workspace = em.getReference(WorkspaceEntity, workspaceId);
+    grant.document = em.getReference(DocumentEntity, document.id);
+    grant.user = em.getReference(CurrentUserEntity, user.id);
+    grant.permission = grantTemplate.permission;
+    grant.grantedBy = em.getReference(CurrentUserEntity, grantedBy.id);
+    grant.revokedAt = undefined;
+    em.persist(grant);
+  }
+
+  await em.flush();
+}
+
+async function seedDocumentAccessSettings(
+  em: EntityManager,
+  workspaceId: string,
+  memberUsers: SeedUserSummary[],
+  documents: SeedDocumentSummary[],
+  settings: DocumentAccessSettingTemplate[] = [],
+): Promise<void> {
+  if (settings.length === 0) {
+    return;
+  }
+
+  const usersByEmail = new Map(memberUsers.map((user) => [user.email, user]));
+  const documentsByKey = new Map(documents.map((document) => [document.key, document]));
+
+  for (const settingTemplate of settings) {
+    const document = documentsByKey.get(settingTemplate.documentKey);
+    const updatedBy = settingTemplate.updatedByEmail
+      ? usersByEmail.get(settingTemplate.updatedByEmail)
+      : memberUsers[0];
+
+    if (!document || !updatedBy) {
+      continue;
+    }
+
+    const existingSetting = await em.findOne(DocumentAccessSettingEntity, {
+      document: document.id,
+    });
+    const setting = existingSetting ??
+      em.create(DocumentAccessSettingEntity, {
+        workspace: em.getReference(WorkspaceEntity, workspaceId),
+        document: em.getReference(DocumentEntity, document.id),
+        updatedBy: em.getReference(CurrentUserEntity, updatedBy.id),
+      });
+
+    setting.workspace = em.getReference(WorkspaceEntity, workspaceId);
+    setting.document = em.getReference(DocumentEntity, document.id);
+    setting.workspaceMemberPermission = settingTemplate.workspaceMemberPermission;
+    setting.updatedBy = em.getReference(CurrentUserEntity, updatedBy.id);
+    em.persist(setting);
   }
 
   await em.flush();
@@ -793,6 +895,20 @@ async function seedWorkspaceScenario(
 
   const memberSummaries = memberUsers.map((member) => member.user);
   await seedWorkspacePreferences(em, workspace.id, memberSummaries, documents);
+  await seedDocumentAccessGrants(
+    em,
+    workspace.id,
+    memberSummaries,
+    documents,
+    template.documentAccessGrants,
+  );
+  await seedDocumentAccessSettings(
+    em,
+    workspace.id,
+    memberSummaries,
+    documents,
+    template.documentAccessSettings,
+  );
   await seedFavoritesAndVisits(em, workspace.id, memberSummaries, documents);
   await seedPublishedDocs(em, workspace.id, memberSummaries, documents);
   await seedSubdocReferences(em, workspace.id, documents);

@@ -1,6 +1,7 @@
 import type { WorkspaceRole } from '../../../src/domains/workspace/domain/enums/workspace-role.enum';
 import type { TeamspaceAccessMode } from '../../../src/domains/teamspace/domain/enums/teamspace-access-mode.enum';
 import type { TeamspaceMemberRole } from '../../../src/domains/teamspace/domain/enums/teamspace-member-role.enum';
+import type { DocumentAccessGrantPermission } from '../../../src/domains/document/domain/enums/document-access-grant-permission.enum';
 
 export type SeedUserFixture = {
   email: string;
@@ -35,6 +36,19 @@ export type DocumentBlueprint = {
   children?: DocumentBlueprint[];
 };
 
+export type DocumentAccessGrantTemplate = {
+  documentKey: string;
+  userEmail: string;
+  permission: DocumentAccessGrantPermission;
+  grantedByEmail?: string;
+};
+
+export type DocumentAccessSettingTemplate = {
+  documentKey: string;
+  workspaceMemberPermission?: DocumentAccessGrantPermission;
+  updatedByEmail?: string;
+};
+
 export type WorkspaceTemplate = {
   key: string;
   name: string;
@@ -42,4 +56,6 @@ export type WorkspaceTemplate = {
   members: WorkspaceMemberTemplate[];
   teamspaces: TeamspaceTemplate[];
   documents: DocumentBlueprint[];
+  documentAccessGrants?: DocumentAccessGrantTemplate[];
+  documentAccessSettings?: DocumentAccessSettingTemplate[];
 };

@@ -10,6 +10,8 @@ import { RoleEntity } from '../src/domains/auth/infra/persistence/entities/role.
 import { RolePermissionEntity } from '../src/domains/auth/infra/persistence/entities/role-permission.entity';
 import { UserRoleEntity } from '../src/domains/auth/infra/persistence/entities/user-role.entity';
 import { UserSessionEntity } from '../src/domains/auth/infra/persistence/entities/user-session.entity';
+import { DocumentAccessGrantEntity } from '../src/domains/document/infra/persistence/entities/document-access-grant.entity';
+import { DocumentAccessSettingEntity } from '../src/domains/document/infra/persistence/entities/document-access-setting.entity';
 import { DocumentEntity } from '../src/domains/document/infra/persistence/entities/document.entity';
 import { DocumentSubdocReferenceEntity } from '../src/domains/document/infra/persistence/entities/document-subdoc-reference.entity';
 import { DocumentVisitEntity } from '../src/domains/document/infra/persistence/entities/document-visit.entity';
@@ -49,6 +51,8 @@ async function main() {
       WorkspaceMemberEntity,
       TeamspaceEntity,
       DocumentEntity,
+      DocumentAccessGrantEntity,
+      DocumentAccessSettingEntity,
       DocumentFavoriteEntity,
       DocumentVisitEntity,
       PublishedDocumentEntity,

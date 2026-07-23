@@ -1,6 +1,7 @@
 import { TeamspaceAccessMode } from '../../../src/domains/teamspace/domain/enums/teamspace-access-mode.enum';
 import { TeamspaceMemberRole } from '../../../src/domains/teamspace/domain/enums/teamspace-member-role.enum';
 import { WorkspaceRole } from '../../../src/domains/workspace/domain/enums/workspace-role.enum';
+import { DocumentAccessGrantPermission } from '../../../src/domains/document/domain/enums/document-access-grant-permission.enum';
 import type {
   SeedUserFixture,
   WorkspaceTemplate,
@@ -130,6 +131,27 @@ export const REALISTIC_WORKSPACE_TEMPLATES: WorkspaceTemplate[] = [
         ],
       },
     ],
+    documentAccessGrants: [
+      {
+        documentKey: 'weekly-highlights',
+        userEmail: 'alex.rivera@example.com',
+        permission: DocumentAccessGrantPermission.EDIT,
+        grantedByEmail: 'maya.chen@example.com',
+      },
+      {
+        documentKey: 'launch-calendar',
+        userEmail: 'sofie.nguyen@example.com',
+        permission: DocumentAccessGrantPermission.VIEW,
+        grantedByEmail: 'maya.chen@example.com',
+      },
+    ],
+    documentAccessSettings: [
+      {
+        documentKey: 'weekly-highlights',
+        workspaceMemberPermission: DocumentAccessGrantPermission.VIEW,
+        updatedByEmail: 'maya.chen@example.com',
+      },
+    ],
   },
   {
     key: 'northwind-ops',
@@ -221,6 +243,27 @@ export const REALISTIC_WORKSPACE_TEMPLATES: WorkspaceTemplate[] = [
             summary: 'Milestones, interfaces, and non-goals for a delivery project.',
           },
         ],
+      },
+    ],
+    documentAccessGrants: [
+      {
+        documentKey: 'account-health',
+        userEmail: 'omar.hassan@example.com',
+        permission: DocumentAccessGrantPermission.EDIT,
+        grantedByEmail: 'nina.patel@example.com',
+      },
+      {
+        documentKey: 'ops-home',
+        userEmail: 'lucy.garcia@example.com',
+        permission: DocumentAccessGrantPermission.MANAGE,
+        grantedByEmail: 'nina.patel@example.com',
+      },
+    ],
+    documentAccessSettings: [
+      {
+        documentKey: 'account-health',
+        workspaceMemberPermission: DocumentAccessGrantPermission.COMMENT,
+        updatedByEmail: 'nina.patel@example.com',
       },
     ],
   },
