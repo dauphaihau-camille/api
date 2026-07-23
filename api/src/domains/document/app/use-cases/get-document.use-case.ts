@@ -1,25 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { PublishRepository } from '../../../publish/app/ports/publish.repository';
-import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import { DocumentObservabilityService } from '../../observability/document-observability.service';
 import type { DocumentSummary } from '../contracts/document.contract';
 import { DocumentNotFoundError } from '../errors/document-app.error';
 import { toDocumentSummary } from '../mappers/document-summary.mapper';
 import { DocumentNavigationQueryRepository } from '../ports/document-navigation-query.repository';
 import { DocumentVisitRepository } from '../ports/document-visit.repository';
-import { DocumentAccessResolver } from '../policies/document-access.resolver';
-import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
+import { DocumentAccessCapabilityService } from '../services/document-access-capability.service';
 
 @Injectable()
 export class GetDocumentUseCase {
   constructor(
-    private readonly workspaceRepository: WorkspaceRepository,
     private readonly documentNavigationQueryRepository: DocumentNavigationQueryRepository,
     private readonly documentVisitRepository: DocumentVisitRepository,
     private readonly publishRepository: PublishRepository,
     private readonly documentObservabilityService: DocumentObservabilityService,
-    private readonly documentAccessResolver: DocumentAccessResolver,
+    private readonly documentAccessCapabilityService: DocumentAccessCapabilityService,
   ) {}
 
   async execute(
@@ -34,14 +31,8 @@ export class GetDocumentUseCase {
     }
 
     const accessStartedAt = Date.now();
-    const workspace = await resolveWorkspaceForUser(this.workspaceRepository, document.workspace.id, currentUser);
-
-    const capabilities = this.documentAccessResolver.resolve({
-      actorUserId: currentUser.userId,
-      documentOwnerUserId: document.ownerUser.id,
-      documentTeamspaceId: document.teamspace?.id,
-      workspaceRole: workspace.currentUserRole,
-    });
+    const { capabilities, setting: accessSetting } =
+      await this.documentAccessCapabilityService.resolveForDocument(document, currentUser);
 
     if (!capabilities.canView) {
       throw new DocumentNotFoundError(documentId);
@@ -95,6 +86,14 @@ export class GetDocumentUseCase {
       publishedDocumentId: publishedDocument?.id,
       publicPath: publishedDocument ? `/share/${publishedDocument.id}` : undefined,
       breadcrumb,
+      access: {
+        scope: capabilities.accessScope,
+        permission: capabilities.permission,
+        canView: capabilities.canView,
+        canEdit: capabilities.canEdit,
+        canManage: capabilities.canManageAccess,
+        workspaceMemberPermission: accessSetting?.workspaceMemberPermission,
+      },
     };
   }
 }

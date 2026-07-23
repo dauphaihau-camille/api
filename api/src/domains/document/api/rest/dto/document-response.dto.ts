@@ -1,8 +1,51 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type {
+  DocumentAccessSummary,
   DocumentBreadcrumbItem,
   DocumentSummary,
 } from '../../../app/contracts/document.contract';
+
+class DocumentAccessResponseDto {
+  @ApiProperty()
+  scope!: string;
+
+  @ApiProperty()
+  permission!: string;
+
+  @ApiProperty()
+  can_view!: boolean;
+
+  @ApiProperty()
+  can_edit!: boolean;
+
+  @ApiProperty()
+  can_manage!: boolean;
+
+  @ApiPropertyOptional()
+  workspace_member_permission?: string;
+
+  static fromSummary(access: DocumentAccessSummary): DocumentAccessResponseDto {
+    return {
+      scope: access.scope,
+      permission: access.permission,
+      can_view: access.canView,
+      can_edit: access.canEdit,
+      can_manage: access.canManage,
+      workspace_member_permission: access.workspaceMemberPermission,
+    };
+  }
+}
+
+class DocumentOwnerUserResponseDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  email!: string;
+
+  @ApiPropertyOptional()
+  display_name?: string;
+}
 
 class DocumentBreadcrumbItemDto {
   @ApiProperty()
@@ -38,6 +81,11 @@ export class DocumentResponseDto {
 
   @ApiProperty()
   owner_user_id!: string;
+
+  @ApiProperty({
+    type: DocumentOwnerUserResponseDto,
+  })
+  owner_user!: DocumentOwnerUserResponseDto;
 
   @ApiPropertyOptional()
   teamspace_id?: string;
@@ -87,6 +135,11 @@ export class DocumentResponseDto {
   })
   breadcrumb?: DocumentBreadcrumbItemDto[];
 
+  @ApiPropertyOptional({
+    type: DocumentAccessResponseDto,
+  })
+  access?: DocumentAccessResponseDto;
+
   static fromSummary(document: DocumentSummary): DocumentResponseDto {
     return {
       id: document.id,
@@ -94,6 +147,11 @@ export class DocumentResponseDto {
       version: document.version,
       workspace_id: document.workspaceId,
       owner_user_id: document.ownerUserId,
+      owner_user: {
+        id: document.ownerUser.id,
+        email: document.ownerUser.email,
+        display_name: document.ownerUser.displayName,
+      },
       teamspace_id: document.teamspaceId,
       parent_document_id: document.parentDocumentId,
       title: document.title,
@@ -108,6 +166,9 @@ export class DocumentResponseDto {
       published_document_id: document.publishedDocumentId,
       public_path: document.publicPath,
       breadcrumb: document.breadcrumb?.map(DocumentBreadcrumbItemDto.fromSummary),
+      access: document.access
+        ? DocumentAccessResponseDto.fromSummary(document.access)
+        : undefined,
     };
   }
 }

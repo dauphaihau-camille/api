@@ -7,12 +7,41 @@ import {
 } from '../errors/document-app.error';
 import type { DocumentCollaborationRepository } from '../ports/document-collaboration.repository';
 import type { DocumentCommandRepository } from '../ports/document-command.repository';
+import type { DocumentAccessGrantRepository } from '../ports/document-access-grant.repository';
+import type { DocumentAccessSettingRepository } from '../ports/document-access-setting.repository';
 import { DocumentAccessResolver } from '../policies/document-access.resolver';
+import { DocumentAccessCapabilityService } from '../services/document-access-capability.service';
 import type { SyncDocumentSubdocReferencesUseCase } from './sync-document-subdoc-references.use-case';
 import type { SyncReferencedSubdocTitlesUseCase } from './sync-referenced-subdoc-titles.use-case';
 import { UpdateDocumentUseCase } from './update-document.use-case';
 
 describe('UpdateDocumentUseCase collaboration boundary', () => {
+  function createAccessGrantRepository() {
+    return {
+      findActiveGrant: jest.fn().mockResolvedValue(null),
+      hasActiveGrants: jest.fn().mockResolvedValue(false),
+    } as unknown as jest.Mocked<DocumentAccessGrantRepository>;
+  }
+
+  function createAccessSettingRepository() {
+    return {
+      findByDocumentId: jest.fn().mockResolvedValue(null),
+    } as unknown as jest.Mocked<DocumentAccessSettingRepository>;
+  }
+
+  function createDocumentAccessCapabilityService(
+    workspaceRepository: WorkspaceRepository,
+    grantRepository: DocumentAccessGrantRepository,
+    accessSettingRepository: DocumentAccessSettingRepository,
+  ) {
+    return new DocumentAccessCapabilityService(
+      workspaceRepository,
+      grantRepository,
+      accessSettingRepository,
+      new DocumentAccessResolver(),
+    );
+  }
+
   it('rejects REST content replacement after collaboration state exists', async () => {
     const document = {
       id: 'document-1',
@@ -36,12 +65,13 @@ describe('UpdateDocumentUseCase collaboration boundary', () => {
         updates: [],
       }),
     } as unknown as jest.Mocked<DocumentCollaborationRepository>;
+    const accessGrantRepository = createAccessGrantRepository();
+    const accessSettingRepository = createAccessSettingRepository();
     const useCase = new UpdateDocumentUseCase(
       {} as AuditService,
-      workspaceRepository,
-      new DocumentAccessResolver(),
       commandRepository,
       collaborationRepository,
+      createDocumentAccessCapabilityService(workspaceRepository, accessGrantRepository, accessSettingRepository),
       {} as SyncDocumentSubdocReferencesUseCase,
       {} as SyncReferencedSubdocTitlesUseCase,
     );
@@ -74,12 +104,13 @@ describe('UpdateDocumentUseCase collaboration boundary', () => {
     const collaborationRepository = {
       loadState: jest.fn(),
     } as unknown as jest.Mocked<DocumentCollaborationRepository>;
+    const accessGrantRepository = createAccessGrantRepository();
+    const accessSettingRepository = createAccessSettingRepository();
     const useCase = new UpdateDocumentUseCase(
       {} as AuditService,
-      workspaceRepository,
-      new DocumentAccessResolver(),
       commandRepository,
       collaborationRepository,
+      createDocumentAccessCapabilityService(workspaceRepository, accessGrantRepository, accessSettingRepository),
       {} as SyncDocumentSubdocReferencesUseCase,
       {} as SyncReferencedSubdocTitlesUseCase,
     );
@@ -133,12 +164,13 @@ describe('UpdateDocumentUseCase collaboration boundary', () => {
     const syncReferencedSubdocTitlesUseCase = {
       execute: jest.fn(),
     } as unknown as jest.Mocked<SyncReferencedSubdocTitlesUseCase>;
+    const accessGrantRepository = createAccessGrantRepository();
+    const accessSettingRepository = createAccessSettingRepository();
     const useCase = new UpdateDocumentUseCase(
       auditService,
-      workspaceRepository,
-      new DocumentAccessResolver(),
       commandRepository,
       collaborationRepository,
+      createDocumentAccessCapabilityService(workspaceRepository, accessGrantRepository, accessSettingRepository),
       {} as SyncDocumentSubdocReferencesUseCase,
       syncReferencedSubdocTitlesUseCase,
     );

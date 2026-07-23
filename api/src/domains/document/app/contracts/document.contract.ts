@@ -6,6 +6,21 @@ export interface DocumentBreadcrumbItem {
   title: string;
 }
 
+export interface DocumentAccessSummary {
+  scope: 'private' | 'shared' | 'teamspace';
+  permission: 'none' | 'view' | 'edit' | 'manage';
+  canView: boolean;
+  canEdit: boolean;
+  canManage: boolean;
+  workspaceMemberPermission?: 'view' | 'comment' | 'edit' | 'manage';
+}
+
+export interface DocumentOwnerUserSummary {
+  id: string;
+  email: string;
+  displayName?: string;
+}
+
 export interface DocumentTeamspaceRef {
   id: string;
   name: string;
@@ -18,6 +33,7 @@ export interface DocumentSummary {
   version: number;
   workspaceId: string;
   ownerUserId: string;
+  ownerUser: DocumentOwnerUserSummary;
   teamspaceId?: string;
   parentDocumentId?: string;
   title: string;
@@ -32,6 +48,7 @@ export interface DocumentSummary {
   publishedDocumentId?: string;
   publicPath?: string;
   breadcrumb?: DocumentBreadcrumbItem[];
+  access?: DocumentAccessSummary;
 }
 
 export interface CreateSubdocCommandResult {
@@ -59,6 +76,8 @@ export interface DocumentTreeChild {
 export interface DocumentNavigationNode {
   id: string;
   publicId: string;
+  accessScope?: 'private' | 'shared' | 'teamspace';
+  isOwnedByCurrentUser: boolean;
   title: string;
   teamspaceId?: string;
   parentDocumentId?: string;
@@ -97,6 +116,7 @@ export interface TeamspaceDocumentNavigationGroup {
 
 export interface WorkspaceDocumentNavigation {
   privateDocuments: DocumentNavigationPage;
+  sharedDocuments: DocumentNavigationPage;
   teamspaces: TeamspaceDocumentNavigationGroup[];
 }
 

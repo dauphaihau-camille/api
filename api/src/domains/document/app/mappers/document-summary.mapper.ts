@@ -8,6 +8,11 @@ export function toDocumentSummary(document: DocumentEntity): DocumentSummary {
     version: document.version,
     workspaceId: document.workspace.id,
     ownerUserId: document.ownerUser.id,
+    ownerUser: {
+      id: document.ownerUser.id,
+      email: document.ownerUser.email,
+      displayName: document.ownerUser.displayName,
+    },
     teamspaceId: document.teamspace?.id,
     parentDocumentId: document.parentDocument?.id,
     title: document.title,

@@ -11,6 +11,8 @@ import { DocumentCollaborationRepository } from '../app/ports/document-collabora
 import { extractDocumentSearchText } from '../app/utils/document-search-text.util';
 import { DocumentCollaborationSnapshotEntity } from './persistence/entities/document-collaboration-snapshot.entity';
 import { DocumentCollaborationUpdateEntity } from './persistence/entities/document-collaboration-update.entity';
+import { DocumentAccessGrantEntity } from './persistence/entities/document-access-grant.entity';
+import { DocumentAccessSettingEntity } from './persistence/entities/document-access-setting.entity';
 import { DocumentEntity } from './persistence/entities/document.entity';
 import { DocumentSubdocReferenceEntity } from './persistence/entities/document-subdoc-reference.entity';
 
@@ -50,6 +52,16 @@ export class MikroOrmDocumentCollaborationRepository extends DocumentCollaborati
       })
       : null;
 
+    const directGrant = await entityManager.findOne(DocumentAccessGrantEntity, {
+      document: document.id,
+      user: userId,
+      revokedAt: null,
+    });
+
+    const accessSetting = await entityManager.findOne(DocumentAccessSettingEntity, {
+      document: document.id,
+    });
+
     return {
       content: document.contentJson,
       title: document.title,
@@ -57,6 +69,8 @@ export class MikroOrmDocumentCollaborationRepository extends DocumentCollaborati
       documentTeamspaceId: document.teamspace?.id,
       teamspaceAccessMode: document.teamspace?.accessMode,
       teamspaceMemberRole: teamspaceMembership?.role,
+      directGrantPermission: directGrant?.permission,
+      workspaceMemberPermission: accessSetting?.workspaceMemberPermission,
       workspaceId: document.workspace.id,
       workspaceRole: membership.role,
     };

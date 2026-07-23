@@ -2,21 +2,18 @@ import { OptimisticLockError } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { AuditService } from '~/integrations/audit/audit.service';
-import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import type { DocumentSummary } from '../contracts/document.contract';
 import type { UpdateDocumentInput } from '../contracts/document.input';
 import { DocumentCommandRepository } from '../ports/document-command.repository';
 import { DocumentCollaborationRepository } from '../ports/document-collaboration.repository';
 import { toDocumentSummary } from '../mappers/document-summary.mapper';
-import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
-import { DocumentAccessResolver } from '../policies/document-access.resolver';
 import { extractDocumentSearchText } from '../utils/document-search-text.util';
 import {
   DocumentNotFoundError,
   DocumentContentManagedByCollaborationError,
-  DocumentPermissionDeniedError,
   DocumentVersionConflictError,
 } from '../errors/document-app.error';
+import { DocumentAccessCapabilityService } from '../services/document-access-capability.service';
 import { normalizeContent } from '../utils/document-content.util';
 import { normalizeTitle } from '../utils/document-title.util';
 import { SyncDocumentSubdocReferencesUseCase } from './sync-document-subdoc-references.use-case';
@@ -26,10 +23,9 @@ import { SyncReferencedSubdocTitlesUseCase } from './sync-referenced-subdoc-titl
 export class UpdateDocumentUseCase {
   constructor(
     private readonly auditService: AuditService,
-    private readonly workspaceRepository: WorkspaceRepository,
-    private readonly documentAccessResolver: DocumentAccessResolver,
     private readonly documentCommandRepository: DocumentCommandRepository,
     private readonly documentCollaborationRepository: DocumentCollaborationRepository,
+    private readonly documentAccessCapabilityService: DocumentAccessCapabilityService,
     private readonly syncDocumentSubdocReferencesUseCase: SyncDocumentSubdocReferencesUseCase,
     private readonly syncReferencedSubdocTitlesUseCase: SyncReferencedSubdocTitlesUseCase,
   ) {}
@@ -43,15 +39,7 @@ export class UpdateDocumentUseCase {
     if (!document) {
       throw new DocumentNotFoundError(documentId);
     }
-    const workspace = await resolveWorkspaceForUser(this.workspaceRepository, document.workspace.id, currentUser);
-    if (!this.documentAccessResolver.resolve({
-      actorUserId: currentUser.userId,
-      documentOwnerUserId: document.ownerUser.id,
-      documentTeamspaceId: document.teamspace?.id,
-      workspaceRole: workspace.currentUserRole,
-    }).canEdit) {
-      throw new DocumentPermissionDeniedError();
-    }
+    const { workspace } = await this.documentAccessCapabilityService.assertCanEdit(document, currentUser);
 
     if (
       input.content !== undefined

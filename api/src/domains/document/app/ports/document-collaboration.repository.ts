@@ -1,6 +1,7 @@
 import type { TeamspaceAccessMode } from '../../../teamspace/domain/enums/teamspace-access-mode.enum';
 import type { TeamspaceMemberRole } from '../../../teamspace/domain/enums/teamspace-member-role.enum';
 import type { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.enum';
+import type { DocumentAccessGrantPermission } from '../../domain/enums/document-access-grant-permission.enum';
 
 export type DocumentCollaborationAccess = {
   content: unknown[];
@@ -9,6 +10,8 @@ export type DocumentCollaborationAccess = {
   documentTeamspaceId?: string;
   teamspaceAccessMode?: TeamspaceAccessMode;
   teamspaceMemberRole?: TeamspaceMemberRole;
+  directGrantPermission?: DocumentAccessGrantPermission;
+  workspaceMemberPermission?: DocumentAccessGrantPermission;
   workspaceId: string;
   workspaceRole: WorkspaceRole;
 };

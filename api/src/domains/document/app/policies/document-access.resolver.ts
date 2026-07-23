@@ -2,8 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { TeamspaceAccessMode } from '../../../teamspace/domain/enums/teamspace-access-mode.enum';
 import { TeamspaceMemberRole } from '../../../teamspace/domain/enums/teamspace-member-role.enum';
 import { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.enum';
+import { DocumentAccessGrantPermission } from '../../domain/enums/document-access-grant-permission.enum';
 
 export type DocumentCapabilities = {
+  accessScope: DocumentAccessScope;
   canEdit: boolean;
   canManageAccess: boolean;
   canView: boolean;
@@ -11,11 +13,15 @@ export type DocumentCapabilities = {
 };
 
 export type DocumentPermission = 'none' | 'view' | 'edit' | 'manage';
+export type DocumentAccessScope = 'private' | 'shared' | 'teamspace';
 
 export type DocumentAccessContext = {
   actorUserId: string;
   documentOwnerUserId: string;
   documentTeamspaceId?: string;
+  documentHasActiveGrants?: boolean;
+  directGrantPermission?: DocumentAccessGrantPermission;
+  workspaceMemberPermission?: DocumentAccessGrantPermission;
   teamspaceAccessMode?: TeamspaceAccessMode;
   teamspaceMemberRole?: TeamspaceMemberRole;
   workspaceRole: WorkspaceRole;
@@ -30,6 +36,7 @@ export class DocumentAccessResolver {
         || input === WorkspaceRole.ADMIN;
 
       return {
+        accessScope: 'private',
         canEdit: canEditWorkspaceDocument,
         canManageAccess: canEditWorkspaceDocument,
         canView: true,
@@ -46,24 +53,32 @@ export class DocumentAccessResolver {
       && input.actorUserId === input.documentOwnerUserId;
 
     const teamspacePermission = this.resolveTeamspacePermission(input);
+    const grantPermission = this.resolveGrantPermission(input.directGrantPermission);
+    const workspaceMemberPermission = this.resolveGrantPermission(input.workspaceMemberPermission);
 
-    const isTeamspaceDocument =
-      Boolean(input.documentTeamspaceId);
+    const isTeamspaceDocument = Boolean(input.documentTeamspaceId);
+
+    const effectivePermission = this.strongestPermission([
+      teamspacePermission ? this.teamspaceRoleToPermission(teamspacePermission) : undefined,
+      grantPermission,
+      workspaceMemberPermission,
+    ]);
 
     const canEdit = isPrivateOwner
       || (isWorkspaceAdministrator && isTeamspaceDocument)
-      || teamspacePermission === TeamspaceMemberRole.EDITOR
-      || teamspacePermission === TeamspaceMemberRole.MANAGER;
+      || effectivePermission === 'edit'
+      || effectivePermission === 'manage';
 
     const canManageAccess = isPrivateOwner
       || (isWorkspaceAdministrator && isTeamspaceDocument)
-      || teamspacePermission === TeamspaceMemberRole.MANAGER;
+      || effectivePermission === 'manage';
 
     const canView = (isWorkspaceAdministrator && isTeamspaceDocument)
-      || Boolean(teamspacePermission)
+      || Boolean(effectivePermission)
       || isPrivateOwner;
 
     return {
+      accessScope: this.resolveAccessScope(input),
       canEdit,
       canManageAccess,
       canView,
@@ -73,6 +88,38 @@ export class DocumentAccessResolver {
         canView,
       }),
     };
+  }
+
+  private resolveAccessScope(context: DocumentAccessContext): DocumentAccessScope {
+    if (context.documentTeamspaceId) {
+      return 'teamspace';
+    }
+
+    if (
+      context.documentHasActiveGrants
+      || context.directGrantPermission
+      || context.workspaceMemberPermission
+    ) {
+      return 'shared';
+    }
+
+    return 'private';
+  }
+
+  private resolveGrantPermission(
+    permission?: DocumentAccessGrantPermission,
+  ): DocumentPermission | undefined {
+    switch (permission) {
+      case DocumentAccessGrantPermission.MANAGE:
+        return 'manage';
+      case DocumentAccessGrantPermission.EDIT:
+        return 'edit';
+      case DocumentAccessGrantPermission.COMMENT:
+      case DocumentAccessGrantPermission.VIEW:
+        return 'view';
+      default:
+        return undefined;
+    }
   }
 
   private resolveTeamspacePermission(
@@ -111,5 +158,39 @@ export class DocumentAccessResolver {
     }
 
     return 'none';
+  }
+
+  private teamspaceRoleToPermission(role: TeamspaceMemberRole): DocumentPermission {
+    switch (role) {
+      case TeamspaceMemberRole.MANAGER:
+        return 'manage';
+      case TeamspaceMemberRole.EDITOR:
+        return 'edit';
+      case TeamspaceMemberRole.VIEWER:
+        return 'view';
+    }
+  }
+
+  private strongestPermission(
+    permissions: Array<DocumentPermission | undefined>,
+  ): DocumentPermission | undefined {
+    const rank: Record<DocumentPermission, number> = {
+      none: 0,
+      view: 1,
+      edit: 2,
+      manage: 3,
+    };
+
+    return permissions.reduce<DocumentPermission | undefined>((strongest, permission) => {
+      if (!permission) {
+        return strongest;
+      }
+
+      if (!strongest || rank[permission] > rank[strongest]) {
+        return permission;
+      }
+
+      return strongest;
+    }, undefined);
   }
 }
