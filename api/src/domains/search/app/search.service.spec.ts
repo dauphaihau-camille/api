@@ -1,12 +1,15 @@
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { UserStatus } from '~/domains/auth/domain/enums/user-status.enum';
 import { DocumentAccessResolver } from '../../document/app/policies/document-access.resolver';
+import type { DocumentAccessGrantRepository } from '../../document/app/ports/document-access-grant.repository';
+import type { DocumentAccessSettingRepository } from '../../document/app/ports/document-access-setting.repository';
 import { TeamspaceAccessMode } from '../../teamspace/domain/enums/teamspace-access-mode.enum';
 import { TeamspaceMemberRole } from '../../teamspace/domain/enums/teamspace-member-role.enum';
 import { WorkspaceRole } from '../../workspace/domain/enums/workspace-role.enum';
 import type { WorkspaceRepository } from '../../workspace/app/ports/workspace.repository';
 import { SearchWorkspaceDocumentsUseCase } from './use-cases/search-workspace-documents.use-case';
 import type { SearchRepository } from './ports/search.repository';
+import { DocumentAccessGrantPermission } from '../../document/domain/enums/document-access-grant-permission.enum';
 
 describe('SearchWorkspaceDocumentsUseCase', () => {
   const currentUser: AuthenticatedUser = {
@@ -38,15 +41,25 @@ describe('SearchWorkspaceDocumentsUseCase', () => {
         },
       ]),
     } as unknown as jest.Mocked<WorkspaceRepository>;
+    const documentAccessGrantRepository = {
+      findActiveGrantPermissionsByDocumentId: jest.fn().mockResolvedValue(new Map()),
+    } as unknown as jest.Mocked<DocumentAccessGrantRepository>;
+    const documentAccessSettingRepository = {
+      findWorkspaceMemberPermissionsByDocumentId: jest.fn().mockResolvedValue(new Map()),
+    } as unknown as jest.Mocked<DocumentAccessSettingRepository>;
 
     return {
       service: new SearchWorkspaceDocumentsUseCase(
         searchRepository,
         workspaceRepository,
         new DocumentAccessResolver(),
+        documentAccessGrantRepository,
+        documentAccessSettingRepository,
       ),
       searchRepository,
       workspaceRepository,
+      documentAccessGrantRepository,
+      documentAccessSettingRepository,
     };
   }
 
@@ -195,6 +208,41 @@ describe('SearchWorkspaceDocumentsUseCase', () => {
       expect.objectContaining({
         documentId: 'owned-document',
         title: 'Owned private doc',
+      }),
+    ]);
+  });
+
+  it('keeps private search matches shared through a direct grant', async () => {
+    const { service, searchRepository, documentAccessGrantRepository } = createService(WorkspaceRole.MEMBER);
+    const updatedAt = new Date('2026-03-01T00:00:00.000Z');
+
+    searchRepository.findMatchedDocuments.mockResolvedValue([
+      {
+        document: {
+          id: 'shared-document',
+          publicId: 'shared-public',
+          workspace: { id: 'workspace-1' },
+          teamspace: undefined,
+          parentDocument: undefined,
+          ownerUser: { id: 'other-user' },
+          title: 'Shared private doc',
+          contentJson: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hello' }] }],
+          updatedBy: { displayName: undefined, email: 'other@example.com' },
+          updatedAt,
+        },
+        matchedText: 'Hello shared',
+      },
+    ] as never);
+    documentAccessGrantRepository.findActiveGrantPermissionsByDocumentId.mockResolvedValue(
+      new Map([['shared-document', DocumentAccessGrantPermission.VIEW]]),
+    );
+
+    const result = await service.execute('workspace-1', currentUser, 'hello');
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        documentId: 'shared-document',
+        title: 'Shared private doc',
       }),
     ]);
   });

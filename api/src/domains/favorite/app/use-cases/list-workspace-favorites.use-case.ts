@@ -3,6 +3,8 @@ import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import type { DocumentCapabilities } from '~/domains/document/app/policies/document-access.resolver';
 import { hasMeaningfulContent } from '~/domains/document/app/utils/document-content.util';
 import { DocumentNavigationQueryRepository } from '~/domains/document/app/ports/document-navigation-query.repository';
+import { DocumentAccessGrantRepository } from '~/domains/document/app/ports/document-access-grant.repository';
+import { DocumentAccessSettingRepository } from '~/domains/document/app/ports/document-access-setting.repository';
 import type {
   FavoriteDocumentAccessSummary,
   FavoriteDocumentSummary,
@@ -20,6 +22,8 @@ export class ListWorkspaceFavoritesUseCase {
     private readonly workspaceRepository: WorkspaceRepository,
     private readonly documentNavigationQueryRepository: DocumentNavigationQueryRepository,
     private readonly documentAccessResolver: DocumentAccessResolver,
+    private readonly documentAccessGrantRepository: DocumentAccessGrantRepository,
+    private readonly documentAccessSettingRepository: DocumentAccessSettingRepository,
   ) {}
 
   async execute(
@@ -49,6 +53,17 @@ export class ListWorkspaceFavoritesUseCase {
         userId: currentUser.userId,
       });
 
+    const directGrantPermissionsByDocumentId =
+      await this.documentAccessGrantRepository.findActiveGrantPermissionsByDocumentId({
+        documentIds: favorites.map((favorite) => favorite.document.id),
+        userId: currentUser.userId,
+      });
+
+    const workspaceMemberPermissionsByDocumentId =
+      await this.documentAccessSettingRepository.findWorkspaceMemberPermissionsByDocumentId({
+        documentIds: favorites.map((favorite) => favorite.document.id),
+      });
+
     const favoritesWithCapabilities = favorites.map((favorite) => ({
       favorite,
       capabilities: this.documentAccessResolver.resolve({
@@ -59,6 +74,8 @@ export class ListWorkspaceFavoritesUseCase {
         teamspaceMemberRole: favorite.document.teamspace?.id
           ? teamspaceMemberRolesByTeamspaceId.get(favorite.document.teamspace.id)
           : undefined,
+        directGrantPermission: directGrantPermissionsByDocumentId.get(favorite.document.id),
+        workspaceMemberPermission: workspaceMemberPermissionsByDocumentId.get(favorite.document.id),
         workspaceRole: workspace.currentUserRole,
       }),
     }));

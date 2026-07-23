@@ -17,6 +17,12 @@ export class DocumentNavigationNodeResponseDto {
   title!: string;
 
   @ApiPropertyOptional()
+  access_scope?: string;
+
+  @ApiProperty()
+  is_owned_by_current_user!: boolean;
+
+  @ApiPropertyOptional()
   teamspace_id?: string;
 
   @ApiPropertyOptional()
@@ -39,6 +45,8 @@ export class DocumentNavigationNodeResponseDto {
       id: node.id,
       public_id: node.publicId,
       title: node.title,
+      access_scope: node.accessScope,
+      is_owned_by_current_user: node.isOwnedByCurrentUser,
       teamspace_id: node.teamspaceId,
       parent_document_id: node.parentDocumentId,
       sort_key: node.sortKey,
@@ -99,6 +107,11 @@ export class WorkspaceDocumentNavigationResponseDto {
   private_documents!: DocumentNavigationPageResponseDto;
 
   @ApiProperty({
+    type: () => DocumentNavigationPageResponseDto,
+  })
+  shared_documents!: DocumentNavigationPageResponseDto;
+
+  @ApiProperty({
     type: () => TeamspaceDocumentNavigationGroupResponseDto,
     isArray: true,
   })
@@ -109,6 +122,7 @@ export class WorkspaceDocumentNavigationResponseDto {
   ): WorkspaceDocumentNavigationResponseDto {
     return {
       private_documents: DocumentNavigationPageResponseDto.fromPage(navigation.privateDocuments),
+      shared_documents: DocumentNavigationPageResponseDto.fromPage(navigation.sharedDocuments),
       teamspaces: navigation.teamspaces.map(TeamspaceDocumentNavigationGroupResponseDto.fromGroup),
     };
   }

@@ -5,6 +5,8 @@ import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repo
 import type { DocumentEntity } from '../../infra/persistence/entities/document.entity';
 import type { DocumentTreeChild } from '../contracts/document.contract';
 import { DocumentNotFoundError } from '../errors/document-app.error';
+import { DocumentAccessGrantRepository } from '../ports/document-access-grant.repository';
+import { DocumentAccessSettingRepository } from '../ports/document-access-setting.repository';
 import { DocumentNavigationQueryRepository } from '../ports/document-navigation-query.repository';
 import { DocumentAccessResolver } from '../policies/document-access.resolver';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
@@ -16,6 +18,8 @@ export class ListDocumentChildrenUseCase {
     private readonly workspaceRepository: WorkspaceRepository,
     private readonly documentNavigationQueryRepository: DocumentNavigationQueryRepository,
     private readonly documentAccessResolver: DocumentAccessResolver,
+    private readonly documentAccessGrantRepository: DocumentAccessGrantRepository,
+    private readonly documentAccessSettingRepository: DocumentAccessSettingRepository,
   ) {}
 
   async execute(
@@ -34,12 +38,20 @@ export class ListDocumentChildrenUseCase {
       currentUser.userId,
       document.teamspace?.id,
     );
+    const parentDirectGrant = await this.documentAccessGrantRepository.findActiveGrant({
+      documentId: document.id,
+      userId: currentUser.userId,
+    });
+    const parentAccessSetting =
+      await this.documentAccessSettingRepository.findByDocumentId(document.id);
     const parentCapabilities = this.documentAccessResolver.resolve({
       actorUserId: currentUser.userId,
       documentOwnerUserId: document.ownerUser.id,
       documentTeamspaceId: document.teamspace?.id,
       teamspaceAccessMode: document.teamspace?.accessMode,
       teamspaceMemberRole: parentTeamspaceMemberRole,
+      directGrantPermission: parentDirectGrant?.permission,
+      workspaceMemberPermission: parentAccessSetting?.workspaceMemberPermission,
       workspaceRole: workspace.currentUserRole,
     });
 
@@ -55,6 +67,15 @@ export class ListDocumentChildrenUseCase {
       currentUser.userId,
       children,
     );
+    const directGrantPermissionsByDocumentId =
+      await this.documentAccessGrantRepository.findActiveGrantPermissionsByDocumentId({
+        documentIds: children.map((child) => child.id),
+        userId: currentUser.userId,
+      });
+    const workspaceMemberPermissionsByDocumentId =
+      await this.documentAccessSettingRepository.findWorkspaceMemberPermissionsByDocumentId({
+        documentIds: children.map((child) => child.id),
+      });
 
     const visibleChildren = children.filter((child) => this.documentAccessResolver.resolve({
       actorUserId: currentUser.userId,
@@ -64,6 +85,8 @@ export class ListDocumentChildrenUseCase {
       teamspaceMemberRole: child.teamspace?.id
         ? teamspaceMemberRolesByTeamspaceId.get(child.teamspace.id)
         : undefined,
+      directGrantPermission: directGrantPermissionsByDocumentId.get(child.id),
+      workspaceMemberPermission: workspaceMemberPermissionsByDocumentId.get(child.id),
       workspaceRole: workspace.currentUserRole,
     }).canView);
 

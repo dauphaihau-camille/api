@@ -11,6 +11,8 @@ import type {
 import type { ListWorkspaceDocumentsInput } from '../contracts/document.input';
 import { DocumentNavigationQueryRepository } from '../ports/document-navigation-query.repository';
 import { DocumentEntity } from '../../infra/persistence/entities/document.entity';
+import { DocumentAccessGrantRepository } from '../ports/document-access-grant.repository';
+import { DocumentAccessSettingRepository } from '../ports/document-access-setting.repository';
 import {
   DocumentNotFoundError,
   InvalidDocumentCursorError,
@@ -19,12 +21,16 @@ import { DocumentAccessResolver } from '../policies/document-access.resolver';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
 import { hasMeaningfulContent } from '../utils/document-content.util';
 
+type DocumentNavigationPageMode = 'viewable' | 'private' | 'direct-shared';
+
 @Injectable()
 export class ListWorkspaceDocumentsUseCase {
   constructor(
     private readonly workspaceRepository: WorkspaceRepository,
     private readonly documentNavigationQueryRepository: DocumentNavigationQueryRepository,
     private readonly documentAccessResolver: DocumentAccessResolver,
+    private readonly documentAccessGrantRepository: DocumentAccessGrantRepository,
+    private readonly documentAccessSettingRepository: DocumentAccessSettingRepository,
   ) {}
 
   async execute(
@@ -45,12 +51,23 @@ export class ListWorkspaceDocumentsUseCase {
         currentUser.userId,
         parentDocument.teamspace?.id,
       );
+
+      const parentDirectGrant = await this.documentAccessGrantRepository.findActiveGrant({
+        documentId: parentDocument.id,
+        userId: currentUser.userId,
+      });
+
+      const parentAccessSetting =
+        await this.documentAccessSettingRepository.findByDocumentId(parentDocument.id);
+
       const parentCapabilities = this.documentAccessResolver.resolve({
         actorUserId: currentUser.userId,
         documentOwnerUserId: parentDocument.ownerUser.id,
         documentTeamspaceId: parentDocument.teamspace?.id,
         teamspaceAccessMode: parentDocument.teamspace?.accessMode,
         teamspaceMemberRole: parentTeamspaceMemberRole,
+        directGrantPermission: parentDirectGrant?.permission,
+        workspaceMemberPermission: parentAccessSetting?.workspaceMemberPermission,
         workspaceRole: workspace.currentUserRole,
       });
 
@@ -70,7 +87,7 @@ export class ListWorkspaceDocumentsUseCase {
 
     const teamspaces = await this.documentNavigationQueryRepository.findTeamspaces(workspace.id);
 
-    const [privateDocuments, teamspaceDocuments] = await Promise.all([
+    const [privateDocuments, sharedDocuments, teamspaceDocuments] = await Promise.all([
       this.listDocumentNavigationPage(workspace.id, {
         workspaceRole: workspace.currentUserRole,
         userId: currentUser.userId,
@@ -79,6 +96,17 @@ export class ListWorkspaceDocumentsUseCase {
         limit: input.limit,
         cursor: input.cursor,
         query: input.query,
+        mode: 'private',
+      }),
+      this.listDocumentNavigationPage(workspace.id, {
+        workspaceRole: workspace.currentUserRole,
+        userId: currentUser.userId,
+        teamspaceId: null,
+        parentDocumentId: null,
+        limit: input.limit,
+        cursor: input.cursor,
+        query: input.query,
+        mode: 'direct-shared',
       }),
       Promise.all(teamspaces.map(async (teamspace) => ({
         id: teamspace.id,
@@ -92,12 +120,14 @@ export class ListWorkspaceDocumentsUseCase {
           limit: input.limit,
           cursor: input.cursor,
           query: input.query,
+          mode: 'viewable',
         }),
       }))),
     ]);
 
     return {
       privateDocuments,
+      sharedDocuments,
       teamspaces: teamspaceDocuments,
     };
   }
@@ -112,6 +142,7 @@ export class ListWorkspaceDocumentsUseCase {
       limit: number;
       cursor?: string;
       query?: string;
+      mode?: DocumentNavigationPageMode;
     },
   ): Promise<DocumentNavigationPage> {
     const documents = await this.documentNavigationQueryRepository.findRootDocuments({
@@ -120,36 +151,111 @@ export class ListWorkspaceDocumentsUseCase {
       parentDocumentId: input.parentDocumentId,
       query: input.query,
     });
+
     const cursor = input.cursor
       ? this.decodeDocumentListCursor(input.cursor)
       : undefined;
+
     const teamspaceMemberRolesByTeamspaceId = await this.findTeamspaceMemberRolesByTeamspaceId(
       input.userId,
       documents,
     );
-    const accessFilteredDocuments = documents.filter((document) => this.documentAccessResolver.resolve({
-      actorUserId: input.userId,
-      documentOwnerUserId: document.ownerUser.id,
-      documentTeamspaceId: document.teamspace?.id,
-      teamspaceAccessMode: document.teamspace?.accessMode,
-      teamspaceMemberRole: document.teamspace?.id
-        ? teamspaceMemberRolesByTeamspaceId.get(document.teamspace.id)
-        : undefined,
-      workspaceRole: input.workspaceRole,
-    }).canView);
+
+    const directGrantPermissionsByDocumentId =
+      await this.documentAccessGrantRepository.findActiveGrantPermissionsByDocumentId({
+        documentIds: documents.map((document) => document.id),
+        userId: input.userId,
+      });
+
+    const workspaceMemberPermissionsByDocumentId =
+      await this.documentAccessSettingRepository.findWorkspaceMemberPermissionsByDocumentId({
+        documentIds: documents.map((document) => document.id),
+      });
+    const documentIdsWithActiveGrants = new Set(
+      (await Promise.all(documents.map(async (document) => (
+        await this.documentAccessGrantRepository.hasActiveGrants(document.id)
+          ? document.id
+          : undefined
+      )))).filter((documentId): documentId is string => Boolean(documentId)),
+    );
+
+    const documentsWithCapabilities = documents.map((document) => ({
+      document,
+      capabilities: this.documentAccessResolver.resolve({
+        actorUserId: input.userId,
+        documentOwnerUserId: document.ownerUser.id,
+        documentTeamspaceId: document.teamspace?.id,
+        teamspaceAccessMode: document.teamspace?.accessMode,
+        teamspaceMemberRole: document.teamspace?.id
+          ? teamspaceMemberRolesByTeamspaceId.get(document.teamspace.id)
+          : undefined,
+        directGrantPermission: directGrantPermissionsByDocumentId.get(document.id),
+        documentHasActiveGrants: documentIdsWithActiveGrants.has(document.id),
+        workspaceMemberPermission: workspaceMemberPermissionsByDocumentId.get(document.id),
+        workspaceRole: input.workspaceRole,
+      }),
+    }));
+
+    const accessScopeByDocumentId = new Map(
+      documentsWithCapabilities.map(({ capabilities, document }) => [
+        document.id,
+        capabilities.accessScope,
+      ]),
+    );
+
+    const mode = input.mode ?? 'viewable';
+
+    const accessFilteredDocuments = documentsWithCapabilities
+      .filter(({ capabilities, document }) =>
+        capabilities.canView
+        && this.matchesNavigationPageMode({
+          document,
+          documentIdsWithActiveGrants,
+          directGrantPermissionsByDocumentId,
+          mode,
+          userId: input.userId,
+        }))
+      .map(({ document }) => document);
+
     const visibleDocuments = cursor
       ? accessFilteredDocuments.filter((document) =>
         document.sortKey > cursor.sortKey
             || (document.sortKey === cursor.sortKey && document.id > cursor.id))
       : accessFilteredDocuments;
+
     const pagedDocuments = visibleDocuments.slice(0, input.limit + 1);
     const hasMore = pagedDocuments.length > input.limit;
     const items = pagedDocuments.slice(0, input.limit);
 
     return {
-      items: await this.toDocumentNavigationNodes(items, workspaceId, input.userId),
+      items: await this.toDocumentNavigationNodes(items, workspaceId, input.userId, accessScopeByDocumentId),
       nextCursor: hasMore ? this.encodeDocumentListCursor(items[items.length - 1]!) : undefined,
     };
+  }
+
+  private matchesNavigationPageMode(input: {
+    directGrantPermissionsByDocumentId: Map<string, unknown>;
+    documentIdsWithActiveGrants: Set<string>;
+    document: DocumentEntity;
+    mode: DocumentNavigationPageMode;
+    userId: string;
+  }): boolean {
+    switch (input.mode) {
+      case 'private':
+        return !input.document.teamspace
+          && input.document.ownerUser.id === input.userId;
+      case 'direct-shared':
+        return !input.document.teamspace
+          && (
+            input.directGrantPermissionsByDocumentId.has(input.document.id)
+            || (
+              input.document.ownerUser.id === input.userId
+              && input.documentIdsWithActiveGrants.has(input.document.id)
+            )
+          );
+      case 'viewable':
+        return true;
+    }
   }
 
   private async findTeamspaceMemberRole(
@@ -192,6 +298,7 @@ export class ListWorkspaceDocumentsUseCase {
     documents: DocumentEntity[],
     workspaceId: string,
     userId: string,
+    accessScopeByDocumentId: Map<string, DocumentNavigationNode['accessScope']> = new Map(),
   ): Promise<DocumentNavigationNode[]> {
     const [hasChildrenEntries, favoriteDocumentIds] = await Promise.all([
       Promise.all(documents.map(async (document) => {
@@ -211,6 +318,9 @@ export class ListWorkspaceDocumentsUseCase {
     return documents.map((document) => ({
       id: document.id,
       publicId: document.publicId,
+      accessScope: accessScopeByDocumentId.get(document.id) ??
+        (document.teamspace ? 'teamspace' : 'private'),
+      isOwnedByCurrentUser: document.ownerUser.id === userId,
       title: document.title,
       teamspaceId: document.teamspace?.id,
       parentDocumentId: document.parentDocument?.id,

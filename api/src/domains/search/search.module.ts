@@ -1,5 +1,6 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { Module } from '@nestjs/common';
+import { DocumentModule } from '../document/document.module';
 import { DocumentAccessResolver } from '../document/app/policies/document-access.resolver';
 import { DocumentEntity } from '../document/infra/persistence/entities/document.entity';
 import { DocumentVisitEntity } from '../document/infra/persistence/entities/document-visit.entity';
@@ -12,6 +13,7 @@ import { MikroOrmSearchRepository } from './infra/mikro-orm-search.repository';
 
 @Module({
   imports: [
+    DocumentModule,
     WorkspaceModule,
     MikroOrmModule.forFeature([
       DocumentEntity,

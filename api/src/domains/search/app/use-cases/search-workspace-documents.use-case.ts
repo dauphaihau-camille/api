@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { DocumentAccessResolver } from '~/domains/document/app/policies/document-access.resolver';
+import { DocumentAccessGrantRepository } from '~/domains/document/app/ports/document-access-grant.repository';
+import { DocumentAccessSettingRepository } from '~/domains/document/app/ports/document-access-setting.repository';
 import { hasMeaningfulContent } from '~/domains/document/app/utils/document-content.util';
 import { DocumentEntity } from '~/domains/document/infra/persistence/entities/document.entity';
 import type { TeamspaceMemberRole } from '~/domains/teamspace/domain/enums/teamspace-member-role.enum';
@@ -16,6 +18,8 @@ export class SearchWorkspaceDocumentsUseCase {
     private readonly searchRepository: SearchRepository,
     private readonly workspaceRepository: WorkspaceRepository,
     private readonly documentAccessResolver: DocumentAccessResolver,
+    private readonly documentAccessGrantRepository: DocumentAccessGrantRepository,
+    private readonly documentAccessSettingRepository: DocumentAccessSettingRepository,
   ) {}
 
   async execute(
@@ -34,7 +38,7 @@ export class SearchWorkspaceDocumentsUseCase {
 
     if (!normalizedQuery) {
       return this.mapDocumentsToSummaries(
-        this.filterViewableDocuments(await this.searchRepository.findRecentVisitedDocuments({
+        await this.filterViewableDocuments(await this.searchRepository.findRecentVisitedDocuments({
           workspaceId: workspace.id,
           userId: currentUser.userId,
           limit,
@@ -43,7 +47,7 @@ export class SearchWorkspaceDocumentsUseCase {
     }
 
     return this.mapDocumentsToSummaries(
-      this.filterViewableDocuments(await this.searchRepository.findMatchedDocuments({
+      await this.filterViewableDocuments(await this.searchRepository.findMatchedDocuments({
         workspaceId: workspace.id,
         userId: currentUser.userId,
         query: normalizedQuery,
@@ -52,20 +56,32 @@ export class SearchWorkspaceDocumentsUseCase {
     );
   }
 
-  private filterViewableDocuments<T extends {
+  private async filterViewableDocuments<T extends {
     document: DocumentEntity;
     teamspaceMemberRole?: TeamspaceMemberRole;
   }>(
     items: T[],
     userId: string,
     workspaceRole: WorkspaceRole,
-  ): T[] {
+  ): Promise<T[]> {
+    const directGrantPermissionsByDocumentId =
+      await this.documentAccessGrantRepository.findActiveGrantPermissionsByDocumentId({
+        documentIds: items.map((item) => item.document.id),
+        userId,
+      });
+    const workspaceMemberPermissionsByDocumentId =
+      await this.documentAccessSettingRepository.findWorkspaceMemberPermissionsByDocumentId({
+        documentIds: items.map((item) => item.document.id),
+      });
+
     return items.filter((item) => this.documentAccessResolver.resolve({
       actorUserId: userId,
       documentOwnerUserId: item.document.ownerUser.id,
       documentTeamspaceId: item.document.teamspace?.id,
       teamspaceAccessMode: item.document.teamspace?.accessMode,
       teamspaceMemberRole: item.teamspaceMemberRole,
+      directGrantPermission: directGrantPermissionsByDocumentId.get(item.document.id),
+      workspaceMemberPermission: workspaceMemberPermissionsByDocumentId.get(item.document.id),
       workspaceRole,
     }).canView);
   }

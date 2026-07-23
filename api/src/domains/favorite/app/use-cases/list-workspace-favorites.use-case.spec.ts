@@ -1,7 +1,10 @@
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { UserStatus } from '~/domains/auth/domain/enums/user-status.enum';
 import type { DocumentNavigationQueryRepository } from '~/domains/document/app/ports/document-navigation-query.repository';
+import type { DocumentAccessGrantRepository } from '~/domains/document/app/ports/document-access-grant.repository';
+import type { DocumentAccessSettingRepository } from '~/domains/document/app/ports/document-access-setting.repository';
 import { DocumentAccessResolver } from '~/domains/document/app/policies/document-access.resolver';
+import { DocumentAccessGrantPermission } from '~/domains/document/domain/enums/document-access-grant-permission.enum';
 import { TeamspaceAccessMode } from '~/domains/teamspace/domain/enums/teamspace-access-mode.enum';
 import { TeamspaceMemberRole } from '~/domains/teamspace/domain/enums/teamspace-member-role.enum';
 import type { WorkspaceRepository } from '~/domains/workspace/app/ports/workspace.repository';
@@ -49,6 +52,18 @@ describe('ListWorkspaceFavoritesUseCase', () => {
     } as unknown as jest.Mocked<DocumentNavigationQueryRepository>;
   }
 
+  function createAccessGrantRepository() {
+    return {
+      findActiveGrantPermissionsByDocumentId: jest.fn().mockResolvedValue(new Map()),
+    } as unknown as jest.Mocked<DocumentAccessGrantRepository>;
+  }
+
+  function createAccessSettingRepository() {
+    return {
+      findWorkspaceMemberPermissionsByDocumentId: jest.fn().mockResolvedValue(new Map()),
+    } as unknown as jest.Mocked<DocumentAccessSettingRepository>;
+  }
+
   it('returns navigation metadata for favorite documents', async () => {
     const workspaceRepository = createWorkspaceRepository();
     const favoriteRepository = createFavoriteRepository();
@@ -84,6 +99,8 @@ describe('ListWorkspaceFavoritesUseCase', () => {
       workspaceRepository,
       navigationRepository,
       new DocumentAccessResolver(),
+      createAccessGrantRepository(),
+      createAccessSettingRepository(),
     );
 
     await expect(
@@ -152,6 +169,8 @@ describe('ListWorkspaceFavoritesUseCase', () => {
       workspaceRepository,
       navigationRepository,
       new DocumentAccessResolver(),
+      createAccessGrantRepository(),
+      createAccessSettingRepository(),
     );
 
     await expect(
@@ -215,6 +234,8 @@ describe('ListWorkspaceFavoritesUseCase', () => {
       workspaceRepository,
       navigationRepository,
       new DocumentAccessResolver(),
+      createAccessGrantRepository(),
+      createAccessSettingRepository(),
     );
 
     await expect(
@@ -235,5 +256,68 @@ describe('ListWorkspaceFavoritesUseCase', () => {
       teamspaceIds: ['teamspace-1'],
       userId: 'user-1',
     });
+  });
+
+  it('returns shared private favorites when a direct grant exists', async () => {
+    const workspaceRepository = createWorkspaceRepository();
+    workspaceRepository.findAllForUser.mockResolvedValue([
+      {
+        id: 'workspace-1',
+        version: 1,
+        slug: 'workspace-1',
+        name: 'Workspace 1',
+        description: undefined,
+        currentUserRole: WorkspaceRole.MEMBER,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      },
+    ]);
+    const favoriteRepository = createFavoriteRepository();
+    const navigationRepository = createNavigationRepository();
+    const accessGrantRepository = createAccessGrantRepository();
+
+    favoriteRepository.findFavoritesForWorkspace.mockResolvedValue([
+      {
+        createdAt: new Date('2026-01-02T00:00:00.000Z'),
+        workspace: { id: 'workspace-1' },
+        document: {
+          id: 'document-1',
+          publicId: 'public-1',
+          teamspace: undefined,
+          parentDocument: undefined,
+          title: 'Shared favorite',
+          sortKey: 7,
+          ownerUser: { id: 'another-user' },
+          contentJson: [],
+        },
+      },
+    ] as never);
+    accessGrantRepository.findActiveGrantPermissionsByDocumentId.mockResolvedValue(
+      new Map([['document-1', DocumentAccessGrantPermission.EDIT]]),
+    );
+    navigationRepository.countActiveChildren.mockResolvedValue(0);
+
+    const useCase = new ListWorkspaceFavoritesUseCase(
+      favoriteRepository,
+      workspaceRepository,
+      navigationRepository,
+      new DocumentAccessResolver(),
+      accessGrantRepository,
+      createAccessSettingRepository(),
+    );
+
+    await expect(
+      useCase.execute('workspace-1', currentUser),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        documentId: 'document-1',
+        access: {
+          permission: 'edit',
+          canView: true,
+          canEdit: true,
+          canManage: false,
+        },
+      }),
+    ]);
   });
 });

@@ -9,7 +9,11 @@ import type { DocumentObservabilityService } from '../../observability/document-
 import type { DocumentNavigationQueryRepository } from '../ports/document-navigation-query.repository';
 import type { DocumentTreeQueryRepository } from '../ports/document-tree-query.repository';
 import type { DocumentVisitRepository } from '../ports/document-visit.repository';
+import type { DocumentAccessGrantRepository } from '../ports/document-access-grant.repository';
+import type { DocumentAccessSettingRepository } from '../ports/document-access-setting.repository';
+import { DocumentAccessGrantPermission } from '../../domain/enums/document-access-grant-permission.enum';
 import { DocumentAccessResolver } from '../policies/document-access.resolver';
+import { DocumentAccessCapabilityService } from '../services/document-access-capability.service';
 import { GetDefaultWorkspaceDocumentUseCase } from './get-default-workspace-document.use-case';
 import { GetDocumentUseCase } from './get-document.use-case';
 import { ListDocumentChildrenUseCase } from './list-document-children.use-case';
@@ -89,6 +93,34 @@ describe('Document read use cases', () => {
     } as unknown as jest.Mocked<DocumentObservabilityService>;
   }
 
+  function createAccessGrantRepository() {
+    return {
+      findActiveGrant: jest.fn().mockResolvedValue(null),
+      findActiveGrantPermissionsByDocumentId: jest.fn().mockResolvedValue(new Map()),
+      hasActiveGrants: jest.fn().mockResolvedValue(false),
+    } as unknown as jest.Mocked<DocumentAccessGrantRepository>;
+  }
+
+  function createAccessSettingRepository() {
+    return {
+      findByDocumentId: jest.fn().mockResolvedValue(null),
+      findWorkspaceMemberPermissionsByDocumentId: jest.fn().mockResolvedValue(new Map()),
+    } as unknown as jest.Mocked<DocumentAccessSettingRepository>;
+  }
+
+  function createDocumentAccessCapabilityService(
+    workspaceRepository: WorkspaceRepository,
+    grantRepository: DocumentAccessGrantRepository,
+    accessSettingRepository: DocumentAccessSettingRepository,
+  ) {
+    return new DocumentAccessCapabilityService(
+      workspaceRepository,
+      grantRepository,
+      accessSettingRepository,
+      new DocumentAccessResolver(),
+    );
+  }
+
   it('passes a title search filter when listing workspace documents', async () => {
     const workspaceRepository = createWorkspaceRepository();
     const navigationRepository = createNavigationRepository();
@@ -101,6 +133,8 @@ describe('Document read use cases', () => {
       workspaceRepository,
       navigationRepository,
       new DocumentAccessResolver(),
+      createAccessGrantRepository(),
+      createAccessSettingRepository(),
     );
 
     await useCase.execute('workspace-1', currentUser, {
@@ -150,6 +184,8 @@ describe('Document read use cases', () => {
       workspaceRepository,
       navigationRepository,
       new DocumentAccessResolver(),
+      createAccessGrantRepository(),
+      createAccessSettingRepository(),
     );
 
     await expect(useCase.execute('workspace-1', currentUser, {
@@ -160,6 +196,7 @@ describe('Document read use cases', () => {
         {
           id: 'child-document',
           publicId: 'child-public-id',
+          accessScope: 'teamspace',
           title: 'Release Checklist',
           teamspaceId: 'teamspace-1',
           parentDocumentId: 'parent-document',
@@ -167,9 +204,197 @@ describe('Document read use cases', () => {
           hasChildren: false,
           hasContent: true,
           isFavorite: false,
+          isOwnedByCurrentUser: false,
         },
       ],
       nextCursor: undefined,
+    });
+  });
+
+  it('excludes workspace-wide shared root documents from private and invited shared navigation nodes', async () => {
+    const workspaceRepository = createWorkspaceRepository(WorkspaceRole.MEMBER);
+    const navigationRepository = createNavigationRepository();
+    const accessSettingRepository = createAccessSettingRepository();
+    const sharedDocument = {
+      id: 'shared-document',
+      publicId: 'shared-document-public',
+      workspace: { id: 'workspace-1' },
+      teamspace: undefined,
+      parentDocument: undefined,
+      ownerUser: { id: 'another-user' },
+      title: 'Workspace shared plan',
+      contentJson: [{ type: 'paragraph', content: [{ type: 'text', text: 'Plan' }] }],
+      sortKey: 1,
+    };
+
+    navigationRepository.findTeamspaces.mockResolvedValue([]);
+    navigationRepository.findRootDocuments.mockResolvedValue([sharedDocument] as never);
+    navigationRepository.countActiveChildren.mockResolvedValue(0);
+    navigationRepository.findFavoriteDocumentIds.mockResolvedValue([]);
+    accessSettingRepository.findWorkspaceMemberPermissionsByDocumentId.mockResolvedValue(
+      new Map([['shared-document', DocumentAccessGrantPermission.VIEW]]),
+    );
+
+    const useCase = new ListWorkspaceDocumentsUseCase(
+      workspaceRepository,
+      navigationRepository,
+      new DocumentAccessResolver(),
+      createAccessGrantRepository(),
+      accessSettingRepository,
+    );
+
+    await expect(useCase.execute('workspace-1', currentUser, {
+      limit: 50,
+    })).resolves.toMatchObject({
+      privateDocuments: {
+        items: [],
+      },
+      sharedDocuments: {
+        items: [],
+      },
+    });
+  });
+
+  it('lists direct grant root documents in shared navigation', async () => {
+    const workspaceRepository = createWorkspaceRepository(WorkspaceRole.MEMBER);
+    const navigationRepository = createNavigationRepository();
+    const accessGrantRepository = createAccessGrantRepository();
+    const sharedDocument = {
+      id: 'direct-shared-document',
+      publicId: 'direct-shared-document-public',
+      workspace: { id: 'workspace-1' },
+      teamspace: undefined,
+      parentDocument: undefined,
+      ownerUser: { id: 'another-user' },
+      title: 'Direct shared plan',
+      contentJson: [{ type: 'paragraph', content: [{ type: 'text', text: 'Plan' }] }],
+      sortKey: 1,
+    };
+
+    navigationRepository.findTeamspaces.mockResolvedValue([]);
+    navigationRepository.findRootDocuments.mockResolvedValue([sharedDocument] as never);
+    navigationRepository.countActiveChildren.mockResolvedValue(0);
+    navigationRepository.findFavoriteDocumentIds.mockResolvedValue([]);
+    accessGrantRepository.findActiveGrantPermissionsByDocumentId.mockResolvedValue(
+      new Map([['direct-shared-document', DocumentAccessGrantPermission.VIEW]]),
+    );
+
+    const useCase = new ListWorkspaceDocumentsUseCase(
+      workspaceRepository,
+      navigationRepository,
+      new DocumentAccessResolver(),
+      accessGrantRepository,
+      createAccessSettingRepository(),
+    );
+
+    await expect(useCase.execute('workspace-1', currentUser, {
+      limit: 50,
+    })).resolves.toMatchObject({
+      privateDocuments: {
+        items: [],
+      },
+      sharedDocuments: {
+        items: [
+          {
+            id: 'direct-shared-document',
+            accessScope: 'shared',
+            isOwnedByCurrentUser: false,
+          },
+        ],
+      },
+    });
+  });
+
+  it('lists owner-owned root documents with active direct grants in shared navigation', async () => {
+    const workspaceRepository = createWorkspaceRepository(WorkspaceRole.MEMBER);
+    const navigationRepository = createNavigationRepository();
+    const accessGrantRepository = createAccessGrantRepository();
+    const sharedDocument = {
+      id: 'owner-direct-shared-document',
+      publicId: 'owner-direct-shared-document-public',
+      workspace: { id: 'workspace-1' },
+      teamspace: undefined,
+      parentDocument: undefined,
+      ownerUser: { id: currentUser.userId },
+      title: 'Owner shared plan',
+      contentJson: [{ type: 'paragraph', content: [{ type: 'text', text: 'Plan' }] }],
+      sortKey: 1,
+    };
+
+    navigationRepository.findTeamspaces.mockResolvedValue([]);
+    navigationRepository.findRootDocuments.mockResolvedValue([sharedDocument] as never);
+    navigationRepository.countActiveChildren.mockResolvedValue(0);
+    navigationRepository.findFavoriteDocumentIds.mockResolvedValue([]);
+    accessGrantRepository.hasActiveGrants.mockImplementation(async (documentId) =>
+      documentId === 'owner-direct-shared-document');
+
+    const useCase = new ListWorkspaceDocumentsUseCase(
+      workspaceRepository,
+      navigationRepository,
+      new DocumentAccessResolver(),
+      accessGrantRepository,
+      createAccessSettingRepository(),
+    );
+
+    await expect(useCase.execute('workspace-1', currentUser, {
+      limit: 50,
+    })).resolves.toMatchObject({
+      sharedDocuments: {
+        items: [
+          {
+            id: 'owner-direct-shared-document',
+            accessScope: 'shared',
+            isOwnedByCurrentUser: true,
+          },
+        ],
+      },
+    });
+  });
+
+  it('marks owner-owned workspace shared root documents as owned navigation nodes', async () => {
+    const workspaceRepository = createWorkspaceRepository(WorkspaceRole.MEMBER);
+    const navigationRepository = createNavigationRepository();
+    const accessSettingRepository = createAccessSettingRepository();
+    const sharedDocument = {
+      id: 'owner-shared-document',
+      publicId: 'owner-shared-document-public',
+      workspace: { id: 'workspace-1' },
+      teamspace: undefined,
+      parentDocument: undefined,
+      ownerUser: { id: currentUser.userId },
+      title: 'Owner workspace shared plan',
+      contentJson: [{ type: 'paragraph', content: [{ type: 'text', text: 'Plan' }] }],
+      sortKey: 1,
+    };
+
+    navigationRepository.findTeamspaces.mockResolvedValue([]);
+    navigationRepository.findRootDocuments.mockResolvedValue([sharedDocument] as never);
+    navigationRepository.countActiveChildren.mockResolvedValue(0);
+    navigationRepository.findFavoriteDocumentIds.mockResolvedValue([]);
+    accessSettingRepository.findWorkspaceMemberPermissionsByDocumentId.mockResolvedValue(
+      new Map([['owner-shared-document', DocumentAccessGrantPermission.VIEW]]),
+    );
+
+    const useCase = new ListWorkspaceDocumentsUseCase(
+      workspaceRepository,
+      navigationRepository,
+      new DocumentAccessResolver(),
+      createAccessGrantRepository(),
+      accessSettingRepository,
+    );
+
+    await expect(useCase.execute('workspace-1', currentUser, {
+      limit: 50,
+    })).resolves.toMatchObject({
+      privateDocuments: {
+        items: [
+          {
+            id: 'owner-shared-document',
+            accessScope: 'shared',
+            isOwnedByCurrentUser: true,
+          },
+        ],
+      },
     });
   });
 
@@ -197,6 +422,7 @@ describe('Document read use cases', () => {
     navigationRepository.findTeamspaces.mockResolvedValue([teamspace]);
     navigationRepository.findRootDocuments
       .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([document] as never);
     navigationRepository.findTeamspaceMemberRolesByTeamspaceId.mockResolvedValue(
       new Map([['teamspace-1', TeamspaceMemberRole.VIEWER]]),
@@ -208,12 +434,18 @@ describe('Document read use cases', () => {
       workspaceRepository,
       navigationRepository,
       new DocumentAccessResolver(),
+      createAccessGrantRepository(),
+      createAccessSettingRepository(),
     );
 
     await expect(useCase.execute('workspace-1', currentUser, {
       limit: 50,
     })).resolves.toEqual({
       privateDocuments: {
+        items: [],
+        nextCursor: undefined,
+      },
+      sharedDocuments: {
         items: [],
         nextCursor: undefined,
       },
@@ -227,6 +459,7 @@ describe('Document read use cases', () => {
               {
                 id: 'engineering-hub',
                 publicId: 'engineering-hub-public',
+                accessScope: 'teamspace',
                 title: 'Engineering Hub',
                 teamspaceId: 'teamspace-1',
                 parentDocumentId: undefined,
@@ -234,6 +467,7 @@ describe('Document read use cases', () => {
                 hasChildren: false,
                 hasContent: true,
                 isFavorite: false,
+                isOwnedByCurrentUser: false,
               },
             ],
             nextCursor: undefined,
@@ -280,6 +514,8 @@ describe('Document read use cases', () => {
       workspaceRepository,
       navigationRepository,
       new DocumentAccessResolver(),
+      createAccessGrantRepository(),
+      createAccessSettingRepository(),
     );
 
     await expect(useCase.execute('engineering-hub', currentUser)).resolves.toEqual([
@@ -361,14 +597,15 @@ describe('Document read use cases', () => {
     navigationRepository.findAncestors.mockResolvedValue([]);
     publishRepository.findPublishedDocumentByDocumentId.mockResolvedValue(null);
     visitRepository.recordVisit.mockReturnValue(visitPromise);
+    const accessGrantRepository = createAccessGrantRepository();
+    const accessSettingRepository = createAccessSettingRepository();
 
     const useCase = new GetDocumentUseCase(
-      workspaceRepository,
       navigationRepository,
       visitRepository,
       publishRepository,
       observabilityService,
-      new DocumentAccessResolver(),
+      createDocumentAccessCapabilityService(workspaceRepository, accessGrantRepository, accessSettingRepository),
     );
 
     const result = await useCase.execute('document-1', currentUser);
@@ -393,6 +630,13 @@ describe('Document read use cases', () => {
       publishedDocumentId: undefined,
       publicPath: undefined,
       breadcrumb: [],
+      access: {
+        scope: 'private',
+        permission: 'manage',
+        canView: true,
+        canEdit: true,
+        canManage: true,
+      },
     });
     expect(visitRepository.recordVisit).toHaveBeenCalledWith({
       documentId: document.id,
@@ -446,14 +690,15 @@ describe('Document read use cases', () => {
     navigationRepository.findAncestors.mockResolvedValue([]);
     publishRepository.findPublishedDocumentByDocumentId.mockResolvedValue(null);
     visitRepository.recordVisit.mockResolvedValue(undefined);
+    const accessGrantRepository = createAccessGrantRepository();
+    const accessSettingRepository = createAccessSettingRepository();
 
     const useCase = new GetDocumentUseCase(
-      workspaceRepository,
       navigationRepository,
       visitRepository,
       publishRepository,
       observabilityService,
-      new DocumentAccessResolver(),
+      createDocumentAccessCapabilityService(workspaceRepository, accessGrantRepository, accessSettingRepository),
     );
 
     await expect(useCase.execute(document.id, currentUser)).rejects.toBeInstanceOf(DocumentNotFoundError);
@@ -500,6 +745,8 @@ describe('Document read use cases', () => {
       workspaceRepository,
       navigationRepository,
       new DocumentAccessResolver(),
+      createAccessGrantRepository(),
+      createAccessSettingRepository(),
     );
 
     await expect(useCase.execute(parentDocument.id, currentUser)).resolves.toEqual([
