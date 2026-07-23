@@ -3,6 +3,7 @@ import { DocumentAccessGrantPermission } from '../../../domain/enums/document-ac
 import type {
   DocumentAccessGrantSummary,
 } from '../../../app/ports/document-access-grant.repository';
+import type { DocumentCollaboratorSummary } from '../../../app/use-cases/list-document-collaborators.use-case';
 import type {
   ShareDocumentFailureSummary,
   ShareDocumentsSummary,
@@ -45,7 +46,26 @@ export class DocumentCollaboratorResponseDto {
   @ApiProperty()
   updated_at!: string;
 
-  static fromSummary(grant: DocumentAccessGrantSummary): DocumentCollaboratorResponseDto {
+  @ApiProperty({
+    enum: ['direct', 'inherited'],
+  })
+  access_source!: 'direct' | 'inherited';
+
+  @ApiPropertyOptional()
+  inherited_from_document_id?: string;
+
+  @ApiPropertyOptional()
+  inherited_from_document_title?: string;
+
+  static fromSummary(
+    grant: DocumentAccessGrantSummary | DocumentCollaboratorSummary,
+  ): DocumentCollaboratorResponseDto {
+    const accessSource = 'accessSource' in grant ? grant.accessSource : 'direct';
+
+    const inheritedFromDocument = 'inheritedFromDocument' in grant
+      ? grant.inheritedFromDocument
+      : undefined;
+
     return {
       id: grant.id,
       document_id: grant.documentId,
@@ -58,6 +78,9 @@ export class DocumentCollaboratorResponseDto {
       granted_by_user_id: grant.grantedByUserId,
       created_at: grant.createdAt.toISOString(),
       updated_at: grant.updatedAt.toISOString(),
+      access_source: accessSource,
+      inherited_from_document_id: inheritedFromDocument?.id,
+      inherited_from_document_title: inheritedFromDocument?.title,
     };
   }
 }
