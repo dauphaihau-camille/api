@@ -33,19 +33,31 @@ describe('Document read use cases', () => {
   function createWorkspaceRepository(
     currentUserRole: WorkspaceRole = WorkspaceRole.OWNER,
   ) {
+    const workspace = {
+      id: 'workspace-1',
+      version: 1,
+      slug: 'workspace-1',
+      name: 'Workspace 1',
+      description: undefined,
+      currentUserRole,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    };
+
     return {
-      findAllForUser: jest.fn().mockResolvedValue([
-        {
-          id: 'workspace-1',
+      findAllForUser: jest.fn().mockResolvedValue([workspace]),
+      findById: jest.fn().mockResolvedValue(workspace),
+      findWorkspaceAccess: jest.fn().mockResolvedValue({
+        workspace,
+        membership: {
+          id: 'membership-1',
           version: 1,
-          slug: 'workspace-1',
-          name: 'Workspace 1',
-          description: undefined,
-          currentUserRole,
-          createdAt: new Date('2026-01-01T00:00:00.000Z'),
-          updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+          userId: currentUser.userId,
+          email: currentUser.email,
+          role: currentUserRole,
+          joinedAt: new Date('2026-01-01T00:00:00.000Z'),
         },
-      ]),
+      }),
     } as unknown as jest.Mocked<WorkspaceRepository>;
   }
 
@@ -719,7 +731,10 @@ describe('Document read use cases', () => {
 
     await expect(useCase.execute(document.id, currentUser)).rejects.toBeInstanceOf(DocumentNotFoundError);
 
-    expect(workspaceRepository.findAllForUser).toHaveBeenCalledWith(currentUser.userId);
+    expect(workspaceRepository.findWorkspaceAccess).toHaveBeenCalledWith(
+      'workspace-1',
+      currentUser.userId,
+    );
     expect(visitRepository.recordVisit).not.toHaveBeenCalled();
   });
 

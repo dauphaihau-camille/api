@@ -29,6 +29,8 @@ export abstract class WorkspaceRepository {
 
   abstract findBySlug(slug: string): Promise<WorkspaceSummary | null>;
 
+  abstract findById(workspaceId: string): Promise<WorkspaceSummary | null>;
+
   abstract findWorkspaceAccess(
     workspaceId: string,
     userId: string,

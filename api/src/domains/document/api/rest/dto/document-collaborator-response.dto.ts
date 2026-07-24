@@ -3,6 +3,7 @@ import { DocumentAccessGrantPermission } from '../../../domain/enums/document-ac
 import type {
   DocumentAccessGrantSummary,
 } from '../../../app/ports/document-access-grant.repository';
+import type { DocumentInvitationSummary } from '../../../app/ports/document-invitation.repository';
 import type { DocumentCollaboratorSummary } from '../../../app/use-cases/list-document-collaborators.use-case';
 import type {
   ShareDocumentFailureSummary,
@@ -86,18 +87,65 @@ export class DocumentCollaboratorResponseDto {
 }
 
 export class ShareDocumentFailureResponseDto {
-  @ApiProperty()
-  user_id!: string;
+  @ApiPropertyOptional()
+  user_id?: string;
+
+  @ApiPropertyOptional()
+  email?: string;
 
   @ApiProperty({
-    enum: ['workspace_user_not_found'],
+    enum: ['user_not_found'],
   })
   reason!: ShareDocumentFailureSummary['reason'];
 
   static fromSummary(failure: ShareDocumentFailureSummary): ShareDocumentFailureResponseDto {
     return {
       user_id: failure.userId,
+      email: failure.email,
       reason: failure.reason,
+    };
+  }
+}
+
+export class DocumentInvitationResponseDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  document_id!: string;
+
+  @ApiProperty()
+  email!: string;
+
+  @ApiProperty({
+    enum: DocumentAccessGrantPermission,
+  })
+  permission!: DocumentAccessGrantPermission;
+
+  @ApiProperty()
+  invited_by_user_id!: string;
+
+  @ApiProperty()
+  created_at!: string;
+
+  @ApiProperty()
+  updated_at!: string;
+
+  @ApiProperty({
+    enum: ['pending'],
+  })
+  status!: 'pending';
+
+  static fromSummary(invitation: DocumentInvitationSummary): DocumentInvitationResponseDto {
+    return {
+      id: invitation.id,
+      document_id: invitation.documentId,
+      email: invitation.email,
+      permission: invitation.permission,
+      invited_by_user_id: invitation.invitedByUserId,
+      created_at: invitation.createdAt.toISOString(),
+      updated_at: invitation.updatedAt.toISOString(),
+      status: 'pending',
     };
   }
 }
@@ -110,6 +158,12 @@ export class ShareDocumentsResponseDto {
   collaborators!: DocumentCollaboratorResponseDto[];
 
   @ApiProperty({
+    type: DocumentInvitationResponseDto,
+    isArray: true,
+  })
+  invitations!: DocumentInvitationResponseDto[];
+
+  @ApiProperty({
     type: ShareDocumentFailureResponseDto,
     isArray: true,
   })
@@ -118,6 +172,7 @@ export class ShareDocumentsResponseDto {
   static fromSummary(summary: ShareDocumentsSummary): ShareDocumentsResponseDto {
     return {
       collaborators: summary.collaborators.map(DocumentCollaboratorResponseDto.fromSummary),
+      invitations: summary.invitations.map(DocumentInvitationResponseDto.fromSummary),
       failed: summary.failed.map(ShareDocumentFailureResponseDto.fromSummary),
     };
   }

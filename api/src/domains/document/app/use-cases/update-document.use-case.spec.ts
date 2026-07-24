@@ -34,6 +34,28 @@ describe('UpdateDocumentUseCase collaboration boundary', () => {
     } as unknown as jest.Mocked<DocumentAccessSettingRepository>;
   }
 
+  function createWorkspaceRepository(role: WorkspaceRole) {
+    const workspace = {
+      id: 'workspace-1',
+      currentUserRole: role,
+    };
+
+    return {
+      findAllForUser: jest.fn().mockResolvedValue([workspace]),
+      findById: jest.fn().mockResolvedValue(workspace),
+      findWorkspaceAccess: jest.fn().mockResolvedValue({
+        workspace,
+        membership: {
+          id: 'membership-1',
+          userId: 'user-1',
+          email: 'user@example.com',
+          role,
+          joinedAt: new Date('2026-01-01T00:00:00.000Z'),
+        },
+      }),
+    } as unknown as jest.Mocked<WorkspaceRepository>;
+  }
+
   function createDocumentAccessCapabilityService(
     workspaceRepository: WorkspaceRepository,
     grantRepository: DocumentAccessGrantRepository,
@@ -53,12 +75,7 @@ describe('UpdateDocumentUseCase collaboration boundary', () => {
       ownerUser: { id: 'user-1' },
       workspace: { id: 'workspace-1' },
     };
-    const workspaceRepository = {
-      findAllForUser: jest.fn().mockResolvedValue([{
-        id: 'workspace-1',
-        currentUserRole: WorkspaceRole.OWNER,
-      }]),
-    } as unknown as jest.Mocked<WorkspaceRepository>;
+    const workspaceRepository = createWorkspaceRepository(WorkspaceRole.OWNER);
     const commandRepository = {
       findDocument: jest.fn().mockResolvedValue(document),
       lockDocumentVersion: jest.fn(),
@@ -92,12 +109,7 @@ describe('UpdateDocumentUseCase collaboration boundary', () => {
   });
 
   it('preserves the workspace member edit denial through document capabilities', async () => {
-    const workspaceRepository = {
-      findAllForUser: jest.fn().mockResolvedValue([{
-        id: 'workspace-1',
-        currentUserRole: WorkspaceRole.MEMBER,
-      }]),
-    } as unknown as jest.Mocked<WorkspaceRepository>;
+    const workspaceRepository = createWorkspaceRepository(WorkspaceRole.MEMBER);
     const commandRepository = {
       findDocument: jest.fn().mockResolvedValue({
         id: 'document-1',
@@ -148,12 +160,7 @@ describe('UpdateDocumentUseCase collaboration boundary', () => {
         email: 'user@example.com',
       },
     };
-    const workspaceRepository = {
-      findAllForUser: jest.fn().mockResolvedValue([{
-        id: 'workspace-1',
-        currentUserRole: WorkspaceRole.MEMBER,
-      }]),
-    } as unknown as jest.Mocked<WorkspaceRepository>;
+    const workspaceRepository = createWorkspaceRepository(WorkspaceRole.MEMBER);
     const commandRepository = {
       assignUpdatedByUser: jest.fn(),
       findDocument: jest.fn().mockResolvedValue(document),

@@ -49,6 +49,12 @@ export class MikroOrmWorkspaceRepository implements WorkspaceRepository {
     return workspace ? this.toWorkspaceSummary(workspace, WorkspaceRole.MEMBER) : null;
   }
 
+  async findById(workspaceId: string): Promise<WorkspaceSummary | null> {
+    const workspace = await this.entityManager.fork().findOne(WorkspaceEntity, { id: workspaceId });
+
+    return workspace ? this.toWorkspaceSummary(workspace, WorkspaceRole.MEMBER) : null;
+  }
+
   async findWorkspaceAccess(
     workspaceId: string,
     userId: string,

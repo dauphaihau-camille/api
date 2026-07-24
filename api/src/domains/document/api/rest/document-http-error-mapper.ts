@@ -13,9 +13,11 @@ import {
   DocumentContentManagedByCollaborationError,
   DocumentDuplicationInvariantError,
   DocumentDescendantMoveError,
+  DocumentInvitationNotFoundError,
   DocumentNotFoundError,
   DocumentNotArchivedError,
   DocumentPermissionDeniedError,
+  DocumentShareRecipientRequiredError,
   DocumentTeamspaceNotFoundError,
   DocumentVersionConflictError,
   DocumentWorkspaceNotFoundError,
@@ -34,6 +36,7 @@ export function mapDocumentAppErrorToHttpException(error: DocumentAppError): Htt
     || error instanceof DocumentWorkspaceNotFoundError
     || error instanceof DocumentTeamspaceNotFoundError
     || error instanceof DocumentAccessGrantUserNotFoundError
+    || error instanceof DocumentInvitationNotFoundError
   ) {
     return new NotFoundException(error.message);
   }
@@ -60,6 +63,7 @@ export function mapDocumentAppErrorToHttpException(error: DocumentAppError): Htt
     || error instanceof DocumentDescendantMoveError
     || error instanceof ArchivedDocumentDuplicationError
     || error instanceof DocumentNotArchivedError
+    || error instanceof DocumentShareRecipientRequiredError
   ) {
     return new BadRequestException(error.message);
   }

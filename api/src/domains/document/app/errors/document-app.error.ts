@@ -32,7 +32,19 @@ export class DocumentPermissionDeniedError extends DocumentAppError {
 
 export class DocumentAccessGrantUserNotFoundError extends DocumentAppError {
   constructor(userId: string) {
-    super(`Workspace user ${userId} was not found.`);
+    super(`User ${userId} was not found.`);
+  }
+}
+
+export class DocumentInvitationNotFoundError extends DocumentAppError {
+  constructor(invitationId: string) {
+    super(`Document invitation ${invitationId} was not found.`);
+  }
+}
+
+export class DocumentShareRecipientRequiredError extends DocumentAppError {
+  constructor() {
+    super('Document share recipient is required.');
   }
 }
 

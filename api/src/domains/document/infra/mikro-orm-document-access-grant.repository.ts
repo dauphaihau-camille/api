@@ -210,6 +210,34 @@ export class MikroOrmDocumentAccessGrantRepository extends DocumentAccessGrantRe
     };
   }
 
+  async findUserById(userId: string): Promise<DocumentAccessGrantUserSummary | null> {
+    const user = await this.entityManager.fork().findOne(CurrentUserEntity, {
+      id: userId,
+    });
+
+    return user
+      ? {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+      }
+      : null;
+  }
+
+  async findUserByEmail(email: string): Promise<DocumentAccessGrantUserSummary | null> {
+    const user = await this.entityManager.fork().findOne(CurrentUserEntity, {
+      email,
+    });
+
+    return user
+      ? {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+      }
+      : null;
+  }
+
   async upsertGrant(input: {
     workspaceId: string;
     documentId: string;

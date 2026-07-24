@@ -3,7 +3,10 @@ import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import type { WorkspaceSummary } from '~/domains/workspace/app/contracts/workspace.contract';
 import { WorkspaceRepository } from '~/domains/workspace/app/ports/workspace.repository';
 import type { DocumentEntity } from '../../infra/persistence/entities/document.entity';
-import { DocumentPermissionDeniedError } from '../errors/document-app.error';
+import {
+  DocumentPermissionDeniedError,
+  DocumentWorkspaceNotFoundError,
+} from '../errors/document-app.error';
 import {
   DocumentAccessSettingRepository,
   type DocumentAccessSettingSummary,
@@ -13,7 +16,6 @@ import {
   DocumentAccessResolver,
   type DocumentCapabilities,
 } from '../policies/document-access.resolver';
-import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
 
 export type ResolvedDocumentAccess = {
   capabilities: DocumentCapabilities;
@@ -34,9 +36,8 @@ export class DocumentAccessCapabilityService {
     document: DocumentEntity,
     currentUser: AuthenticatedUser,
   ): Promise<ResolvedDocumentAccess> {
-    const workspace = await resolveWorkspaceForUser(this.workspaceRepository, document.workspace.id, currentUser);
-
-    const [actorGrant, hasActiveGrants, setting] = await Promise.all([
+    const [workspaceAccess, actorGrant, hasActiveGrants, setting] = await Promise.all([
+      this.workspaceRepository.findWorkspaceAccess(document.workspace.id, currentUser.userId),
       this.documentAccessGrantRepository.findActiveGrant({
         documentId: document.id,
         userId: currentUser.userId,
@@ -44,6 +45,21 @@ export class DocumentAccessCapabilityService {
       this.documentAccessGrantRepository.hasActiveGrantsIncludingAncestors(document.id),
       this.documentAccessSettingRepository.findByDocumentId(document.id),
     ]);
+
+    const userWorkspaces = workspaceAccess
+      ? []
+      : await this.workspaceRepository.findAllForUser(currentUser.userId);
+
+    const workspaceFromMembership = userWorkspaces.find((candidate) => candidate.id === document.workspace.id);
+
+    const workspace = workspaceAccess?.workspace ??
+      workspaceFromMembership ??
+      await this.workspaceRepository.findById(document.workspace.id);
+
+    if (!workspace) {
+      throw new DocumentWorkspaceNotFoundError(document.workspace.id);
+    }
+
     const ancestorGrant = await this.documentAccessGrantRepository.findStrongestActiveGrantInAncestors({
       documentId: document.id,
       userId: currentUser.userId,
@@ -56,6 +72,7 @@ export class DocumentAccessCapabilityService {
       documentHasActiveGrants: hasActiveGrants,
       directGrantPermission: actorGrant?.permission,
       ancestorGrantPermission: ancestorGrant?.permission,
+      isWorkspaceMember: Boolean(workspaceAccess || workspaceFromMembership),
       workspaceMemberPermission: setting?.workspaceMemberPermission,
       workspaceRole: workspace.currentUserRole,
     });

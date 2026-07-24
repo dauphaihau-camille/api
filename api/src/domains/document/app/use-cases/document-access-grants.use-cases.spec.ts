@@ -11,6 +11,7 @@ import {
 import type { DocumentAccessGrantRepository } from '../ports/document-access-grant.repository';
 import type { DocumentAccessSettingRepository } from '../ports/document-access-setting.repository';
 import type { DocumentCommandRepository } from '../ports/document-command.repository';
+import type { DocumentInvitationRepository } from '../ports/document-invitation.repository';
 import type { DocumentNavigationQueryRepository } from '../ports/document-navigation-query.repository';
 import { DocumentAccessResolver } from '../policies/document-access.resolver';
 import { DocumentAccessCapabilityService } from '../services/document-access-capability.service';
@@ -49,11 +50,30 @@ describe('document access grant use cases', () => {
   };
 
   function createWorkspaceRepository() {
+    const workspace = {
+      id: 'workspace-1',
+      version: 1,
+      name: 'Workspace',
+      slug: 'workspace',
+      currentUserRole: WorkspaceRole.MEMBER,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    };
+
     return {
-      findAllForUser: jest.fn().mockResolvedValue([{
-        id: 'workspace-1',
-        currentUserRole: WorkspaceRole.MEMBER,
-      }]),
+      findAllForUser: jest.fn().mockResolvedValue([workspace]),
+      findById: jest.fn().mockResolvedValue(workspace),
+      findWorkspaceAccess: jest.fn().mockResolvedValue({
+        workspace,
+        membership: {
+          id: 'membership-1',
+          version: 1,
+          userId: 'owner-user',
+          email: 'owner@example.com',
+          role: WorkspaceRole.MEMBER,
+          joinedAt: new Date('2026-01-01T00:00:00.000Z'),
+        },
+      }),
     } as unknown as jest.Mocked<WorkspaceRepository>;
   }
 
@@ -84,6 +104,14 @@ describe('document access grant use cases', () => {
         id: 'recipient-user',
         email: 'recipient@example.com',
       }),
+      findUserById: jest.fn().mockResolvedValue({
+        id: 'recipient-user',
+        email: 'recipient@example.com',
+      }),
+      findUserByEmail: jest.fn().mockResolvedValue({
+        id: 'recipient-user',
+        email: 'recipient@example.com',
+      }),
       upsertGrant: jest.fn().mockResolvedValue({
         id: 'grant-1',
         documentId: 'document-1',
@@ -100,6 +128,26 @@ describe('document access grant use cases', () => {
       listActiveGrants: jest.fn().mockResolvedValue([]),
       listStrongestActiveGrantsInAncestors: jest.fn().mockResolvedValue([]),
     } as unknown as jest.Mocked<DocumentAccessGrantRepository>;
+  }
+
+  function createInvitationRepository() {
+    return {
+      upsertInvitation: jest.fn().mockResolvedValue({
+        id: 'invitation-1',
+        documentId: 'document-1',
+        workspaceId: 'workspace-1',
+        email: 'pending@example.com',
+        permission: DocumentAccessGrantPermission.COMMENT,
+        invitedByUserId: 'owner-user',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      }),
+      listActiveInvitations: jest.fn().mockResolvedValue([]),
+      listActiveInvitationsForEmail: jest.fn().mockResolvedValue([]),
+      markInvitationAccepted: jest.fn().mockResolvedValue(undefined),
+      updateInvitationPermission: jest.fn().mockResolvedValue(null),
+      revokeInvitation: jest.fn().mockResolvedValue(null),
+    } as unknown as jest.Mocked<DocumentInvitationRepository>;
   }
 
   function createAccessSettingRepository() {
@@ -142,6 +190,7 @@ describe('document access grant use cases', () => {
     const useCase = new ShareDocumentUseCase(
       createCommandRepository(),
       grantRepository,
+      createInvitationRepository(),
       createDocumentAccessCapabilityService(workspaceRepository, grantRepository, accessSettingRepository),
       eventEmitter,
     );
@@ -154,10 +203,7 @@ describe('document access grant use cases', () => {
       permission: DocumentAccessGrantPermission.EDIT,
     });
 
-    expect(grantRepository.findWorkspaceUser).toHaveBeenCalledWith({
-      workspaceId: 'workspace-1',
-      userId: 'recipient-user',
-    });
+    expect(grantRepository.findUserById).toHaveBeenCalledWith('recipient-user');
     expect(grantRepository.upsertGrant).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',
       documentId: 'document-1',
@@ -173,7 +219,7 @@ describe('document access grant use cases', () => {
 
   it('shares a private document with multiple workspace users and reports invalid recipients', async () => {
     const grantRepository = createGrantRepository();
-    grantRepository.findWorkspaceUser.mockImplementation(async ({ userId }) => {
+    grantRepository.findUserById.mockImplementation(async (userId) => {
       if (userId === 'missing-user') {
         return null;
       }
@@ -203,9 +249,11 @@ describe('document access grant use cases', () => {
     const workspaceRepository = createWorkspaceRepository();
     const accessSettingRepository = createAccessSettingRepository();
     const eventEmitter = createEventEmitter();
+    const invitationRepository = createInvitationRepository();
     const useCase = new ShareDocumentUseCase(
       createCommandRepository(),
       grantRepository,
+      invitationRepository,
       createDocumentAccessCapabilityService(workspaceRepository, grantRepository, accessSettingRepository),
       eventEmitter,
     );
@@ -228,10 +276,11 @@ describe('document access grant use cases', () => {
           permission: DocumentAccessGrantPermission.EDIT,
         },
       ],
+      invitations: [],
       failed: [
         {
           userId: 'missing-user',
-          reason: 'workspace_user_not_found',
+          reason: 'user_not_found',
         },
       ],
     });
@@ -251,14 +300,62 @@ describe('document access grant use cases', () => {
     );
   });
 
-  it('rejects sharing with a user outside the workspace', async () => {
+  it('creates a pending invitation when sharing with an unknown email', async () => {
     const grantRepository = createGrantRepository();
-    grantRepository.findWorkspaceUser.mockResolvedValue(null);
+    grantRepository.findUserByEmail.mockResolvedValue(null);
+    const invitationRepository = createInvitationRepository();
+    const workspaceRepository = createWorkspaceRepository();
+    const accessSettingRepository = createAccessSettingRepository();
+    const eventEmitter = createEventEmitter();
+    const useCase = new ShareDocumentUseCase(
+      createCommandRepository(),
+      grantRepository,
+      invitationRepository,
+      createDocumentAccessCapabilityService(workspaceRepository, grantRepository, accessSettingRepository),
+      eventEmitter,
+    );
+
+    await expect(useCase.executeMany(document.id, currentUser, {
+      grants: [
+        {
+          email: 'Pending@Example.com',
+          permission: DocumentAccessGrantPermission.COMMENT,
+        },
+      ],
+    })).resolves.toMatchObject({
+      collaborators: [],
+      invitations: [
+        {
+          id: 'invitation-1',
+          email: 'pending@example.com',
+          permission: DocumentAccessGrantPermission.COMMENT,
+        },
+      ],
+      failed: [],
+    });
+
+    expect(invitationRepository.upsertInvitation).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      documentId: 'document-1',
+      email: 'pending@example.com',
+      permission: DocumentAccessGrantPermission.COMMENT,
+      invitedByUserId: 'owner-user',
+    });
+    expect(eventEmitter.emit).toHaveBeenCalledWith(
+      'document.access.changed',
+      new DocumentAccessChangedEvent('document-1', 'workspace-1'),
+    );
+  });
+
+  it('rejects sharing by user id when the user does not exist', async () => {
+    const grantRepository = createGrantRepository();
+    grantRepository.findUserById.mockResolvedValue(null);
     const workspaceRepository = createWorkspaceRepository();
     const accessSettingRepository = createAccessSettingRepository();
     const useCase = new ShareDocumentUseCase(
       createCommandRepository(),
       grantRepository,
+      createInvitationRepository(),
       createDocumentAccessCapabilityService(workspaceRepository, grantRepository, accessSettingRepository),
       createEventEmitter(),
     );
@@ -418,6 +515,7 @@ describe('document access grant use cases', () => {
     const useCase = new ShareDocumentUseCase(
       commandRepository,
       grantRepository,
+      createInvitationRepository(),
       createDocumentAccessCapabilityService(workspaceRepository, grantRepository, accessSettingRepository),
       createEventEmitter(),
     );

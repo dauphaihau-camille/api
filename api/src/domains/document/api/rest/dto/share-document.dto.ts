@@ -3,16 +3,24 @@ import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsEmail,
   IsEnum,
+  IsOptional,
   IsString,
   ValidateNested,
 } from 'class-validator';
 import { DocumentAccessGrantPermission } from '../../../domain/enums/document-access-grant-permission.enum';
 
 export class ShareDocumentDto {
-  @ApiProperty()
+  @ApiProperty({ required: false })
+  @IsOptional()
   @IsString()
-  user_id!: string;
+  user_id?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsEmail()
+  email?: string;
 
   @ApiProperty({
     enum: DocumentAccessGrantPermission,

@@ -22,10 +22,11 @@ export type DocumentAccessContext = {
   documentHasActiveGrants?: boolean;
   directGrantPermission?: DocumentAccessGrantPermission;
   ancestorGrantPermission?: DocumentAccessGrantPermission;
+  isWorkspaceMember?: boolean;
   workspaceMemberPermission?: DocumentAccessGrantPermission;
   teamspaceAccessMode?: TeamspaceAccessMode;
   teamspaceMemberRole?: TeamspaceMemberRole;
-  workspaceRole: WorkspaceRole;
+  workspaceRole?: WorkspaceRole;
 };
 
 @Injectable()
@@ -46,8 +47,9 @@ export class DocumentAccessResolver {
     }
 
     const isWorkspaceAdministrator =
-      input.workspaceRole === WorkspaceRole.OWNER
-      || input.workspaceRole === WorkspaceRole.ADMIN;
+      input.isWorkspaceMember !== false
+      && (input.workspaceRole === WorkspaceRole.OWNER
+        || input.workspaceRole === WorkspaceRole.ADMIN);
 
     const isPrivateOwner =
       !input.documentTeamspaceId
@@ -56,7 +58,9 @@ export class DocumentAccessResolver {
     const teamspacePermission = this.resolveTeamspacePermission(input);
     const grantPermission = this.resolveGrantPermission(input.directGrantPermission);
     const ancestorGrantPermission = this.resolveGrantPermission(input.ancestorGrantPermission);
-    const workspaceMemberPermission = this.resolveGrantPermission(input.workspaceMemberPermission);
+    const workspaceMemberPermission = input.isWorkspaceMember === false
+      ? undefined
+      : this.resolveGrantPermission(input.workspaceMemberPermission);
 
     const isTeamspaceDocument = Boolean(input.documentTeamspaceId);
 

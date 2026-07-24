@@ -57,6 +57,10 @@ export abstract class DocumentAccessGrantRepository {
     userId: string;
   }): Promise<DocumentAccessGrantUserSummary | null>;
 
+  abstract findUserById(userId: string): Promise<DocumentAccessGrantUserSummary | null>;
+
+  abstract findUserByEmail(email: string): Promise<DocumentAccessGrantUserSummary | null>;
+
   abstract upsertGrant(input: {
     workspaceId: string;
     documentId: string;

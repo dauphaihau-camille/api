@@ -16,6 +16,7 @@ import { TeamspaceEntity } from '../teamspace/infra/persistence/entities/teamspa
 import { WorkspaceEntity } from '../workspace/infra/persistence/entities/workspace.entity';
 import { DocumentController } from './api/rest/document.controller';
 import { DocumentAccessGrantRepository } from './app/ports/document-access-grant.repository';
+import { DocumentInvitationRepository } from './app/ports/document-invitation.repository';
 import { DocumentAccessSettingRepository } from './app/ports/document-access-setting.repository';
 import { DocumentCommandRepository } from './app/ports/document-command.repository';
 import { DocumentNavigationQueryRepository } from './app/ports/document-navigation-query.repository';
@@ -36,10 +37,12 @@ import { GetDocumentAccessSettingsUseCase } from './app/use-cases/get-document-a
 import { ListDocumentChildrenUseCase } from './app/use-cases/list-document-children.use-case';
 import { ListArchivedWorkspaceDocumentsUseCase } from './app/use-cases/list-archived-workspace-documents.use-case';
 import { ListDocumentCollaboratorsUseCase } from './app/use-cases/list-document-collaborators.use-case';
+import { ListDocumentInvitationsUseCase } from './app/use-cases/list-document-invitations.use-case';
 import { ListWorkspaceDocumentsUseCase } from './app/use-cases/list-workspace-documents.use-case';
 import { MoveDocumentUseCase } from './app/use-cases/move-document.use-case';
 import { PermanentlyDeleteDocumentUseCase } from './app/use-cases/permanently-delete-document.use-case';
 import { RevokeDocumentAccessUseCase } from './app/use-cases/revoke-document-access.use-case';
+import { RevokeDocumentInvitationUseCase } from './app/use-cases/revoke-document-invitation.use-case';
 import { RestoreDocumentUseCase } from './app/use-cases/restore-document.use-case';
 import { RemoveArchivedSubdocReferencesUseCase } from './app/use-cases/remove-archived-subdoc-references.use-case';
 import { ShareDocumentUseCase } from './app/use-cases/share-document.use-case';
@@ -47,8 +50,10 @@ import { SyncDocumentSubdocReferencesUseCase } from './app/use-cases/sync-docume
 import { SyncReferencedSubdocTitlesUseCase } from './app/use-cases/sync-referenced-subdoc-titles.use-case';
 import { UpdateDocumentUseCase } from './app/use-cases/update-document.use-case';
 import { UpdateDocumentAccessSettingsUseCase } from './app/use-cases/update-document-access-settings.use-case';
+import { UpdateDocumentInvitationUseCase } from './app/use-cases/update-document-invitation.use-case';
 import { MikroOrmDocumentAccessGrantRepository } from './infra/mikro-orm-document-access-grant.repository';
 import { MikroOrmDocumentAccessSettingRepository } from './infra/mikro-orm-document-access-setting.repository';
+import { MikroOrmDocumentInvitationRepository } from './infra/mikro-orm-document-invitation.repository';
 import { MikroOrmDocumentCommandRepository } from './infra/mikro-orm-document-command.repository';
 import { MikroOrmDocumentNavigationQueryRepository } from './infra/mikro-orm-document-navigation-query.repository';
 import { MikroOrmDocumentSubdocReferenceRepository } from './infra/mikro-orm-document-subdoc-reference.repository';
@@ -59,6 +64,7 @@ import { DocumentObservabilityService } from './observability/document-observabi
 import { DocumentAccessGrantEntity } from './infra/persistence/entities/document-access-grant.entity';
 import { DocumentAccessSettingEntity } from './infra/persistence/entities/document-access-setting.entity';
 import { DocumentEntity } from './infra/persistence/entities/document.entity';
+import { DocumentInvitationEntity } from './infra/persistence/entities/document-invitation.entity';
 import { DocumentSubdocReferenceEntity } from './infra/persistence/entities/document-subdoc-reference.entity';
 import { DocumentVisitEntity } from './infra/persistence/entities/document-visit.entity';
 import { DocumentFavoriteEntity } from '../favorite/infra/persistence/entities/document-favorite.entity';
@@ -76,6 +82,7 @@ import { DocumentCollaborationSnapshotEntity } from './infra/persistence/entitie
 import { DocumentCollaborationUpdateEntity } from './infra/persistence/entities/document-collaboration-update.entity';
 import { DocumentAccessResolver } from './app/policies/document-access.resolver';
 import { NotifyCollaborationPermissionsChangedListener } from './listeners/notify-collaboration-permissions-changed.listener';
+import { ClaimDocumentInvitationsOnUserCreatedListener } from './listeners/claim-document-invitations-on-user-created.listener';
 
 @Module({
   imports: [
@@ -93,6 +100,7 @@ import { NotifyCollaborationPermissionsChangedListener } from './listeners/notif
       DocumentEntity,
       DocumentAccessGrantEntity,
       DocumentAccessSettingEntity,
+      DocumentInvitationEntity,
       DocumentSubdocReferenceEntity,
       DocumentVisitEntity,
       DocumentFavoriteEntity,
@@ -110,6 +118,10 @@ import { NotifyCollaborationPermissionsChangedListener } from './listeners/notif
     {
       provide: DocumentAccessSettingRepository,
       useClass: MikroOrmDocumentAccessSettingRepository,
+    },
+    {
+      provide: DocumentInvitationRepository,
+      useClass: MikroOrmDocumentInvitationRepository,
     },
     {
       provide: DocumentCommandRepository,
@@ -167,6 +179,7 @@ import { NotifyCollaborationPermissionsChangedListener } from './listeners/notif
     GetDocumentAccessSettingsUseCase,
     ListDocumentChildrenUseCase,
     ListDocumentCollaboratorsUseCase,
+    ListDocumentInvitationsUseCase,
     CreateDocumentUseCase,
     CreateSubdocCommandUseCase,
     ArchiveSubdocCommandUseCase,
@@ -181,12 +194,16 @@ import { NotifyCollaborationPermissionsChangedListener } from './listeners/notif
     PermanentlyDeleteDocumentUseCase,
     ShareDocumentUseCase,
     RevokeDocumentAccessUseCase,
+    RevokeDocumentInvitationUseCase,
     UpdateDocumentAccessSettingsUseCase,
+    UpdateDocumentInvitationUseCase,
     NotifyCollaborationPermissionsChangedListener,
+    ClaimDocumentInvitationsOnUserCreatedListener,
   ],
   exports: [
     DocumentAccessGrantRepository,
     DocumentAccessSettingRepository,
+    DocumentInvitationRepository,
     DocumentAccessResolver,
     WorkspaceDefaultDocumentProvisioner,
   ],

@@ -33,15 +33,18 @@ import { GetDocumentUseCase } from '../../app/use-cases/get-document.use-case';
 import { GetDocumentAccessSettingsUseCase } from '../../app/use-cases/get-document-access-settings.use-case';
 import { ListDocumentChildrenUseCase } from '../../app/use-cases/list-document-children.use-case';
 import { ListDocumentCollaboratorsUseCase } from '../../app/use-cases/list-document-collaborators.use-case';
+import { ListDocumentInvitationsUseCase } from '../../app/use-cases/list-document-invitations.use-case';
 import { ListArchivedWorkspaceDocumentsUseCase } from '../../app/use-cases/list-archived-workspace-documents.use-case';
 import { ListWorkspaceDocumentsUseCase } from '../../app/use-cases/list-workspace-documents.use-case';
 import { MoveDocumentUseCase } from '../../app/use-cases/move-document.use-case';
 import { PermanentlyDeleteDocumentUseCase } from '../../app/use-cases/permanently-delete-document.use-case';
 import { RevokeDocumentAccessUseCase } from '../../app/use-cases/revoke-document-access.use-case';
+import { RevokeDocumentInvitationUseCase } from '../../app/use-cases/revoke-document-invitation.use-case';
 import { RestoreDocumentUseCase } from '../../app/use-cases/restore-document.use-case';
 import { ShareDocumentUseCase } from '../../app/use-cases/share-document.use-case';
 import { UpdateDocumentUseCase } from '../../app/use-cases/update-document.use-case';
 import { UpdateDocumentAccessSettingsUseCase } from '../../app/use-cases/update-document-access-settings.use-case';
+import { UpdateDocumentInvitationUseCase } from '../../app/use-cases/update-document-invitation.use-case';
 import {
   isDocumentAppError,
   mapDocumentAppErrorToHttpException,
@@ -65,11 +68,13 @@ import { CreateSubdocCommandResponseDto } from './dto/create-subdoc-command-resp
 import { ArchiveSubdocCommandResponseDto } from './dto/archive-subdoc-command-response.dto';
 import {
   DocumentCollaboratorResponseDto,
+  DocumentInvitationResponseDto,
   ShareDocumentsResponseDto,
 } from './dto/document-collaborator-response.dto';
 import { ShareDocumentDto, ShareDocumentsDto } from './dto/share-document.dto';
 import { DocumentAccessSettingsResponseDto } from './dto/document-access-settings-response.dto';
 import { UpdateDocumentAccessSettingsDto } from './dto/update-document-access-settings.dto';
+import { UpdateDocumentInvitationDto } from './dto/update-document-invitation.dto';
 
 @Controller()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -84,6 +89,7 @@ export class DocumentController {
     private readonly getDocumentAccessSettingsUseCase: GetDocumentAccessSettingsUseCase,
     private readonly listDocumentChildrenUseCase: ListDocumentChildrenUseCase,
     private readonly listDocumentCollaboratorsUseCase: ListDocumentCollaboratorsUseCase,
+    private readonly listDocumentInvitationsUseCase: ListDocumentInvitationsUseCase,
     private readonly createDocumentUseCase: CreateDocumentUseCase,
     private readonly createSubdocCommandUseCase: CreateSubdocCommandUseCase,
     private readonly archiveSubdocCommandUseCase: ArchiveSubdocCommandUseCase,
@@ -95,7 +101,9 @@ export class DocumentController {
     private readonly moveDocumentUseCase: MoveDocumentUseCase,
     private readonly shareDocumentUseCase: ShareDocumentUseCase,
     private readonly revokeDocumentAccessUseCase: RevokeDocumentAccessUseCase,
+    private readonly revokeDocumentInvitationUseCase: RevokeDocumentInvitationUseCase,
     private readonly updateDocumentAccessSettingsUseCase: UpdateDocumentAccessSettingsUseCase,
+    private readonly updateDocumentInvitationUseCase: UpdateDocumentInvitationUseCase,
   ) {}
 
   @Get('workspaces/:workspaceId/documents/default')
@@ -378,6 +386,25 @@ export class DocumentController {
       .catch(this.rethrowDocumentAppError);
   }
 
+  @Get('documents/:documentId/invitations')
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    summary: 'List pending document invitations',
+  })
+  @ApiOkResponse({
+    type: DocumentInvitationResponseDto,
+    isArray: true,
+  })
+  async listInvitations(
+    @Param('documentId') documentId: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ): Promise<DocumentInvitationResponseDto[]> {
+    return this.listDocumentInvitationsUseCase
+      .execute(documentId, currentUser)
+      .then((invitations) => invitations.map(DocumentInvitationResponseDto.fromSummary))
+      .catch(this.rethrowDocumentAppError);
+  }
+
   @Post('documents/:documentId/share')
   @HttpCode(200)
   @Header('Cache-Control', 'no-store')
@@ -395,6 +422,7 @@ export class DocumentController {
     return this.shareDocumentUseCase
       .execute(documentId, currentUser, {
         userId: body.user_id,
+        email: body.email,
         permission: body.permission,
       })
       .then(DocumentCollaboratorResponseDto.fromSummary)
@@ -419,6 +447,7 @@ export class DocumentController {
       .executeMany(documentId, currentUser, {
         grants: body.grants.map((grant) => ({
           userId: grant.user_id,
+          email: grant.email,
           permission: grant.permission,
         })),
       })
@@ -479,6 +508,44 @@ export class DocumentController {
   ): Promise<void> {
     return this.revokeDocumentAccessUseCase
       .execute(documentId, currentUser, userId)
+      .catch(this.rethrowDocumentAppError);
+  }
+
+  @Patch('documents/:documentId/invitations/:invitationId')
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    summary: 'Update pending document invitation',
+  })
+  @ApiOkResponse({
+    type: DocumentInvitationResponseDto,
+  })
+  async updateInvitation(
+    @Param('documentId') documentId: string,
+    @Param('invitationId') invitationId: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Body() body: UpdateDocumentInvitationDto,
+  ): Promise<DocumentInvitationResponseDto> {
+    return this.updateDocumentInvitationUseCase
+      .execute(documentId, invitationId, currentUser, {
+        permission: body.permission,
+      })
+      .then(DocumentInvitationResponseDto.fromSummary)
+      .catch(this.rethrowDocumentAppError);
+  }
+
+  @Delete('documents/:documentId/invitations/:invitationId')
+  @HttpCode(204)
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    summary: 'Revoke pending document invitation',
+  })
+  async revokeInvitation(
+    @Param('documentId') documentId: string,
+    @Param('invitationId') invitationId: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ): Promise<void> {
+    return this.revokeDocumentInvitationUseCase
+      .execute(documentId, invitationId, currentUser)
       .catch(this.rethrowDocumentAppError);
   }
 
