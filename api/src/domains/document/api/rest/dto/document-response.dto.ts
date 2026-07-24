@@ -36,6 +36,17 @@ class DocumentAccessResponseDto {
   }
 }
 
+class DocumentCollaborationResponseDto {
+  @ApiProperty()
+  enabled!: boolean;
+
+  @ApiProperty()
+  mode!: string;
+
+  @ApiProperty()
+  show_presence!: boolean;
+}
+
 class DocumentOwnerUserResponseDto {
   @ApiProperty()
   id!: string;
@@ -140,6 +151,11 @@ export class DocumentResponseDto {
   })
   access?: DocumentAccessResponseDto;
 
+  @ApiPropertyOptional({
+    type: DocumentCollaborationResponseDto,
+  })
+  collaboration?: DocumentCollaborationResponseDto;
+
   static fromSummary(document: DocumentSummary): DocumentResponseDto {
     return {
       id: document.id,
@@ -168,6 +184,13 @@ export class DocumentResponseDto {
       breadcrumb: document.breadcrumb?.map(DocumentBreadcrumbItemDto.fromSummary),
       access: document.access
         ? DocumentAccessResponseDto.fromSummary(document.access)
+        : undefined,
+      collaboration: document.collaboration
+        ? {
+          enabled: document.collaboration.enabled,
+          mode: document.collaboration.mode,
+          show_presence: document.collaboration.showPresence,
+        }
         : undefined,
     };
   }

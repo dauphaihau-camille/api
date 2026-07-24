@@ -94,6 +94,11 @@ export class GetDocumentUseCase {
         canManage: capabilities.canManageAccess,
         workspaceMemberPermission: accessSetting?.workspaceMemberPermission,
       },
+      collaboration: {
+        enabled: capabilities.accessScope !== 'private',
+        mode: capabilities.canEdit && !document.archivedAt ? 'edit' : 'view',
+        showPresence: capabilities.accessScope !== 'private' && !document.archivedAt,
+      },
     };
   }
 }

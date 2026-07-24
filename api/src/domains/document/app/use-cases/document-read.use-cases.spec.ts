@@ -643,6 +643,11 @@ describe('Document read use cases', () => {
         canManage: true,
         workspaceMemberPermission: undefined,
       },
+      collaboration: {
+        enabled: false,
+        mode: 'edit',
+        showPresence: false,
+      },
       ownerUser: {
         id: 'user-1',
         email: undefined,
@@ -718,6 +723,65 @@ describe('Document read use cases', () => {
     expect(visitRepository.recordVisit).not.toHaveBeenCalled();
   });
 
+  it('returns view-only collaboration mode for archived documents', async () => {
+    const workspaceRepository = createWorkspaceRepository();
+    const navigationRepository = createNavigationRepository();
+    const visitRepository = createVisitRepository();
+    const publishRepository = createPublishRepository();
+    const observabilityService = createObservabilityService();
+    const archivedAt = new Date('2026-01-03T00:00:00.000Z');
+    const document = {
+      id: 'archived-document',
+      publicId: 'archived-document-public-id',
+      version: 1,
+      workspace: { id: 'workspace-1' },
+      teamspace: undefined,
+      parentDocument: undefined,
+      title: 'Archived document',
+      contentFormat: 'blocknote_v1',
+      contentJson: [],
+      sortKey: 1,
+      archivedAt,
+      ownerUser: { id: 'user-1' },
+      updatedBy: {
+        displayName: 'Owner',
+        email: 'owner@example.com',
+      },
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-02T00:00:00.000Z'),
+    };
+
+    navigationRepository.findDocument.mockResolvedValue(document as never);
+    navigationRepository.findFavoriteDocumentIds.mockResolvedValue([]);
+    navigationRepository.findAncestors.mockResolvedValue([]);
+    publishRepository.findPublishedDocumentByDocumentId.mockResolvedValue(null);
+    visitRepository.recordVisit.mockResolvedValue(undefined);
+
+    const useCase = new GetDocumentUseCase(
+      navigationRepository,
+      visitRepository,
+      publishRepository,
+      observabilityService,
+      createDocumentAccessCapabilityService(
+        workspaceRepository,
+        createAccessGrantRepository(),
+        createAccessSettingRepository(),
+      ),
+    );
+
+    await expect(useCase.execute(document.id, currentUser)).resolves.toMatchObject({
+      access: {
+        canEdit: true,
+        canManage: true,
+      },
+      collaboration: {
+        enabled: false,
+        mode: 'view',
+        showPresence: false,
+      },
+    });
+  });
+
   it('returns child document detail through an inherited parent grant', async () => {
     const workspaceRepository = createWorkspaceRepository(WorkspaceRole.MEMBER);
     const navigationRepository = createNavigationRepository();
@@ -785,6 +849,11 @@ describe('Document read use cases', () => {
         canView: true,
         canEdit: false,
         canManage: false,
+      },
+      collaboration: {
+        enabled: true,
+        mode: 'view',
+        showPresence: true,
       },
     });
   });

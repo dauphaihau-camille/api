@@ -15,6 +15,12 @@ export interface DocumentAccessSummary {
   workspaceMemberPermission?: 'view' | 'comment' | 'edit' | 'manage';
 }
 
+export interface DocumentCollaborationSummary {
+  enabled: boolean;
+  mode: 'edit' | 'view';
+  showPresence: boolean;
+}
+
 export interface DocumentOwnerUserSummary {
   id: string;
   email: string;
@@ -49,6 +55,7 @@ export interface DocumentSummary {
   publicPath?: string;
   breadcrumb?: DocumentBreadcrumbItem[];
   access?: DocumentAccessSummary;
+  collaboration?: DocumentCollaborationSummary;
 }
 
 export interface CreateSubdocCommandResult {
