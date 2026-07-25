@@ -14,7 +14,11 @@ import { WorkspaceMemberEntity } from '../workspace/infra/persistence/entities/w
 import { TeamspaceMemberEntity } from '../teamspace/infra/persistence/entities/teamspace-member.entity';
 import { TeamspaceEntity } from '../teamspace/infra/persistence/entities/teamspace.entity';
 import { WorkspaceEntity } from '../workspace/infra/persistence/entities/workspace.entity';
+import { DocumentAccessController } from './api/rest/document-access.controller';
+import { DocumentCommandController } from './api/rest/document-command.controller';
+import { DocumentLifecycleController } from './api/rest/document-lifecycle.controller';
 import { DocumentController } from './api/rest/document.controller';
+import { WorkspaceDocumentController } from './api/rest/workspace-document.controller';
 import { DocumentAccessGrantRepository } from './app/ports/document-access-grant.repository';
 import { DocumentInvitationRepository } from './app/ports/document-invitation.repository';
 import { DocumentAccessSettingRepository } from './app/ports/document-access-setting.repository';
@@ -109,7 +113,13 @@ import { ClaimDocumentInvitationsOnUserCreatedListener } from './listeners/claim
       DocumentCollaborationUpdateEntity,
     ]),
   ],
-  controllers: [DocumentController],
+  controllers: [
+    WorkspaceDocumentController,
+    DocumentController,
+    DocumentCommandController,
+    DocumentLifecycleController,
+    DocumentAccessController,
+  ],
   providers: [
     {
       provide: DocumentAccessGrantRepository,

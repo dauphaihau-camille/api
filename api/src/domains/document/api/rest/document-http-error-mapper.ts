@@ -70,3 +70,11 @@ export function mapDocumentAppErrorToHttpException(error: DocumentAppError): Htt
 
   return new BadRequestException(error.message);
 }
+
+export function rethrowDocumentAppError(error: unknown): never {
+  if (isDocumentAppError(error)) {
+    throw mapDocumentAppErrorToHttpException(error);
+  }
+
+  throw error;
+}
