@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -14,6 +15,7 @@ import {
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { CurrentUser } from '~/platform/decorators/current-user.decorator';
@@ -22,10 +24,12 @@ import { JwtAuthGuard } from '~/domains/auth/api/guard/jwt-auth.guard';
 import { PermissionsGuard } from '~/domains/auth/api/guard/permissions.guard';
 import { AddWorkspaceMemberUseCase } from '../../app/use-cases/add-workspace-member.use-case';
 import { ListWorkspaceMembersUseCase } from '../../app/use-cases/list-workspace-members.use-case';
+import { SearchWorkspaceMembersUseCase } from '../../app/use-cases/search-workspace-members.use-case';
 import { RemoveWorkspaceMemberUseCase } from '../../app/use-cases/remove-workspace-member.use-case';
 import { UpdateWorkspaceMemberUseCase } from '../../app/use-cases/update-workspace-member.use-case';
 import { AddWorkspaceMemberDto } from './dto/add-workspace-member.dto';
 import { UpdateWorkspaceMemberDto } from './dto/update-workspace-member.dto';
+import { SearchWorkspaceMembersQueryDto } from './dto/search-workspace-members.query.dto';
 import { WorkspaceMemberResponseDto } from './dto/workspace-member-response.dto';
 import {
   isMembershipAppError,
@@ -39,6 +43,7 @@ import {
 export class MembershipController {
   constructor(
     private readonly listWorkspaceMembersUseCase: ListWorkspaceMembersUseCase,
+    private readonly searchWorkspaceMembersUseCase: SearchWorkspaceMembersUseCase,
     private readonly addWorkspaceMemberUseCase: AddWorkspaceMemberUseCase,
     private readonly updateWorkspaceMemberUseCase: UpdateWorkspaceMemberUseCase,
     private readonly removeWorkspaceMemberUseCase: RemoveWorkspaceMemberUseCase,
@@ -59,6 +64,36 @@ export class MembershipController {
   ): Promise<WorkspaceMemberResponseDto[]> {
     return this.listWorkspaceMembersUseCase
       .execute(workspaceId, currentUser)
+      .then((members) => members.map(WorkspaceMemberResponseDto.fromSummary))
+      .catch(this.rethrowMembershipAppError);
+  }
+
+  @Get('workspaces/:workspaceId/members/search')
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    summary: 'Search workspace members',
+  })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    type: String,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+  })
+  @ApiOkResponse({
+    type: WorkspaceMemberResponseDto,
+    isArray: true,
+  })
+  async searchWorkspaceMembers(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Query() query: SearchWorkspaceMembersQueryDto,
+  ): Promise<WorkspaceMemberResponseDto[]> {
+    return this.searchWorkspaceMembersUseCase
+      .execute(workspaceId, currentUser, query.q, query.limit)
       .then((members) => members.map(WorkspaceMemberResponseDto.fromSummary))
       .catch(this.rethrowMembershipAppError);
   }

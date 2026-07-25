@@ -24,6 +24,11 @@ export class MembershipRepositoryVersionConflictError extends Error {
 export abstract class MembershipRepository {
   abstract findAllWorkspacesForUser(userId: string): Promise<WorkspaceSummary[]>;
   abstract findMembers(workspaceId: string): Promise<WorkspaceMemberSummary[]>;
+  abstract searchMembers(input: {
+    workspaceId: string;
+    query?: string;
+    limit: number;
+  }): Promise<WorkspaceMemberSummary[]>;
   abstract findMemberById(
     workspaceId: string,
     memberId: string,

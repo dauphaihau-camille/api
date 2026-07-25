@@ -53,6 +53,12 @@ export abstract class WorkspaceRepository {
 
   abstract findMembers(workspaceId: string): Promise<WorkspaceMemberSummary[]>;
 
+  abstract searchMembers(input: {
+    workspaceId: string;
+    query?: string;
+    limit: number;
+  }): Promise<WorkspaceMemberSummary[]>;
+
   abstract findMemberById(
     workspaceId: string,
     memberId: string,

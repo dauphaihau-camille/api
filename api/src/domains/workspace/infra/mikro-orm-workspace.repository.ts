@@ -177,6 +177,79 @@ export class MikroOrmWorkspaceRepository implements WorkspaceRepository {
     return memberships.map((membership) => this.toMemberSummary(membership));
   }
 
+  async searchMembers(input: {
+    workspaceId: string;
+    query?: string;
+    limit: number;
+  }): Promise<WorkspaceMemberSummary[]> {
+    const entityManager = this.entityManager.fork();
+    const normalizedQuery = input.query?.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      const memberships = await entityManager.find(
+        WorkspaceMemberEntity,
+        { workspace: input.workspaceId },
+        {
+          populate: ['user'],
+          orderBy: {
+            role: 'asc',
+            joinedAt: 'asc',
+          },
+          limit: input.limit,
+        },
+      );
+
+      return memberships.map((membership) => this.toMemberSummary(membership));
+    }
+
+    const matches = await entityManager.getConnection().execute<Array<{ member_id: string }>>(
+      `
+        select wm.id as member_id
+        from workspace_members wm
+        inner join users u on u.id = wm.user_id
+        where wm.workspace_id = ?
+          and (
+            lower(u.email) like ?
+            or lower(coalesce(u.display_name, '')) like ?
+          )
+        order by wm.role asc, wm.joined_at asc
+        limit ?
+      `,
+      [input.workspaceId, `%${normalizedQuery}%`, `%${normalizedQuery}%`, input.limit],
+    );
+
+    if (matches.length === 0) {
+      return [];
+    }
+
+    const memberships = await entityManager.find(
+      WorkspaceMemberEntity,
+      {
+        id: {
+          $in: matches.map((match) => match.member_id),
+        },
+      },
+      {
+        populate: ['user'],
+        orderBy: {
+          role: 'asc',
+          joinedAt: 'asc',
+        },
+      },
+    );
+
+    const membershipsById = new Map(memberships.map((membership) => [
+      membership.id,
+      membership,
+    ]));
+
+    return matches.flatMap((match) => {
+      const membership = membershipsById.get(match.member_id);
+
+      return membership ? [this.toMemberSummary(membership)] : [];
+    });
+  }
+
   async findMemberById(
     workspaceId: string,
     memberId: string,

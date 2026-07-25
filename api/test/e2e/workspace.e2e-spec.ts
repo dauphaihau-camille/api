@@ -236,6 +236,24 @@ describe('Workspace and membership flow (e2e)', () => {
       ]),
     );
 
+    const searchMembersResponse = await request(app.getHttpServer())
+      .get(`/v1/workspaces/${workspace.slug}/members/search`)
+      .query({
+        q: 'invitee',
+        limit: 5,
+      })
+      .set('Cookie', owner.cookie)
+      .expect(200);
+
+    expect(searchMembersResponse.body).toEqual([
+      expect.objectContaining({
+        user_id: expect.any(String),
+        email: inviteeEmail,
+        display_name: 'invitee user',
+        role: 'member',
+      }),
+    ]);
+
     const updateMemberResponse = await request(app.getHttpServer())
       .patch(`/v1/workspaces/${workspace.slug}/members/${member.id}`)
       .set('Cookie', owner.cookie)

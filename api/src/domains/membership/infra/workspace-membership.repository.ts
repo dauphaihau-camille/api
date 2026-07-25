@@ -26,6 +26,14 @@ export class WorkspaceMembershipRepository implements MembershipRepository {
     return this.workspaceRepository.findMembers(workspaceId);
   }
 
+  searchMembers(input: {
+    workspaceId: string;
+    query?: string;
+    limit: number;
+  }): Promise<WorkspaceMemberSummary[]> {
+    return this.workspaceRepository.searchMembers(input);
+  }
+
   findMemberById(
     workspaceId: string,
     memberId: string,

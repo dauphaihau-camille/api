@@ -7,6 +7,7 @@ import { MembershipOwnerGuardService } from './app/services/membership-owner-gua
 import { AddWorkspaceMemberUseCase } from './app/use-cases/add-workspace-member.use-case';
 import { ListWorkspaceMembersUseCase } from './app/use-cases/list-workspace-members.use-case';
 import { RemoveWorkspaceMemberUseCase } from './app/use-cases/remove-workspace-member.use-case';
+import { SearchWorkspaceMembersUseCase } from './app/use-cases/search-workspace-members.use-case';
 import { UpdateWorkspaceMemberUseCase } from './app/use-cases/update-workspace-member.use-case';
 import { WorkspaceMembershipRepository } from './infra/workspace-membership.repository';
 
@@ -20,6 +21,7 @@ import { WorkspaceMembershipRepository } from './infra/workspace-membership.repo
     },
     MembershipOwnerGuardService,
     ListWorkspaceMembersUseCase,
+    SearchWorkspaceMembersUseCase,
     AddWorkspaceMemberUseCase,
     UpdateWorkspaceMemberUseCase,
     RemoveWorkspaceMemberUseCase,
