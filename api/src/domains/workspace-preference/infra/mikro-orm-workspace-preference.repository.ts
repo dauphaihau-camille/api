@@ -4,6 +4,7 @@ import { isUniqueConstraintError } from '~/platform/database/is-unique-constrain
 import { CurrentUserEntity } from '../../auth/infra/persistence/entities/current-user.entity';
 import { WorkspaceEntity } from '../../workspace/infra/persistence/entities/workspace.entity';
 import { WorkspacePreferenceRepository } from '../app/ports/workspace-preference.repository';
+import type { ExpandedDocumentIdsByScope } from '../app/workspace-preference.types';
 import { WorkspacePreferenceEntity } from './persistence/entities/workspace-preference.entity';
 
 @Injectable()
@@ -39,14 +40,14 @@ export class MikroOrmWorkspacePreferenceRepository implements WorkspacePreferenc
   async save(input: {
     workspaceId: string;
     userId: string;
-    expandedDocumentIds: string[];
+    expandedDocumentIdsByScope: ExpandedDocumentIdsByScope;
   }): Promise<WorkspacePreferenceEntity> {
     const entityManager = this.entityManager.fork();
 
     const preference = entityManager.create(WorkspacePreferenceEntity, {
       user: entityManager.getReference(CurrentUserEntity, input.userId),
       workspace: entityManager.getReference(WorkspaceEntity, input.workspaceId),
-      expandedDocumentIds: input.expandedDocumentIds,
+      expandedDocumentIdsByScope: input.expandedDocumentIdsByScope,
     });
 
     try {
@@ -60,12 +61,13 @@ export class MikroOrmWorkspacePreferenceRepository implements WorkspacePreferenc
     }
 
     const recoveryEntityManager = this.entityManager.fork();
+
     const existingPreference = await recoveryEntityManager.findOneOrFail(WorkspacePreferenceEntity, {
       workspace: input.workspaceId,
       user: input.userId,
     });
 
-    existingPreference.expandedDocumentIds = input.expandedDocumentIds;
+    existingPreference.expandedDocumentIdsByScope = input.expandedDocumentIdsByScope;
     await recoveryEntityManager.persist(existingPreference).flush();
 
     return existingPreference;
@@ -81,7 +83,7 @@ export class MikroOrmWorkspacePreferenceRepository implements WorkspacePreferenc
     const preference = entityManager.create(WorkspacePreferenceEntity, {
       user: entityManager.getReference(CurrentUserEntity, input.userId),
       workspace: entityManager.getReference(WorkspaceEntity, input.workspaceId),
-      expandedDocumentIds: [],
+      expandedDocumentIdsByScope: {},
       lastActiveAt,
     });
 

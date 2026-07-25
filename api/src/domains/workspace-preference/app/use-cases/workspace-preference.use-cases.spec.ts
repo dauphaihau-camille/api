@@ -58,7 +58,7 @@ describe('Workspace preference use cases', () => {
     await expect(useCase.execute('workspace-1', currentUser)).resolves.toEqual({
       workspaceId: 'workspace-1',
       navigation: {
-        expandedDocumentIds: [],
+        expandedDocumentIdsByScope: {},
       },
       activity: {
         lastActiveAt: null,
@@ -71,7 +71,9 @@ describe('Workspace preference use cases', () => {
     const workspacePreferenceRepository = createWorkspacePreferenceRepository();
 
     workspacePreferenceRepository.save.mockResolvedValue({
-      expandedDocumentIds: ['doc-1', 'doc-2'],
+      expandedDocumentIdsByScope: {
+        private: ['doc-1', 'doc-2'],
+      },
     } as never);
 
     const useCase = new UpdateWorkspacePreferenceUseCase(
@@ -81,14 +83,21 @@ describe('Workspace preference use cases', () => {
 
     await useCase.execute('workspace-1', currentUser, {
       navigation: {
-        expandedDocumentIds: [' doc-1 ', 'doc-2', 'doc-1', ''],
+        expandedDocumentIdsByScope: {
+          private: [' doc-1 ', 'doc-2', 'doc-1', ''],
+          ' ': ['ignored-doc'],
+          favorites: [' fav-1 '],
+        },
       },
     });
 
     expect(workspacePreferenceRepository.save).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',
       userId: 'user-1',
-      expandedDocumentIds: ['doc-1', 'doc-2'],
+      expandedDocumentIdsByScope: {
+        private: ['doc-1', 'doc-2'],
+        favorites: ['fav-1'],
+      },
     });
   });
 

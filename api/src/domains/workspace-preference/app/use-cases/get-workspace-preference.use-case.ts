@@ -4,7 +4,7 @@ import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repo
 import type { WorkspacePreferenceSummary } from '../workspace-preference.types';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
 import { WorkspacePreferenceRepository } from '../ports/workspace-preference.repository';
-import { normalizeExpandedDocumentIds } from '../utils/normalize-expanded-document-ids.util';
+import { normalizeExpandedDocumentIdsByScope } from '../utils/normalize-expanded-document-ids.util';
 
 @Injectable()
 export class GetWorkspacePreferenceUseCase {
@@ -30,7 +30,9 @@ export class GetWorkspacePreferenceUseCase {
     return {
       workspaceId: workspace.id,
       navigation: {
-        expandedDocumentIds: normalizeExpandedDocumentIds(preference?.expandedDocumentIds),
+        expandedDocumentIdsByScope: normalizeExpandedDocumentIdsByScope(
+          preference?.expandedDocumentIdsByScope,
+        ),
       },
       activity: {
         lastActiveAt: preference?.lastActiveAt ?? null,

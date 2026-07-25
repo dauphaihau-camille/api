@@ -91,7 +91,7 @@ export class WorkspacePreferenceController {
     return this.updateWorkspacePreferenceUseCase
       .execute(workspaceId, currentUser, {
         navigation: {
-          expandedDocumentIds: body.navigation.expanded_document_ids,
+          expandedDocumentIdsByScope: body.navigation.expanded_document_ids_by_scope,
         },
       })
       .then(WorkspacePreferenceResponseDto.fromSummary)

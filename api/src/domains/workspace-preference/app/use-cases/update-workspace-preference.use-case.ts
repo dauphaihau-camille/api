@@ -7,7 +7,7 @@ import type {
 } from '../workspace-preference.types';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
 import { WorkspacePreferenceRepository } from '../ports/workspace-preference.repository';
-import { normalizeExpandedDocumentIds } from '../utils/normalize-expanded-document-ids.util';
+import { normalizeExpandedDocumentIdsByScope } from '../utils/normalize-expanded-document-ids.util';
 
 @Injectable()
 export class UpdateWorkspacePreferenceUseCase {
@@ -26,19 +26,21 @@ export class UpdateWorkspacePreferenceUseCase {
       workspaceIdentifier,
       currentUser,
     );
-    const expandedDocumentIds = normalizeExpandedDocumentIds(
-      input.navigation.expandedDocumentIds,
+
+    const expandedDocumentIdsByScope = normalizeExpandedDocumentIdsByScope(
+      input.navigation.expandedDocumentIdsByScope,
     );
+
     const preference = await this.workspacePreferenceRepository.save({
       workspaceId: workspace.id,
       userId: currentUser.userId,
-      expandedDocumentIds,
+      expandedDocumentIdsByScope,
     });
 
     return {
       workspaceId: workspace.id,
       navigation: {
-        expandedDocumentIds: preference.expandedDocumentIds,
+        expandedDocumentIdsByScope: preference.expandedDocumentIdsByScope,
       },
       activity: {
         lastActiveAt: preference.lastActiveAt,

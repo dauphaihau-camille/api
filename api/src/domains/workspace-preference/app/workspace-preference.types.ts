@@ -1,7 +1,9 @@
+export type ExpandedDocumentIdsByScope = Record<string, string[]>;
+
 export interface WorkspacePreferenceSummary {
   workspaceId: string;
   navigation: {
-    expandedDocumentIds: string[];
+    expandedDocumentIdsByScope: ExpandedDocumentIdsByScope;
   };
   activity: {
     lastActiveAt: Date | null;
@@ -10,6 +12,6 @@ export interface WorkspacePreferenceSummary {
 
 export interface UpdateWorkspacePreferenceInput {
   navigation: {
-    expandedDocumentIds: string[];
+    expandedDocumentIdsByScope: ExpandedDocumentIdsByScope;
   };
 }

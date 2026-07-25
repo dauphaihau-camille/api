@@ -3,12 +3,15 @@ import type { WorkspacePreferenceSummary } from '../../../app/workspace-preferen
 
 class WorkspaceNavigationPreferenceResponseDto {
   @ApiProperty({
-    type: 'array',
-    items: {
-      type: 'string',
+    type: 'object',
+    additionalProperties: {
+      type: 'array',
+      items: {
+        type: 'string',
+      },
     },
   })
-  expanded_document_ids!: string[];
+  expanded_document_ids_by_scope!: Record<string, string[]>;
 }
 
 class WorkspaceActivityPreferenceResponseDto {
@@ -39,7 +42,7 @@ export class WorkspacePreferenceResponseDto {
     return {
       workspace_id: preference.workspaceId,
       navigation: {
-        expanded_document_ids: preference.navigation.expandedDocumentIds,
+        expanded_document_ids_by_scope: preference.navigation.expandedDocumentIdsByScope,
       },
       activity: {
         last_active_at: preference.activity.lastActiveAt?.toISOString() ?? null,

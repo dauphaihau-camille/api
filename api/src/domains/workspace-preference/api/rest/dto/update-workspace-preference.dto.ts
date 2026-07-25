@@ -1,19 +1,21 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-  IsArray, IsObject, IsString, ValidateNested, 
+  IsObject, ValidateNested,
 } from 'class-validator';
 
 class WorkspaceNavigationPreferenceDto {
   @ApiProperty({
-    type: 'array',
-    items: {
-      type: 'string',
+    type: 'object',
+    additionalProperties: {
+      type: 'array',
+      items: {
+        type: 'string',
+      },
     },
   })
-  @IsArray()
-  @IsString({ each: true })
-  expanded_document_ids!: string[];
+  @IsObject()
+  expanded_document_ids_by_scope!: Record<string, string[]>;
 }
 
 export class UpdateWorkspacePreferenceDto {

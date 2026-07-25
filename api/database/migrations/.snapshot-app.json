@@ -5148,22 +5148,6 @@
           "enumItems": [],
           "mappedType": "uuid"
         },
-        "expanded_document_ids": {
-          "name": "expanded_document_ids",
-          "type": "jsonb",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "unique": false,
-          "length": null,
-          "precision": null,
-          "scale": null,
-          "default": null,
-          "comment": null,
-          "enumItems": [],
-          "mappedType": "json"
-        },
         "last_active_at": {
           "name": "last_active_at",
           "type": "timestamptz(6)",
@@ -5179,6 +5163,22 @@
           "comment": null,
           "enumItems": [],
           "mappedType": "datetime"
+        },
+        "expanded_document_ids_by_scope": {
+          "name": "expanded_document_ids_by_scope",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "'{}'",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "json"
         }
       },
       "name": "workspace_user_preferences",

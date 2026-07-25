@@ -1,4 +1,5 @@
 import type { WorkspacePreferenceEntity } from '../../infra/persistence/entities/workspace-preference.entity';
+import type { ExpandedDocumentIdsByScope } from '../workspace-preference.types';
 
 export abstract class WorkspacePreferenceRepository {
   abstract findByWorkspaceAndUser(
@@ -9,7 +10,7 @@ export abstract class WorkspacePreferenceRepository {
   abstract save(input: {
     workspaceId: string;
     userId: string;
-    expandedDocumentIds: string[];
+    expandedDocumentIdsByScope: ExpandedDocumentIdsByScope;
   }): Promise<WorkspacePreferenceEntity>;
   abstract markAsLastActive(input: {
     workspaceId: string;

@@ -625,10 +625,13 @@ async function seedWorkspacePreferences(
       em.create(WorkspacePreferenceEntity, {
         workspace: em.getReference(WorkspaceEntity, workspaceId),
         user: em.getReference(CurrentUserEntity, memberUser.id),
-        expandedDocumentIds: [],
+        expandedDocumentIdsByScope: {},
       });
 
-    preference.expandedDocumentIds = rootDocumentIds.slice(0, Math.max(1, 2 + (index % 2)));
+    preference.expandedDocumentIdsByScope = {
+      ...preference.expandedDocumentIdsByScope,
+      private: rootDocumentIds.slice(0, Math.max(1, 2 + (index % 2))),
+    };
     em.persist(preference);
   }
 

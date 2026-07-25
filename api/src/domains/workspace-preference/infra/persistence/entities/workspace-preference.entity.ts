@@ -4,6 +4,7 @@ import {
 import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
 import { WorkspaceEntity } from '~/domains/workspace/infra/persistence/entities/workspace.entity';
 import { AbstractWorkspaceEntity } from '~/domains/workspace/infra/persistence/entities/abstract-workspace.entity';
+import type { ExpandedDocumentIdsByScope } from '../../../app/workspace-preference.types';
 
 @Entity({ tableName: 'workspace_user_preferences' })
 @Unique({ properties: ['user', 'workspace'] })
@@ -14,8 +15,8 @@ export class WorkspacePreferenceEntity extends AbstractWorkspaceEntity {
   @ManyToOne(() => WorkspaceEntity, { fieldName: 'workspace_id' })
   workspace!: WorkspaceEntity;
 
-  @Property({ fieldName: 'expanded_document_ids', type: 'json' })
-  expandedDocumentIds: string[] = [];
+  @Property({ fieldName: 'expanded_document_ids_by_scope', type: 'json' })
+  expandedDocumentIdsByScope: ExpandedDocumentIdsByScope = {};
 
   @Property({ fieldName: 'last_active_at', type: 'timestamptz', nullable: true })
   lastActiveAt: Date | null = null;
