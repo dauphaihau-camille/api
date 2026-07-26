@@ -35,7 +35,11 @@ type ServerToClientEvents = {
   'collab:awareness': (payload: { documentId: string; update: Buffer }) => void;
   'collab:error': (payload: CollaborationResponse<never>) => void;
   'collab:permissions-changed': (payload: { documentId: string }) => void;
-  'collab:update': (payload: { documentId: string; update: Buffer }) => void;
+  'collab:update': (payload: {
+    documentId: string;
+    updatedAt?: string;
+    update: Buffer;
+  }) => void;
 };
 
 type CollaborationSocket = Socket<
@@ -123,7 +127,7 @@ implements OnGatewayConnection, OnGatewayDisconnect {
   async update(
     @ConnectedSocket() socket: CollaborationSocket,
     @MessageBody() body: unknown,
-  ): Promise<CollaborationResponse<{ sequence: number }>> {
+  ): Promise<CollaborationResponse<{ sequence: number; updatedAt: string }>> {
     try {
       const documentId = this.parseDocumentId(body);
 
@@ -139,6 +143,7 @@ implements OnGatewayConnection, OnGatewayDisconnect {
 
       socket.to(this.room(documentId)).emit('collab:update', {
         documentId,
+        updatedAt: result.updatedAt.toISOString(),
         update: Buffer.from(update),
       });
 
@@ -153,6 +158,7 @@ implements OnGatewayConnection, OnGatewayDisconnect {
         ok: true,
         data: {
           sequence: result.sequence,
+          updatedAt: result.updatedAt.toISOString(),
         },
       };
     }

@@ -82,6 +82,7 @@ export class DocumentCollaborationService {
   ): Promise<{
     propagatedUpdates: Array<{ documentId: string; update: Uint8Array }>;
     sequence: number;
+    updatedAt: Date;
   }> {
     const Yjs = await loadYjs();
     const access = await this.requireAccess(documentId, currentUser.userId);
@@ -146,7 +147,7 @@ export class DocumentCollaborationService {
 
     activeDocument.sequence = Math.max(activeDocument.sequence, sequence);
 
-    await this.repository.saveProjection(
+    const savedProjection = await this.repository.saveProjection(
       documentId,
       sequence,
       projection.title,
@@ -206,6 +207,7 @@ export class DocumentCollaborationService {
     return {
       propagatedUpdates,
       sequence,
+      updatedAt: savedProjection.updatedAt,
     };
   }
 

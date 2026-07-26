@@ -59,7 +59,7 @@ export abstract class DocumentCollaborationRepository {
     content: unknown[],
     referencedDocumentIds: string[],
     updatedByUserId: string,
-  ): Promise<void>;
+  ): Promise<{ updatedAt: Date }>;
 
   abstract compactState(
     documentId: string,

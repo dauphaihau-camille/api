@@ -29,6 +29,7 @@ describe('DocumentCollaborationGateway', () => {
     const applyUpdate = jest.fn().mockResolvedValue({
       propagatedUpdates: [],
       sequence: 4,
+      updatedAt: new Date('2026-01-02T00:00:00.000Z'),
     });
     const gateway = new DocumentCollaborationGateway(
       {} as WsAuthService,
@@ -47,7 +48,13 @@ describe('DocumentCollaborationGateway', () => {
       update: new Uint8Array([1, 2, 3]),
     });
 
-    expect(result).toEqual({ ok: true, data: { sequence: 4 } });
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        sequence: 4,
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      },
+    });
     expect(applyUpdate).toHaveBeenCalledWith(
       'document-1',
       user,
@@ -55,6 +62,7 @@ describe('DocumentCollaborationGateway', () => {
     );
     expect(emit).toHaveBeenCalledWith('collab:update', {
       documentId: 'document-1',
+      updatedAt: '2026-01-02T00:00:00.000Z',
       update: Buffer.from([1, 2, 3]),
     });
     expect(applyUpdate.mock.invocationCallOrder[0]).toBeLessThan(

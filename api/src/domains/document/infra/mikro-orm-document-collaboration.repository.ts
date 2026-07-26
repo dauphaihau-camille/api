@@ -235,8 +235,9 @@ export class MikroOrmDocumentCollaborationRepository extends DocumentCollaborati
     content: unknown[],
     referencedDocumentIds: string[],
     updatedByUserId: string,
-  ): Promise<void> {
+  ): Promise<{ updatedAt: Date }> {
     const entityManager = this.entityManager.fork();
+    let updatedAt: Date | null = null;
 
     await entityManager.transactional(async (transactionalEntityManager) => {
       const snapshot = await transactionalEntityManager.findOneOrFail(
@@ -244,16 +245,17 @@ export class MikroOrmDocumentCollaborationRepository extends DocumentCollaborati
         { document: documentId },
         { lockMode: LockMode.PESSIMISTIC_WRITE },
       );
-
-      if (snapshot.projectionSequence >= sequence) {
-        return;
-      }
-
       const document = await transactionalEntityManager.findOneOrFail(
         DocumentEntity,
         documentId,
         { populate: ['workspace'] },
       );
+
+      if (snapshot.projectionSequence >= sequence) {
+        updatedAt = document.updatedAt;
+        return;
+      }
+
       const existingReferences = await transactionalEntityManager.find(
         DocumentSubdocReferenceEntity,
         { sourceDocument: documentId },
@@ -280,10 +282,13 @@ export class MikroOrmDocumentCollaborationRepository extends DocumentCollaborati
         }
       }
 
-      await transactionalEntityManager.getConnection().execute(
+      const [savedDocument] = await transactionalEntityManager.getConnection().execute<
+        Array<{ updated_at: Date | string }>
+      >(
         `update "documents"
          set "title" = ?, "content_json" = cast(? as jsonb), "search_text" = ?, "updated_by" = ?, "updated_at" = now()
-         where "id" = ?`,
+         where "id" = ?
+         returning "updated_at"`,
         [
           title,
           JSON.stringify(content),
@@ -292,9 +297,16 @@ export class MikroOrmDocumentCollaborationRepository extends DocumentCollaborati
           documentId,
         ],
       );
+      updatedAt = new Date(savedDocument.updated_at);
       snapshot.projectionSequence = sequence;
       await transactionalEntityManager.flush();
     });
+
+    if (!updatedAt) {
+      throw new Error('Document projection save did not return updated_at');
+    }
+
+    return { updatedAt };
   }
 
   async compactState(

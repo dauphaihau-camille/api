@@ -29,6 +29,7 @@ describe('DocumentCollaborationService', () => {
 
   function createRepository() {
     let state: PersistedDocumentCollaborationState | null = null;
+    const savedUpdatedAt = new Date('2026-01-02T00:00:00.000Z');
 
     const repository: jest.Mocked<DocumentCollaborationRepository> = {
       getAccess: jest.fn().mockResolvedValue({
@@ -60,7 +61,7 @@ describe('DocumentCollaborationService', () => {
         };
         return sequence;
       }),
-      saveProjection: jest.fn().mockResolvedValue(undefined),
+      saveProjection: jest.fn().mockResolvedValue({ updatedAt: savedUpdatedAt }),
       compactState: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -147,6 +148,7 @@ describe('DocumentCollaborationService', () => {
     const result = await service.applyUpdate('document-1', user, update);
 
     expect(result.sequence).toBe(1);
+    expect(result.updatedAt).toEqual(new Date('2026-01-02T00:00:00.000Z'));
     expect(repository.appendUpdate).toHaveBeenCalledWith(
       'document-1',
       update,
