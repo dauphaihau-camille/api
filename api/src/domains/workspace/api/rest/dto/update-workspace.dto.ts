@@ -35,7 +35,7 @@ export class UpdateWorkspaceDto {
     example: 'camille-product',
     minLength: 3,
     maxLength: 32,
-    description: 'Custom workspace domain slug used in the app URL.',
+    description: 'Custom workspace slug used in workspace URLs.',
   })
   @IsOptional()
   @IsString()
