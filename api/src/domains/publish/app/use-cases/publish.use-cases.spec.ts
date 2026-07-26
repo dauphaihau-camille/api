@@ -64,6 +64,7 @@ describe('Publish use cases', () => {
     const document = {
       id: 'document-1',
       workspaceId: 'workspace-1',
+      ownerUserId: currentUser.userId,
     };
     const publishedDocument = {
       id: 'published-1',
