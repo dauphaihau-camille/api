@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
+import { isUniqueConstraintError } from '~/platform/database/is-unique-constraint-error';
 import { DocumentAccessGrantPermission } from '../../domain/enums/document-access-grant-permission.enum';
 import {
   DocumentAccessGrantRepository,
@@ -18,6 +19,8 @@ import {
   DocumentInvitationRepository,
   type DocumentInvitationSummary,
 } from '../ports/document-invitation.repository';
+import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
+import { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.enum';
 
 export type ShareDocumentFailureSummary = {
   email?: string;
@@ -38,6 +41,7 @@ export class ShareDocumentUseCase {
     private readonly documentAccessGrantRepository: DocumentAccessGrantRepository,
     private readonly documentInvitationRepository: DocumentInvitationRepository,
     private readonly documentAccessCapabilityService: DocumentAccessCapabilityService,
+    private readonly workspaceRepository: WorkspaceRepository,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -77,6 +81,7 @@ export class ShareDocumentUseCase {
       grantedByUserId: currentUser.userId,
     });
 
+    await this.ensureWorkspaceMembers(workspace.id, [recipient.id]);
     this.emitAccessChanged(document.id, workspace.id);
 
     return grant;
@@ -145,6 +150,11 @@ export class ShareDocumentUseCase {
         })),
     );
 
+    await this.ensureWorkspaceMembers(
+      workspace.id,
+      validGrants.map(({ recipient }) => recipient.id),
+    );
+
     const invitations = await Promise.all(
       invitationGrants.map(({ grant }) =>
         this.documentInvitationRepository.upsertInvitation({
@@ -165,6 +175,35 @@ export class ShareDocumentUseCase {
       invitations,
       failed,
     };
+  }
+
+  private async ensureWorkspaceMembers(workspaceId: string, userIds: string[]): Promise<void> {
+    if (userIds.length === 0) {
+      return;
+    }
+
+    const members = await this.workspaceRepository.findMembers(workspaceId);
+    const memberIds = new Set(members.map((member) => member.userId));
+
+    await Promise.all(userIds.map(async (userId) => {
+      if (memberIds.has(userId)) {
+        return;
+      }
+
+      try {
+        await this.workspaceRepository.addMember({
+          workspaceId,
+          userId,
+          role: WorkspaceRole.MEMBER,
+        });
+        memberIds.add(userId);
+      }
+      catch (error) {
+        if (!isUniqueConstraintError(error)) {
+          throw error;
+        }
+      }
+    }));
   }
 
   private async findRecipient(input: {

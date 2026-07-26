@@ -74,6 +74,17 @@ describe('document access grant use cases', () => {
           joinedAt: new Date('2026-01-01T00:00:00.000Z'),
         },
       }),
+      findMembers: jest.fn().mockResolvedValue([]),
+      addMember: jest.fn().mockResolvedValue({
+        id: 'membership-2',
+        version: 1,
+        userId: 'recipient-user',
+        email: 'recipient@example.com',
+        displayName: undefined,
+        avatar: undefined,
+        role: WorkspaceRole.MEMBER,
+        joinedAt: new Date('2026-01-01T00:00:00.000Z'),
+      }),
     } as unknown as jest.Mocked<WorkspaceRepository>;
   }
 
@@ -192,6 +203,7 @@ describe('document access grant use cases', () => {
       grantRepository,
       createInvitationRepository(),
       createDocumentAccessCapabilityService(workspaceRepository, grantRepository, accessSettingRepository),
+      workspaceRepository,
       eventEmitter,
     );
 
@@ -210,6 +222,11 @@ describe('document access grant use cases', () => {
       userId: 'recipient-user',
       permission: DocumentAccessGrantPermission.EDIT,
       grantedByUserId: 'owner-user',
+    });
+    expect(workspaceRepository.addMember).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      userId: 'recipient-user',
+      role: WorkspaceRole.MEMBER,
     });
     expect(eventEmitter.emit).toHaveBeenCalledWith(
       'document.access.changed',
@@ -255,6 +272,7 @@ describe('document access grant use cases', () => {
       grantRepository,
       invitationRepository,
       createDocumentAccessCapabilityService(workspaceRepository, grantRepository, accessSettingRepository),
+      workspaceRepository,
       eventEmitter,
     );
 
@@ -293,6 +311,11 @@ describe('document access grant use cases', () => {
       permission: DocumentAccessGrantPermission.EDIT,
       grantedByUserId: 'owner-user',
     });
+    expect(workspaceRepository.addMember).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      userId: 'recipient-user-1',
+      role: WorkspaceRole.MEMBER,
+    });
     expect(eventEmitter.emit).toHaveBeenCalledTimes(1);
     expect(eventEmitter.emit).toHaveBeenCalledWith(
       'document.access.changed',
@@ -312,6 +335,7 @@ describe('document access grant use cases', () => {
       grantRepository,
       invitationRepository,
       createDocumentAccessCapabilityService(workspaceRepository, grantRepository, accessSettingRepository),
+      workspaceRepository,
       eventEmitter,
     );
 
@@ -357,6 +381,7 @@ describe('document access grant use cases', () => {
       grantRepository,
       createInvitationRepository(),
       createDocumentAccessCapabilityService(workspaceRepository, grantRepository, accessSettingRepository),
+      workspaceRepository,
       createEventEmitter(),
     );
 
@@ -517,6 +542,7 @@ describe('document access grant use cases', () => {
       grantRepository,
       createInvitationRepository(),
       createDocumentAccessCapabilityService(workspaceRepository, grantRepository, accessSettingRepository),
+      workspaceRepository,
       createEventEmitter(),
     );
 
