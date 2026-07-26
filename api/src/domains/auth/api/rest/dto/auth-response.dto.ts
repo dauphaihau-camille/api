@@ -8,6 +8,8 @@ export class UserProfileResponseDto {
   email!: string;
   @ApiPropertyOptional()
   display_name?: string;
+  @ApiPropertyOptional()
+  avatar?: string;
   @ApiProperty()
   status!: UserProfile['status'];
   @ApiProperty()
@@ -26,6 +28,7 @@ export class UserProfileResponseDto {
       id: profile.id,
       email: profile.email,
       display_name: profile.displayName,
+      avatar: profile.avatar,
       status: profile.status,
       session_id: profile.sessionId,
       roles: profile.roles,

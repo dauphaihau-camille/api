@@ -8,6 +8,7 @@ export class GetCurrentUserUseCase {
       id: currentUser.userId,
       email: currentUser.email,
       displayName: currentUser.displayName,
+      avatar: currentUser.avatar,
       status: currentUser.status,
       sessionId: currentUser.sessionId,
       roles: currentUser.roles,

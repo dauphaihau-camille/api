@@ -1,6 +1,8 @@
 import { LockMode, OptimisticLockError } from '@mikro-orm/core';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
+import { StorageService } from '~/integrations/storage/app/ports/storage.service';
+import { resolveUserAvatarUrl } from '~/integrations/storage/app/user-avatar-url.util';
 import {
   AuthUserRepository,
   CreateUserAccountInput,
@@ -21,7 +23,10 @@ import { UserRoleEntity } from './entities/user-role.entity';
 
 @Injectable()
 export class MikroOrmAuthUserRepository implements AuthUserRepository {
-  constructor(private readonly entityManager: EntityManager) {}
+  constructor(
+    private readonly entityManager: EntityManager,
+    private readonly storageService: StorageService,
+  ) {}
 
   async findByEmail(email: Email): Promise<UserAccount | null> {
     const userRepository = this.entityManager.fork().getRepository(CurrentUserEntity);
@@ -219,6 +224,7 @@ export class MikroOrmAuthUserRepository implements AuthUserRepository {
   }
 
   private toUserAccount(user: CurrentUserEntity): UserAccount {
+    const avatar = resolveUserAvatarUrl(user, this.storageService);
     const roles = user.userRoles
       .getItems()
       .map((userRole) => RoleKey.create(userRole.role.key))
@@ -239,6 +245,7 @@ export class MikroOrmAuthUserRepository implements AuthUserRepository {
       version: user.version,
       email: Email.create(user.email),
       displayName: user.displayName,
+      ...(avatar ? { avatar } : {}),
       avatarSourceType: user.avatarSourceType,
       avatarSourceUrl: user.avatarSourceUrl,
       avatarStorageKey: user.avatarStorageKey,

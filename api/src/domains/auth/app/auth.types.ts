@@ -4,6 +4,7 @@ export interface AuthenticatedUser {
   userId: string;
   email: string;
   displayName?: string;
+  avatar?: string;
   status: UserStatus;
   sessionId: string;
   roles: string[];
@@ -54,6 +55,7 @@ export interface UserProfile {
   id: string;
   email: string;
   displayName?: string;
+  avatar?: string;
   status: UserStatus;
   sessionId: string;
   roles: string[];

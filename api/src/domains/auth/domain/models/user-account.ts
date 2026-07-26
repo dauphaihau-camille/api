@@ -10,6 +10,7 @@ export interface UserAccount extends UserAvatarFields {
   version: number;
   email: Email;
   displayName?: string;
+  avatar?: string;
   status: UserStatus;
   emailVerifiedAt?: Date;
   passwordHash?: PasswordHash;

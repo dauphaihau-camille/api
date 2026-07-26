@@ -51,6 +51,7 @@ export class LoadAuthenticatedUserUseCase {
       userId: user.id,
       email: user.email.toString(),
       displayName: user.displayName,
+      avatar: user.avatar,
       status: user.status,
       sessionId: session.id,
       roles: user.roles.map((role) => role.toString()),

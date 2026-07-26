@@ -59,6 +59,7 @@ import { UserSessionEntity } from './infra/persistence/entities/user-session.ent
 import { UserRoleEntity } from './infra/persistence/entities/user-role.entity';
 import { IdempotencyModule } from '../../platform/idempotency/idempotency.module';
 import { NotificationModule } from '../../integrations/notification/notification.module';
+import { StorageModule } from '../../integrations/storage/storage.module';
 import {
   buildOAuthProviderConfigs,
   OAUTH_PROVIDER_CONFIGS,
@@ -85,6 +86,7 @@ const authEntities = [
     CacheModule,
     IdempotencyModule,
     NotificationModule,
+    StorageModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       inject: [ConfigService],
