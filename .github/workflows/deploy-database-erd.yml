@@ -99,7 +99,7 @@ jobs:
         run: >-
           pnpm dlx @liam-hq/cli@0.7.24 erd build
           --input schema.sql
-          --format postgresql
+          --format postgres
           --output-dir ../database-erd
 
       - name: Configure Pages
