@@ -102,6 +102,20 @@ jobs:
           --format postgres
           --output-dir ../database-erd
 
+      - name: Check Pages setup
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: >-
+          gh api
+          --silent
+          "repos/${REPOSITORY}/pages"
+          || {
+            echo "::error::GitHub Pages is not enabled for this repository. Enable Pages in repository Settings > Pages and set Source to GitHub Actions, then rerun this workflow.";
+            exit 1;
+          }
+
       - name: Configure Pages
         if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v6
