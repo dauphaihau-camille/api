@@ -33,6 +33,16 @@ Make correct, minimal, maintainable changes that follow the existing architectur
 - Do not leave floating promises unless they are intentionally detached and documented.
 - Do not use inline `import()` type annotations in type positions. Import types explicitly with `import type { ... }` or create local type aliases instead.
 
+## File Layout
+
+Preferred order:
+
+1. Imports
+2. Constants / types
+3. Exported API (class/functions)
+4. `// ---------- Private helpers ----------`
+5. Private helper functions
+
 ## Validation
 
 - Validate untrusted input at the boundary before it reaches domain logic.
