@@ -1,20 +1,4 @@
-# API Project Structure
-
-This document explains the intended source layout for the API service and the reasoning behind the main boundaries. It complements the shorter [api/README.md](/Volumes/Local/dev/pj-personal/apps/camille/camille-v2/apps/api/api/README.md) and the agent-facing [agent-skills/src-structure.md](/Volumes/Local/dev/pj-personal/apps/camille/camille-v2/apps/api/api/agent-skills/src-structure.md).
-
-## Scope
-
-Use this document when you need to answer:
-
-- why code belongs in one top-level `src/` bucket instead of another
-- how a domain module should be structured internally
-- what kinds of coupling are acceptable or risky
-
-Use the shorter docs for other needs:
-
-- [api/README.md](/Volumes/Local/dev/pj-personal/apps/camille/camille-v2/apps/api/api/README.md): quick service guide
-- [agent-skills/src-structure.md](/Volumes/Local/dev/pj-personal/apps/camille/camille-v2/apps/api/api/agent-skills/src-structure.md): strict placement rules for coding agents
-- [Cross-Domain Infra Leakage](/Volumes/Local/dev/pj-personal/apps/camille/camille-v2/apps/api/api/docs/cross-domain-infra-leakage.md): deep explanation of why domains should not depend on other domains' private persistence details
+# Src Structure
 
 ## Top-Level Source Layout
 
