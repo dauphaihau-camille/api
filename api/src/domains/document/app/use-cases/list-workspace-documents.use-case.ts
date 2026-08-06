@@ -251,7 +251,8 @@ export class ListWorkspaceDocumentsUseCase {
     switch (input.mode) {
       case 'private':
         return !input.document.teamspace
-          && input.document.ownerUser.id === input.userId;
+          && input.document.ownerUser.id === input.userId
+          && !input.documentIdsWithActiveGrants.has(input.document.id);
       case 'direct-shared':
         return !input.document.teamspace
           && (

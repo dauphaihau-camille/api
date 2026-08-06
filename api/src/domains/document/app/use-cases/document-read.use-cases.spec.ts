@@ -356,6 +356,9 @@ describe('Document read use cases', () => {
     await expect(useCase.execute('workspace-1', currentUser, {
       limit: 50,
     })).resolves.toMatchObject({
+      privateDocuments: {
+        items: [],
+      },
       sharedDocuments: {
         items: [
           {
