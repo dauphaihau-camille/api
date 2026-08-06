@@ -22,8 +22,8 @@ export const REALISTIC_USER_FIXTURES: SeedUserFixture[] = [
 export const REALISTIC_WORKSPACE_TEMPLATES: WorkspaceTemplate[] = [
   {
     key: 'acme-product',
-    name: 'Acme Product',
-    description: 'Product, engineering, and go-to-market collaboration for the Acme workspace.',
+    name: 'Camille AI',
+    description: 'AI product, evaluation, and launch collaboration for the Camille assistant workspace.',
     members: [
       { email: 'admin@example.com', role: WorkspaceRole.OWNER },
       { email: 'maya.chen@example.com', role: WorkspaceRole.OWNER },
@@ -35,8 +35,8 @@ export const REALISTIC_WORKSPACE_TEMPLATES: WorkspaceTemplate[] = [
     teamspaces: [
       {
         key: 'engineering',
-        name: 'Engineering',
-        description: 'Architecture notes, release checklists, and technical runbooks.',
+        name: 'Model Evaluation',
+        description: 'Eval scorecards, regression notes, retrieval tests, and model quality reviews.',
         accessMode: TeamspaceAccessMode.RESTRICTED,
         members: [
           { email: 'maya.chen@example.com', role: TeamspaceMemberRole.MANAGER },
@@ -46,8 +46,8 @@ export const REALISTIC_WORKSPACE_TEMPLATES: WorkspaceTemplate[] = [
       },
       {
         key: 'product',
-        name: 'Product',
-        description: 'Specs, roadmap, and launch coordination documents.',
+        name: 'AI Product',
+        description: 'Roadmap, launch briefs, prompt operations, and customer signal documents.',
         members: [
           { email: 'maya.chen@example.com', role: TeamspaceMemberRole.MANAGER },
           { email: 'jordan.lee@example.com', role: TeamspaceMemberRole.EDITOR },
@@ -58,75 +58,183 @@ export const REALISTIC_WORKSPACE_TEMPLATES: WorkspaceTemplate[] = [
     documents: [
       {
         key: 'home',
-        title: 'Company Home',
+        title: 'AI Home',
         kind: 'landing',
-        summary: 'Shared entry page with the most referenced planning docs.',
+        summary: 'Shared entry point for roadmap, launch readiness, model quality, and customer signal work.',
         children: [
           {
             key: 'weekly-highlights',
-            title: 'Weekly Highlights',
+            title: 'Weekly Brief',
             kind: 'notes',
-            summary: 'Short summary of wins, risks, and decisions for the week.',
+            summary: 'Wins, risks, decisions, and next actions across AI product and evaluation work.',
           },
           {
             key: 'launch-calendar',
             title: 'Launch Calendar',
             kind: 'tracker',
-            summary: 'Milestones, launch owners, and current status by release.',
+            summary: 'Milestones, launch owners, demo dates, and release confidence by assistant surface.',
+          },
+          {
+            key: 'decision-log',
+            title: 'Decision Log',
+            kind: 'wiki',
+            summary: 'Durable product and architecture decisions for the AI assistant roadmap.',
+          },
+          {
+            key: 'demo-script',
+            title: 'Demo Script',
+            kind: 'notes',
+            summary: 'Screenshot and walkthrough beats for the workspace assistant product demo.',
           },
         ],
       },
       {
         key: 'engineering-hub',
-        title: 'Engineering Hub',
+        title: 'Model Evaluation',
         kind: 'hub',
-        summary: 'Starting point for architecture, incidents, and release operations.',
+        summary: 'Starting point for answer quality, retrieval accuracy, and model regression work.',
         teamspaceKey: 'engineering',
         children: [
           {
             key: 'architecture',
-            title: 'Architecture Decisions',
+            title: 'Eval Scorecard',
             kind: 'wiki',
-            summary: 'Decision log for data model, auth, and workspace architecture.',
+            summary: 'Quality rubric for grounded answers, citation usefulness, tool-use accuracy, and refusal behavior.',
           },
           {
             key: 'release-runbook',
-            title: 'Release Runbook',
+            title: 'Eval Runbook',
             kind: 'runbook',
-            summary: 'Checklist for staging validation, rollout, and rollback.',
+            summary: 'Steps for running golden-set checks before promoting a model or retrieval change.',
           },
           {
             key: 'incident-review',
-            title: 'Incident Review Template',
+            title: 'Regression Notes',
             kind: 'notes',
-            summary: 'Template for capture, analysis, and follow-up after incidents.',
+            summary: 'Recent failures, owner notes, suspected causes, and mitigation status.',
+          },
+          {
+            key: 'retrieval-tests',
+            title: 'Retrieval Tests',
+            kind: 'tracker',
+            summary: 'Permission-aware search cases covering ranking, citations, stale docs, and empty states.',
+          },
+          {
+            key: 'hallucination-cases',
+            title: 'Hallucination Cases',
+            kind: 'tracker',
+            summary: 'Examples where the assistant overreached, missed citations, or inferred unsupported facts.',
+          },
+          {
+            key: 'model-release-notes',
+            title: 'Model Release Notes',
+            kind: 'notes',
+            summary: 'Observed behavior changes, known limitations, and rollback notes by model version.',
           },
         ],
       },
       {
         key: 'product-hub',
-        title: 'Product Planning',
+        title: 'AI Product',
         kind: 'hub',
-        summary: 'Specs, roadmap, and launch messaging for active initiatives.',
+        summary: 'Roadmap, prompt governance, launch messaging, and customer feedback for the AI assistant.',
         teamspaceKey: 'product',
         children: [
           {
             key: 'roadmap',
-            title: 'Quarterly Roadmap',
+            title: 'Q3 Roadmap',
             kind: 'roadmap',
-            summary: 'Current quarter priorities with sequencing and dependencies.',
+            summary: 'Sequenced investments across workspace search, summarization, permissions, and agent actions.',
           },
           {
             key: 'docs-search-spec',
-            title: 'Docs Search Spec',
+            title: 'Search Quality Spec',
             kind: 'spec',
-            summary: 'Problem statement, goals, scope, and rollout plan for search.',
+            summary: 'Improve answer quality with permission-aware retrieval, citation ranking, and feedback loops.',
           },
           {
             key: 'launch-brief',
             title: 'Launch Brief',
             kind: 'notes',
-            summary: 'Positioning, target audience, and readiness notes for launch.',
+            summary: 'Positioning, target users, demo scenarios, success metrics, and launch readiness notes.',
+          },
+          {
+            key: 'prompt-library',
+            title: 'Prompt Library',
+            kind: 'wiki',
+            summary: 'Reviewed prompts for summaries, search answers, document drafting, and action suggestions.',
+          },
+          {
+            key: 'tool-use-rules',
+            title: 'Tool Use Rules',
+            kind: 'spec',
+            summary: 'Confirmation, permission, and audit requirements before agents act on workspace content.',
+          },
+          {
+            key: 'beta-feedback',
+            title: 'Beta Feedback',
+            kind: 'tracker',
+            summary: 'Customer quotes, usability pain points, feature requests, and follow-up owners from beta users.',
+          },
+          {
+            key: 'assistant-ux',
+            title: 'Assistant UX',
+            kind: 'spec',
+            summary: 'Interaction states for grounded answers, citations, suggestions, corrections, and feedback capture.',
+          },
+        ],
+      },
+      {
+        key: 'security-review',
+        title: 'Security Review',
+        kind: 'hub',
+        summary: 'Risk review for data access, prompt injection, audit logging, and customer trust requirements.',
+        teamspaceKey: 'engineering',
+        children: [
+          {
+            key: 'agent-permissions',
+            title: 'Agent Permissions',
+            kind: 'spec',
+            summary: 'Policy matrix for which assistant actions require view, edit, manage, or explicit confirmation.',
+          },
+          {
+            key: 'prompt-injection',
+            title: 'Prompt Injection',
+            kind: 'runbook',
+            summary: 'Detection and response steps for malicious instructions inside workspace documents.',
+          },
+          {
+            key: 'audit-log-review',
+            title: 'Audit Log Review',
+            kind: 'tracker',
+            summary: 'Review checklist for assistant actions, user approvals, denied access, and suspicious retries.',
+          },
+        ],
+      },
+      {
+        key: 'customer-signals',
+        title: 'Customer Signals',
+        kind: 'hub',
+        summary: 'Voice-of-customer themes that shape AI assistant ranking, summarization, and launch priorities.',
+        teamspaceKey: 'product',
+        children: [
+          {
+            key: 'theme-board',
+            title: 'Theme Board',
+            kind: 'tracker',
+            summary: 'Grouped customer feedback themes from beta interviews, support tickets, and sales calls.',
+          },
+          {
+            key: 'persona-notes',
+            title: 'Persona Notes',
+            kind: 'notes',
+            summary: 'Needs, anxieties, and success criteria for product managers, support leads, and operators.',
+          },
+          {
+            key: 'sales-objections',
+            title: 'Sales Objections',
+            kind: 'notes',
+            summary: 'Common objections about accuracy, permissions, privacy, onboarding, and governance.',
           },
         ],
       },
@@ -139,7 +247,7 @@ export const REALISTIC_WORKSPACE_TEMPLATES: WorkspaceTemplate[] = [
         grantedByEmail: 'maya.chen@example.com',
       },
       {
-        documentKey: 'launch-calendar',
+        documentKey: 'agent-permissions',
         userEmail: 'sofie.nguyen@example.com',
         permission: DocumentAccessGrantPermission.VIEW,
         grantedByEmail: 'maya.chen@example.com',
@@ -147,7 +255,7 @@ export const REALISTIC_WORKSPACE_TEMPLATES: WorkspaceTemplate[] = [
     ],
     documentAccessSettings: [
       {
-        documentKey: 'weekly-highlights',
+        documentKey: 'agent-permissions',
         workspaceMemberPermission: DocumentAccessGrantPermission.VIEW,
         updatedByEmail: 'maya.chen@example.com',
       },
@@ -155,8 +263,8 @@ export const REALISTIC_WORKSPACE_TEMPLATES: WorkspaceTemplate[] = [
   },
   {
     key: 'northwind-ops',
-    name: 'Northwind Operations',
-    description: 'Customer operations and delivery playbooks for a services team.',
+    name: 'Northstar GTM AI',
+    description: 'Customer operations, delivery, and go-to-market playbooks for an AI rollout team.',
     members: [
       { email: 'member@example.com', role: WorkspaceRole.OWNER },
       { email: 'nina.patel@example.com', role: WorkspaceRole.OWNER },
@@ -167,8 +275,8 @@ export const REALISTIC_WORKSPACE_TEMPLATES: WorkspaceTemplate[] = [
     teamspaces: [
       {
         key: 'success',
-        name: 'Customer Success',
-        description: 'Onboarding scripts, account plans, and risk reviews.',
+        name: 'Customer Intelligence',
+        description: 'Account plans, signal reviews, onboarding scripts, and AI adoption risks.',
         accessMode: TeamspaceAccessMode.RESTRICTED,
         members: [
           { email: 'nina.patel@example.com', role: TeamspaceMemberRole.MANAGER },
@@ -178,8 +286,8 @@ export const REALISTIC_WORKSPACE_TEMPLATES: WorkspaceTemplate[] = [
       },
       {
         key: 'delivery',
-        name: 'Delivery',
-        description: 'Implementation templates, project plans, and handoff docs.',
+        name: 'Launch Room',
+        description: 'Implementation templates, launch plans, enablement, and customer handoff docs.',
         members: [
           { email: 'nina.patel@example.com', role: TeamspaceMemberRole.MANAGER },
           { email: 'omar.hassan@example.com', role: TeamspaceMemberRole.EDITOR },
@@ -190,57 +298,99 @@ export const REALISTIC_WORKSPACE_TEMPLATES: WorkspaceTemplate[] = [
     documents: [
       {
         key: 'ops-home',
-        title: 'Operations Home',
+        title: 'GTM Home',
         kind: 'landing',
-        summary: 'Links to active accounts, templates, and current weekly focus.',
+        summary: 'Links to AI launch accounts, enablement docs, renewal risks, and weekly customer focus.',
         children: [
           {
             key: 'account-health',
-            title: 'Account Health Review',
+            title: 'Account Health',
             kind: 'tracker',
-            summary: 'Weekly review of red accounts, churn risk, and executive follow-up.',
+            summary: 'Weekly review of AI adoption, red accounts, churn risk, and executive follow-up.',
+          },
+          {
+            key: 'expansion-signals',
+            title: 'Expansion Signals',
+            kind: 'tracker',
+            summary: 'Usage, champion feedback, integration requests, and renewal opportunities by account.',
+          },
+          {
+            key: 'exec-summary',
+            title: 'Exec Summary',
+            kind: 'notes',
+            summary: 'Leadership-ready snapshot of launch progress, blockers, and customer outcomes.',
           },
         ],
       },
       {
         key: 'success-playbook',
-        title: 'Success Playbook',
+        title: 'Customer Intelligence',
         kind: 'hub',
-        summary: 'Core onboarding and renewal material used by the success team.',
+        summary: 'Core onboarding, adoption, and renewal material used by the customer success team.',
         teamspaceKey: 'success',
         children: [
           {
             key: 'onboarding-plan',
-            title: 'Onboarding Plan Template',
+            title: 'Onboarding Plan',
             kind: 'runbook',
-            summary: 'Standard week-by-week onboarding plan for new accounts.',
+            summary: 'Week-by-week onboarding plan for teams adopting AI search and assistant workflows.',
           },
           {
             key: 'renewal-notes',
-            title: 'Renewal Preparation Notes',
+            title: 'Renewal Notes',
             kind: 'notes',
-            summary: 'Talking points, objections, and expansion opportunities before renewal.',
+            summary: 'Talking points, objections, usage evidence, and expansion opportunities before renewal.',
+          },
+          {
+            key: 'champion-map',
+            title: 'Champion Map',
+            kind: 'tracker',
+            summary: 'Buyer, champion, admin, and skeptic map for each active AI rollout account.',
+          },
+          {
+            key: 'support-themes',
+            title: 'Support Themes',
+            kind: 'notes',
+            summary: 'Recurring support questions about accuracy, permissions, model behavior, and onboarding.',
           },
         ],
       },
       {
         key: 'delivery-handbook',
-        title: 'Delivery Handbook',
+        title: 'Launch Room',
         kind: 'hub',
-        summary: 'Implementation process, risk register, and project kickoff material.',
+        summary: 'Implementation process, risk register, enablement, and customer kickoff material.',
         teamspaceKey: 'delivery',
         children: [
           {
             key: 'kickoff-agenda',
-            title: 'Project Kickoff Agenda',
+            title: 'Kickoff Agenda',
             kind: 'notes',
-            summary: 'Agenda and outcomes expected during project kickoff.',
+            summary: 'Agenda and expected outcomes for AI assistant implementation kickoff.',
           },
           {
             key: 'implementation-spec',
             title: 'Implementation Scope',
             kind: 'spec',
-            summary: 'Milestones, interfaces, and non-goals for a delivery project.',
+            summary: 'Milestones, integrations, permissions, and non-goals for an AI assistant rollout.',
+          },
+          {
+            key: 'enablement-plan',
+            title: 'Enablement Plan',
+            kind: 'runbook',
+            summary: 'Training sessions, example workflows, admin prep, and adoption success checks.',
+          },
+          {
+            key: 'launch-risks',
+            title: 'Launch Risks',
+            kind: 'tracker',
+            summary: 'Risks around data readiness, policy review, stakeholder alignment, and support coverage.',
+          },
+          {
+            key: 'handoff-notes',
+            title: 'Handoff Notes',
+            kind: 'notes',
+            summary: 'Implementation context handed from delivery to success after the first production launch.',
           },
         ],
       },

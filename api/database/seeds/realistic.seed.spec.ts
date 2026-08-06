@@ -6,8 +6,8 @@ import {
 describe('realistic seed content builders', () => {
   it('builds realistic leaf content with headings and paragraphs', () => {
     const content = buildRealisticLeafContent({
-      title: 'Docs Search Spec',
-      summary: 'Scope and rollout plan for search.',
+      title: 'Search Quality Spec',
+      summary: 'Scope and rollout plan for AI search.',
       kind: 'spec',
     });
 
@@ -15,16 +15,16 @@ describe('realistic seed content builders', () => {
       {
         type: 'heading',
         props: { level: 2 },
-        content: [{ type: 'text', text: 'Docs Search Spec' }],
+        content: [{ type: 'text', text: 'Search Quality Spec' }],
       },
       {
         type: 'paragraph',
-        content: [{ type: 'text', text: 'Scope and rollout plan for search.' }],
+        content: [{ type: 'text', text: 'Scope and rollout plan for AI search.' }],
       },
       {
         type: 'heading',
         props: { level: 3 },
-        content: [{ type: 'text', text: 'What This Covers' }],
+        content: [{ type: 'text', text: 'Objective' }],
       },
       expect.objectContaining({
         type: 'paragraph',
@@ -32,7 +32,23 @@ describe('realistic seed content builders', () => {
       {
         type: 'heading',
         props: { level: 3 },
-        content: [{ type: 'text', text: 'Current Notes' }],
+        content: [{ type: 'text', text: 'Current Signal' }],
+      },
+      expect.objectContaining({
+        type: 'paragraph',
+      }),
+      {
+        type: 'heading',
+        props: { level: 3 },
+        content: [{ type: 'text', text: 'Decision Needed' }],
+      },
+      expect.objectContaining({
+        type: 'paragraph',
+      }),
+      {
+        type: 'heading',
+        props: { level: 3 },
+        content: [{ type: 'text', text: 'Next Actions' }],
       },
       expect.objectContaining({
         type: 'paragraph',

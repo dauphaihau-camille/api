@@ -8,6 +8,7 @@ import { UserRoleEntity } from '../../src/domains/auth/infra/persistence/entitie
 import { BcryptPasswordHasher } from '../../src/domains/auth/infra/security/bcrypt-password-hasher';
 import { DEFAULT_CONTENT_FORMAT } from '../../src/domains/document/app/constants/document.constants';
 import { extractDocumentSearchText } from '../../src/domains/document/app/utils/document-search-text.util';
+import { DocumentAccessGrantPermission } from '../../src/domains/document/domain/enums/document-access-grant-permission.enum';
 import { DocumentAccessGrantEntity } from '../../src/domains/document/infra/persistence/entities/document-access-grant.entity';
 import { DocumentAccessSettingEntity } from '../../src/domains/document/infra/persistence/entities/document-access-setting.entity';
 import { DocumentEntity } from '../../src/domains/document/infra/persistence/entities/document.entity';
@@ -190,23 +191,47 @@ export function buildRealisticLeafContent(input: {
   kind: DocumentBlueprint['kind'];
 }): unknown[] {
   const focusLineByKind: Record<DocumentBlueprint['kind'], string> = {
-    landing: 'Use this page as the quick entry point for recurring work.',
-    hub: 'This hub groups the working documents that the team opens most often.',
-    spec: 'Capture the problem, scope, user impact, and rollout decisions here.',
-    notes: 'Write concise notes, decisions, and open follow-ups after each meeting.',
-    runbook: 'Keep operational steps explicit so the next person can execute without guesswork.',
-    roadmap: 'Summarize the quarter priorities, tradeoffs, and sequencing decisions.',
-    wiki: 'Document stable background context that new teammates need to ramp quickly.',
-    tracker: 'Track ownership, status, and next actions in a lightweight shared format.',
+    landing: 'Use this page as the quick entry point for AI roadmap, launch, evaluation, and customer signal work.',
+    hub: 'This hub groups the working pages that the team opens most often during AI product reviews.',
+    spec: 'Capture the problem, scope, user impact, model behavior, permissions, and rollout decisions here.',
+    notes: 'Write concise notes, decisions, customer evidence, and open follow-ups after each review.',
+    runbook: 'Keep operational steps explicit so another teammate can run the AI workflow without guesswork.',
+    roadmap: 'Summarize the quarter priorities, tradeoffs, sequencing, and confidence behind the AI roadmap.',
+    wiki: 'Document stable background context that new teammates need before changing prompts, models, or policies.',
+    tracker: 'Track ownership, status, confidence, and next actions in a lightweight shared format.',
+  };
+  const signalLineByKind: Record<DocumentBlueprint['kind'], string> = {
+    landing: 'Current signal: search quality, launch readiness, and customer feedback are reviewed twice a week.',
+    hub: 'Current signal: the linked pages hold the latest decisions, owners, and unresolved risks.',
+    spec: 'Current signal: the team is validating measurable answer quality before broad rollout.',
+    notes: 'Current signal: decisions are stable, but follow-up owners should refresh status before the next demo.',
+    runbook: 'Current signal: the workflow is ready for staging and needs one final owner pass before production use.',
+    roadmap: 'Current signal: Q3 bets are ordered by customer impact, quality confidence, and implementation risk.',
+    wiki: 'Current signal: this is shared context for reviewers who need a quick but reliable system overview.',
+    tracker: 'Current signal: several items are moving from discovery into launch-readiness review.',
+  };
+  const actionLineByKind: Record<DocumentBlueprint['kind'], string> = {
+    landing: 'Next action: review the linked priority pages and update stale owners before taking screenshots.',
+    hub: 'Next action: open each related page, resolve unclear ownership, and archive work that is no longer active.',
+    spec: 'Next action: confirm success metrics, acceptance criteria, and the narrowest launch scope.',
+    notes: 'Next action: convert unresolved discussion points into tracked owners or explicit decisions.',
+    runbook: 'Next action: run the checklist in staging, capture failures, and note the rollback owner.',
+    roadmap: 'Next action: verify sequencing against capacity, dependencies, and customer commitments.',
+    wiki: 'Next action: keep terminology, examples, and linked decisions current as the AI system changes.',
+    tracker: 'Next action: move blocked rows forward by naming the next concrete owner action.',
   };
 
   return [
     heading(input.title, 2),
     paragraph(input.summary),
-    heading('What This Covers', 3),
+    heading('Objective', 3),
     paragraph(focusLineByKind[input.kind]),
-    heading('Current Notes', 3),
-    paragraph(`This page is seeded as realistic sample content for "${input.title}".`),
+    heading('Current Signal', 3),
+    paragraph(signalLineByKind[input.kind]),
+    heading('Decision Needed', 3),
+    paragraph('Decide whether this work is ready for launch review, needs another evaluation pass, or should stay in discovery.'),
+    heading('Next Actions', 3),
+    paragraph(actionLineByKind[input.kind]),
   ];
 }
 
@@ -605,6 +630,115 @@ async function seedDocumentTree(
   return allDocuments;
 }
 
+async function seedMemberPersonalDocuments(input: {
+  em: EntityManager;
+  workspaceId: string;
+  memberUsers: SeedUserSummary[];
+  replicaKey: string;
+  startingSortKey: number;
+}): Promise<SeedDocumentSummary[]> {
+  const privateTemplates: Array<Pick<DocumentBlueprint, 'key' | 'title' | 'kind' | 'summary'>> = [
+    {
+      key: 'my-ai-notes',
+      title: 'My AI Notes',
+      kind: 'notes',
+      summary: 'Personal notes for AI demo prep, open questions, and rough product thoughts.',
+    },
+    {
+      key: 'draft-prompts',
+      title: 'Draft Prompts',
+      kind: 'wiki',
+      summary: 'Private prompt drafts before they are reviewed and moved into the shared prompt library.',
+    },
+    {
+      key: 'research-queue',
+      title: 'Research Queue',
+      kind: 'tracker',
+      summary: 'Personal backlog of customer examples, evaluation ideas, and follow-up reading.',
+    },
+  ];
+  const sharedTemplates: Array<Pick<DocumentBlueprint, 'key' | 'title' | 'kind' | 'summary'>> = [
+    {
+      key: 'shared-launch-review',
+      title: 'Shared Launch Review',
+      kind: 'notes',
+      summary: 'Direct-shared review notes for launch readiness, product polish, and screenshot prep.',
+    },
+    {
+      key: 'shared-eval-feedback',
+      title: 'Shared Eval Feedback',
+      kind: 'tracker',
+      summary: 'Direct-shared feedback on answer quality, retrieval misses, and model behavior changes.',
+    },
+  ];
+  const documents: SeedDocumentSummary[] = [];
+
+  for (const [memberIndex, memberUser] of input.memberUsers.entries()) {
+    for (const [templateIndex, template] of privateTemplates.entries()) {
+      documents.push(await upsertDocument(input.em, {
+        key: `${template.key}:${memberUser.email}`,
+        publicId: buildSeededPublicId(`${input.replicaKey}:private:${memberUser.email}:${template.key}`),
+        workspaceId: input.workspaceId,
+        title: template.title,
+        contentJson: buildRealisticLeafContent({
+          title: template.title,
+          summary: template.summary,
+          kind: template.kind,
+        }),
+        sortKey: input.startingSortKey + (memberIndex * 10) + templateIndex,
+        createdById: memberUser.id,
+        updatedById: memberUser.id,
+      }));
+    }
+
+    for (const [templateIndex, template] of sharedTemplates.entries()) {
+      const owner = input.memberUsers[(memberIndex + templateIndex + 1) % input.memberUsers.length]!;
+      const ownerFirstName = owner.displayName.split(' ')[0] ?? owner.displayName;
+      const sharedTitle = `${ownerFirstName} ${template.title.replace(/^Shared /, '')}`;
+      const document = await upsertDocument(input.em, {
+        key: `${template.key}:${memberUser.email}`,
+        publicId: buildSeededPublicId(`${input.replicaKey}:shared:${memberUser.email}:${template.key}`),
+        workspaceId: input.workspaceId,
+        title: sharedTitle,
+        contentJson: buildRealisticLeafContent({
+          title: sharedTitle,
+          summary: template.summary,
+          kind: template.kind,
+        }),
+        sortKey: input.startingSortKey + 500 + (memberIndex * 10) + templateIndex,
+        createdById: owner.id,
+        updatedById: owner.id,
+      });
+
+      const existingGrant = await input.em.findOne(DocumentAccessGrantEntity, {
+        document: document.id,
+        user: memberUser.id,
+      });
+      const grant = existingGrant ??
+        input.em.create(DocumentAccessGrantEntity, {
+          workspace: input.em.getReference(WorkspaceEntity, input.workspaceId),
+          document: input.em.getReference(DocumentEntity, document.id),
+          user: input.em.getReference(CurrentUserEntity, memberUser.id),
+          permission: DocumentAccessGrantPermission.EDIT,
+          grantedBy: input.em.getReference(CurrentUserEntity, owner.id),
+        });
+
+      grant.workspace = input.em.getReference(WorkspaceEntity, input.workspaceId);
+      grant.document = input.em.getReference(DocumentEntity, document.id);
+      grant.user = input.em.getReference(CurrentUserEntity, memberUser.id);
+      grant.permission = DocumentAccessGrantPermission.EDIT;
+      grant.grantedBy = input.em.getReference(CurrentUserEntity, owner.id);
+      grant.revokedAt = undefined;
+      input.em.persist(grant);
+      documents.push(document);
+    }
+  }
+
+  await input.em.flush();
+
+  return documents;
+}
+
 async function seedWorkspacePreferences(
   em: EntityManager,
   workspaceId: string,
@@ -897,6 +1031,16 @@ async function seedWorkspaceScenario(
   }
 
   const memberSummaries = memberUsers.map((member) => member.user);
+  documents.push(
+    ...(await seedMemberPersonalDocuments({
+      em,
+      workspaceId: workspace.id,
+      memberUsers: memberSummaries,
+      replicaKey,
+      startingSortKey: template.documents.length + 100,
+    })),
+  );
+
   await seedWorkspacePreferences(em, workspace.id, memberSummaries, documents);
   await seedDocumentAccessGrants(
     em,
