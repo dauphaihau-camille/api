@@ -17,7 +17,7 @@ if (otelEnabled) {
 
   const sdk = new NodeSDK({
     resource: resourceFromAttributes({
-      'service.name': process.env.OTEL_SERVICE_NAME ?? 'nest-template-api',
+      'service.name': process.env.OTEL_SERVICE_NAME ?? 'camille-api',
       'service.version': process.env.npm_package_version ?? '1.0.0',
       'deployment.environment': process.env.SENTRY_ENVIRONMENT ??
         process.env.NODE_ENV ??
@@ -49,8 +49,5 @@ if (otelEnabled) {
 }
 
 function hasOtlpTraceExportConfig() {
-  return Boolean(
-    process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
-    || process.env.OTEL_EXPORTER_OTLP_ENDPOINT
-  );
+  return Boolean(process.env.OTEL_EXPORTER_OTLP_ENDPOINT);
 }

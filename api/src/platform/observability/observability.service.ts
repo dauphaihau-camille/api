@@ -118,7 +118,7 @@ export class ObservabilityService {
       process.env.DB_SLOW_QUERY_THRESHOLD_MS ?? DEFAULT_SLOW_QUERY_THRESHOLD_MS,
     );
     this.registry.setDefaultLabels({
-      service: 'nest-template-api',
+      service: 'camille-api',
     });
     collectDefaultMetrics({
       register: this.registry,

@@ -1,6 +1,6 @@
 import { SpanStatusCode, trace } from '@opentelemetry/api';
 
-const appTracer = trace.getTracer('nest-template-api');
+const appTracer = trace.getTracer('camille-api');
 
 export interface ActiveTraceContext {
   [key: string]: string;

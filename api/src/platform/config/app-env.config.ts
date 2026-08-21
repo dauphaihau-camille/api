@@ -94,6 +94,15 @@ const appEnvBaseSchema = z.object({
   PAYMENT_SUCCESS_PATH: z.string().trim().min(1).default('/payments/success'),
   PAYMENT_CANCEL_PATH: z.string().trim().min(1).default('/payments/cancel'),
   METRICS_BEARER_TOKEN: optionalTrimmedString(),
+  OTEL_ENABLED: z.enum(['true', 'false']).default('true'),
+  OTEL_SERVICE_NAME: z.string().trim().min(1).default('camille-api'),
+  OTEL_TRACES_CONSOLE_EXPORTER: z.enum(['true', 'false']).default('false'),
+  OTEL_LOGS_EXPORTER: optionalTrimmedString(),
+  OTEL_EXPORTER_OTLP_ENDPOINT: optionalUrlString(),
+  OTEL_EXPORTER_OTLP_HEADERS: optionalTrimmedString(),
+  OTEL_EXPORTER_OTLP_PROTOCOL: z
+    .enum(['grpc', 'http/protobuf', 'http/json'])
+    .optional(),
   STORAGE_DRIVER: z.enum(['local', 'minio']).default('local'),
   STORAGE_LOCAL_ROOT: z.string().trim().min(1).default('./storage'),
   STORAGE_PUBLIC_BASE_URL: optionalUrlString(),
