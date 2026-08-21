@@ -34,6 +34,15 @@ const positiveIntegerString = z
   .regex(/^\d+$/, 'Expected a positive integer value.')
   .refine((value) => Number(value) > 0, 'Expected a positive integer value.');
 
+const nonNegativeIntegerString = z
+  .string()
+  .trim()
+  .regex(/^\d+$/, 'Expected a non-negative integer value.');
+
+const DEFAULT_DB_POOL_MAX = 10;
+const DEFAULT_PRODUCTION_DB_POOL_MIN = 2;
+const DEFAULT_NON_PRODUCTION_DB_POOL_MIN = 0;
+
 const appEnvBaseSchema = z.object({
   PORT: positiveIntegerString.default('3000'),
   NODE_ENV: z
@@ -56,6 +65,10 @@ const appEnvBaseSchema = z.object({
   DB_USER: optionalTrimmedString(),
   DB_PASSWORD: optionalTrimmedString(),
   DB_NAME: optionalTrimmedString(),
+  DB_POOL_MIN: nonNegativeIntegerString.optional(),
+  DB_POOL_MAX: positiveIntegerString.optional(),
+  DB_POOL_IDLE_TIMEOUT_MS: positiveIntegerString.optional(),
+  DB_POOL_CONNECTION_TIMEOUT_MS: positiveIntegerString.optional(),
   REDIS_URL: z.url().default('redis://127.0.0.1:6379'),
   CACHE_DRIVER: z.enum(['memory', 'redis']).optional(),
   CACHE_TTL: z.string().trim().min(1).default('60s'),
@@ -133,6 +146,22 @@ const appEnvSchema = appEnvBaseSchema.superRefine((env, context) => {
         });
       }
     }
+  }
+
+  const dbPoolMin = Number(
+    env.DB_POOL_MIN ??
+      (env.NODE_ENV === 'production'
+        ? DEFAULT_PRODUCTION_DB_POOL_MIN
+        : DEFAULT_NON_PRODUCTION_DB_POOL_MIN),
+  );
+  const dbPoolMax = Number(env.DB_POOL_MAX ?? DEFAULT_DB_POOL_MAX);
+
+  if (dbPoolMin > dbPoolMax) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['DB_POOL_MIN'],
+      message: 'Expected DB_POOL_MIN to be less than or equal to DB_POOL_MAX.',
+    });
   }
 
   if (env.MAIL_DRIVER === 'resend' && !env.RESEND_API_KEY) {
