@@ -23,6 +23,7 @@ import { DocumentAccessGrantRepository } from './app/ports/document-access-grant
 import { DocumentInvitationRepository } from './app/ports/document-invitation.repository';
 import { DocumentAccessSettingRepository } from './app/ports/document-access-setting.repository';
 import { DocumentCommandRepository } from './app/ports/document-command.repository';
+import { DocumentDetailQueryRepository } from './app/ports/document-detail-query.repository';
 import { DocumentNavigationQueryRepository } from './app/ports/document-navigation-query.repository';
 import { DocumentSubdocReferenceRepository } from './app/ports/document-subdoc-reference.repository';
 import { DocumentTreeQueryRepository } from './app/ports/document-tree-query.repository';
@@ -59,6 +60,7 @@ import { MikroOrmDocumentAccessGrantRepository } from './infra/mikro-orm-documen
 import { MikroOrmDocumentAccessSettingRepository } from './infra/mikro-orm-document-access-setting.repository';
 import { MikroOrmDocumentInvitationRepository } from './infra/mikro-orm-document-invitation.repository';
 import { MikroOrmDocumentCommandRepository } from './infra/mikro-orm-document-command.repository';
+import { MikroOrmDocumentDetailQueryRepository } from './infra/mikro-orm-document-detail-query.repository';
 import { MikroOrmDocumentNavigationQueryRepository } from './infra/mikro-orm-document-navigation-query.repository';
 import { MikroOrmDocumentSubdocReferenceRepository } from './infra/mikro-orm-document-subdoc-reference.repository';
 import { MikroOrmDocumentTreeQueryRepository } from './infra/mikro-orm-document-tree-query.repository';
@@ -136,6 +138,10 @@ import { ClaimDocumentInvitationsOnUserCreatedListener } from './listeners/claim
     {
       provide: DocumentCommandRepository,
       useClass: MikroOrmDocumentCommandRepository,
+    },
+    {
+      provide: DocumentDetailQueryRepository,
+      useClass: MikroOrmDocumentDetailQueryRepository,
     },
     {
       provide: DocumentNavigationQueryRepository,

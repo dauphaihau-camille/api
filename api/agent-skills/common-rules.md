@@ -68,6 +68,9 @@ Preferred order:
 - Migrations must support rolling deployment.
 - Destructive schema changes or bulk data updates require explicit approval.
 - Use transactions when an operation must be atomic.
+- Prefer fewer, well-shaped database reads over many parallel repository calls on latency-sensitive request paths.
+- Use parallel database queries only when the extra pool checkout pressure is justified by measured latency improvement.
+- For read-heavy detail endpoints, prefer a dedicated query repository/read model over composing many small repository calls.
 
 ## Observability
 
