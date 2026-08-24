@@ -21,6 +21,7 @@ import { TeamspaceEntity } from '../src/domains/teamspace/infra/persistence/enti
 import { WorkspaceEntity } from '../src/domains/workspace/infra/persistence/entities/workspace.entity';
 import { WorkspaceMemberEntity } from '../src/domains/workspace/infra/persistence/entities/workspace-member.entity';
 import { WorkspacePreferenceEntity } from '../src/domains/workspace-preference/infra/persistence/entities/workspace-preference.entity';
+import { WorkspaceSubscriptionEntity } from '../src/domains/subscription/infra/persistence/entities/workspace-subscription.entity';
 import { seedRealisticData } from './seeds/realistic.seed';
 
 function formatDuration(ms: number): string {
@@ -58,6 +59,7 @@ async function main() {
       PublishedDocumentEntity,
       DocumentSubdocReferenceEntity,
       WorkspacePreferenceEntity,
+      WorkspaceSubscriptionEntity,
     ],
   });
 

@@ -32,6 +32,12 @@ export const REALISTIC_WORKSPACE_TEMPLATES: WorkspaceTemplate[] = [
       { email: 'alex.rivera@example.com', role: WorkspaceRole.MEMBER },
       { email: 'member@example.com', role: WorkspaceRole.MEMBER },
     ],
+    subscription: {
+      state: 'plus_active',
+      replicaStates: {
+        2: 'plus_canceling',
+      },
+    },
     teamspaces: [
       {
         key: 'engineering',
@@ -272,6 +278,12 @@ export const REALISTIC_WORKSPACE_TEMPLATES: WorkspaceTemplate[] = [
       { email: 'emily.tran@example.com', role: WorkspaceRole.MEMBER },
       { email: 'lucy.garcia@example.com', role: WorkspaceRole.MEMBER },
     ],
+    subscription: {
+      state: 'free',
+      replicaStates: {
+        2: 'plus_past_due',
+      },
+    },
     teamspaces: [
       {
         key: 'success',

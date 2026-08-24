@@ -23,6 +23,7 @@ Seed modes:
 - `pnpm run db:seed:demo` applies migrations and seeds reference data plus demo users.
 - `pnpm run db:seed:huge` applies migrations, seeds auth data, and generates large synthetic workspace, teamspace, document, membership, publish, favorite, visit, subdoc-reference, and workspace-preference data.
 - `pnpm run db:seed:realistic` applies migrations, seeds auth data, and generates a small set of scenario-based workspaces with realistic BlockNote content and subpage relationships.
+- The realistic seed also creates deterministic workspace subscription rows for Free, Plus active, Plus canceling, Plus past-due, and block-limit upgrade-prompt checks.
 
 Large synthetic seed configuration:
 
@@ -47,3 +48,12 @@ Realistic scenario seed configuration:
 - `SEED_REALISTIC_WORKSPACE_REPLICAS`
 - `SEED_REALISTIC_EXTRA_MEMBERS_PER_WORKSPACE`
 - `SEED_REALISTIC_DEFAULT_PASSWORD`
+
+Realistic subscription states:
+
+- `Camille AI`: Plus active with fake Stripe provider IDs.
+- `Northstar GTM AI`: Free collaborative with the 1,000 block limit.
+- Replica `2` of `Camille AI`: Plus canceling.
+- Replica `2` of `Northstar GTM AI`: Plus past due.
+- `Seeded Block Limit Lab`: Free collaborative workspace seeded at exactly 1,000 content blocks.
+- `Seeded Over Limit Lab`: Free collaborative workspace seeded at 1,200 content blocks for downgrade-style over-limit checks.

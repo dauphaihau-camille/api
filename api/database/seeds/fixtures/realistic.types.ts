@@ -27,6 +27,17 @@ export type WorkspaceMemberTemplate = {
   role: WorkspaceRole;
 };
 
+export type WorkspaceSubscriptionSeedState =
+  | 'free'
+  | 'plus_active'
+  | 'plus_canceling'
+  | 'plus_past_due';
+
+export type WorkspaceSubscriptionTemplate = {
+  state: WorkspaceSubscriptionSeedState;
+  replicaStates?: Record<number, WorkspaceSubscriptionSeedState>;
+};
+
 export type DocumentBlueprint = {
   key: string;
   title: string;
@@ -54,6 +65,7 @@ export type WorkspaceTemplate = {
   name: string;
   description: string;
   members: WorkspaceMemberTemplate[];
+  subscription?: WorkspaceSubscriptionTemplate;
   teamspaces: TeamspaceTemplate[];
   documents: DocumentBlueprint[];
   documentAccessGrants?: DocumentAccessGrantTemplate[];

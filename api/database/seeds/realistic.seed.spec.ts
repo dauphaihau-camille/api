@@ -1,7 +1,10 @@
 import {
   buildRealisticLeafContent,
   buildRealisticParentContent,
+  buildRealisticSubscriptionSeed,
 } from './realistic.seed';
+import { SubscriptionPlan } from '../../src/domains/subscription/domain/enums/subscription-plan.enum';
+import { SubscriptionStatus } from '../../src/domains/subscription/domain/enums/subscription-status.enum';
 
 describe('realistic seed content builders', () => {
   it('builds realistic leaf content with headings and paragraphs', () => {
@@ -81,6 +84,64 @@ describe('realistic seed content builders', () => {
         title: 'Release Runbook',
       },
       children: [],
+    });
+  });
+
+  it('builds deterministic Stripe-shaped Plus subscription seed data', () => {
+    const seed = buildRealisticSubscriptionSeed({
+      workspaceKey: 'acme-product',
+      workspaceName: 'Camille AI',
+      replicaIndex: 1,
+      template: {
+        state: 'plus_active',
+      },
+    });
+
+    expect(seed).toMatchObject({
+      plan: SubscriptionPlan.PLUS,
+      status: SubscriptionStatus.ACTIVE,
+      cancelAtPeriodEnd: false,
+      provider: 'stripe',
+      providerPriceId: 'price_seed_plus_monthly',
+      providerStatus: 'active',
+    });
+    expect(seed.providerCustomerId).toMatch(/^cus_seed_/);
+    expect(seed.providerSubscriptionId).toMatch(/^sub_seed_/);
+  });
+
+  it('uses replica subscription states for cancellation and past-due demos', () => {
+    expect(buildRealisticSubscriptionSeed({
+      workspaceKey: 'acme-product',
+      workspaceName: 'Camille AI 2',
+      replicaIndex: 2,
+      template: {
+        state: 'plus_active',
+        replicaStates: {
+          2: 'plus_canceling',
+        },
+      },
+    })).toMatchObject({
+      plan: SubscriptionPlan.PLUS,
+      status: SubscriptionStatus.CANCELING,
+      cancelAtPeriodEnd: true,
+      providerStatus: 'active',
+    });
+
+    expect(buildRealisticSubscriptionSeed({
+      workspaceKey: 'northwind-ops',
+      workspaceName: 'Northstar GTM AI 2',
+      replicaIndex: 2,
+      template: {
+        state: 'free',
+        replicaStates: {
+          2: 'plus_past_due',
+        },
+      },
+    })).toMatchObject({
+      plan: SubscriptionPlan.PLUS,
+      status: SubscriptionStatus.PAST_DUE,
+      cancelAtPeriodEnd: false,
+      providerStatus: 'past_due',
     });
   });
 });

@@ -16,6 +16,9 @@ import { DocumentSubdocReferenceEntity } from '../../src/domains/document/infra/
 import { DocumentVisitEntity } from '../../src/domains/document/infra/persistence/entities/document-visit.entity';
 import { DocumentFavoriteEntity } from '../../src/domains/favorite/infra/persistence/entities/document-favorite.entity';
 import { PublishedDocumentEntity } from '../../src/domains/publish/infra/persistence/entities/published-document.entity';
+import { SubscriptionPlan } from '../../src/domains/subscription/domain/enums/subscription-plan.enum';
+import { SubscriptionStatus } from '../../src/domains/subscription/domain/enums/subscription-status.enum';
+import { WorkspaceSubscriptionEntity } from '../../src/domains/subscription/infra/persistence/entities/workspace-subscription.entity';
 import { TeamspaceAccessMode } from '../../src/domains/teamspace/domain/enums/teamspace-access-mode.enum';
 import { TeamspaceMemberEntity } from '../../src/domains/teamspace/infra/persistence/entities/teamspace-member.entity';
 import { TeamspaceEntity } from '../../src/domains/teamspace/infra/persistence/entities/teamspace.entity';
@@ -33,6 +36,8 @@ import type {
   DocumentAccessSettingTemplate,
   DocumentBlueprint,
   TeamspaceTemplate,
+  WorkspaceSubscriptionSeedState,
+  WorkspaceSubscriptionTemplate,
   WorkspaceTemplate,
 } from './fixtures/realistic.types';
 
@@ -69,6 +74,17 @@ type DocumentPayload = {
   sortKey: number;
   createdById: string;
   updatedById: string;
+};
+
+type WorkspaceSubscriptionSeed = {
+  plan: SubscriptionPlan;
+  status: SubscriptionStatus;
+  cancelAtPeriodEnd: boolean;
+  provider?: string;
+  providerCustomerId?: string;
+  providerSubscriptionId?: string;
+  providerPriceId?: string;
+  providerStatus?: string;
 };
 
 type RealisticSeedState = {
@@ -119,6 +135,10 @@ function buildSeededPublicId(seed: string): string {
   return createHash('sha256').update(seed).digest('hex').slice(0, 32);
 }
 
+function buildSeededProviderId(prefix: string, seed: string): string {
+  return `${prefix}_${createHash('sha256').update(seed).digest('hex').slice(0, 24)}`;
+}
+
 function collectPublishedSubtreeDocuments(
   documents: SeedDocumentSummary[],
   rootDocumentIds: string[],
@@ -148,6 +168,48 @@ function resolveRealisticSeedConfig(env: NodeJS.ProcessEnv): RealisticSeedConfig
     workspaceReplicas: resolvePositiveInteger(env, 'SEED_REALISTIC_WORKSPACE_REPLICAS', 2, 1),
     extraMembersPerWorkspace: resolvePositiveInteger(env, 'SEED_REALISTIC_EXTRA_MEMBERS_PER_WORKSPACE', 4, 0),
     password: env.SEED_REALISTIC_DEFAULT_PASSWORD?.trim() || 'password123',
+  };
+}
+
+export function buildRealisticSubscriptionSeed(input: {
+  workspaceKey: string;
+  workspaceName: string;
+  replicaIndex: number;
+  template?: WorkspaceSubscriptionTemplate;
+}): WorkspaceSubscriptionSeed {
+  const state = input.template?.replicaStates?.[input.replicaIndex] ??
+    input.template?.state ??
+    'free';
+
+  if (state === 'free') {
+    return {
+      plan: SubscriptionPlan.FREE,
+      status: SubscriptionStatus.FREE,
+      cancelAtPeriodEnd: false,
+    };
+  }
+
+  const providerSeed = `${input.workspaceKey}:${input.replicaIndex}`;
+  const providerStatusByState: Record<Exclude<WorkspaceSubscriptionSeedState, 'free'>, string> = {
+    plus_active: 'active',
+    plus_canceling: 'active',
+    plus_past_due: 'past_due',
+  };
+  const statusByState: Record<Exclude<WorkspaceSubscriptionSeedState, 'free'>, SubscriptionStatus> = {
+    plus_active: SubscriptionStatus.ACTIVE,
+    plus_canceling: SubscriptionStatus.CANCELING,
+    plus_past_due: SubscriptionStatus.PAST_DUE,
+  };
+
+  return {
+    plan: SubscriptionPlan.PLUS,
+    status: statusByState[state],
+    cancelAtPeriodEnd: state === 'plus_canceling',
+    provider: 'stripe',
+    providerCustomerId: buildSeededProviderId('cus_seed', providerSeed),
+    providerSubscriptionId: buildSeededProviderId('sub_seed', providerSeed),
+    providerPriceId: 'price_seed_plus_monthly',
+    providerStatus: providerStatusByState[state],
   };
 }
 
@@ -460,6 +522,45 @@ async function upsertWorkspaceMembers(
   }
 
   await em.flush();
+}
+
+async function upsertWorkspaceSubscription(input: {
+  em: EntityManager;
+  workspaceId: string;
+  seatCount: number;
+  seed: WorkspaceSubscriptionSeed;
+}): Promise<void> {
+  const existingSubscription = await input.em.findOne(WorkspaceSubscriptionEntity, {
+    workspace: input.workspaceId,
+  });
+  const subscription = existingSubscription ??
+    input.em.create(WorkspaceSubscriptionEntity, {
+      workspace: input.em.getReference(WorkspaceEntity, input.workspaceId),
+      plan: input.seed.plan,
+      status: input.seed.status,
+      seatCount: input.seatCount,
+      cancelAtPeriodEnd: input.seed.cancelAtPeriodEnd,
+    });
+  const isPaid = input.seed.plan === SubscriptionPlan.PLUS;
+
+  subscription.workspace = input.em.getReference(WorkspaceEntity, input.workspaceId);
+  subscription.plan = input.seed.plan;
+  subscription.status = input.seed.status;
+  subscription.seatCount = input.seatCount;
+  subscription.cancelAtPeriodEnd = input.seed.cancelAtPeriodEnd;
+  subscription.currentPeriodStart = isPaid
+    ? new Date(Date.UTC(2026, 7, 1, 0, 0, 0))
+    : undefined;
+  subscription.currentPeriodEnd = isPaid
+    ? new Date(Date.UTC(2026, 8, 1, 0, 0, 0))
+    : undefined;
+  subscription.provider = input.seed.provider;
+  subscription.providerCustomerId = input.seed.providerCustomerId;
+  subscription.providerSubscriptionId = input.seed.providerSubscriptionId;
+  subscription.providerPriceId = input.seed.providerPriceId;
+  subscription.providerStatus = input.seed.providerStatus;
+  input.em.persist(subscription);
+  await input.em.flush();
 }
 
 async function upsertTeamspaceMembers(
@@ -980,6 +1081,68 @@ async function seedSubdocReferences(
   await em.flush();
 }
 
+function buildBlockLimitLabContent(blockCount: number, limitLabel: string): unknown[] {
+  return Array.from({ length: blockCount }, (_, index) =>
+    paragraph(`Seed block ${index + 1}: ${limitLabel}`));
+}
+
+async function seedBlockLimitLabWorkspace(input: {
+  em: EntityManager;
+  users: SeedUserSummary[];
+  slug: string;
+  name: string;
+  description: string;
+  documentTitle: string;
+  blockCount: number;
+  limitLabel: string;
+}): Promise<void> {
+  const owner = findUsersByEmail(input.users, ['maya.chen@example.com'])[0];
+  const member = findUsersByEmail(input.users, ['jordan.lee@example.com'])[0];
+
+  if (!owner || !member) {
+    return;
+  }
+
+  const workspace = await upsertWorkspace(
+    input.em,
+    input.slug,
+    input.name,
+    input.description,
+  );
+  const members = [
+    { user: owner, role: WorkspaceRole.OWNER },
+    { user: member, role: WorkspaceRole.MEMBER },
+  ];
+
+  await upsertWorkspaceMembers(input.em, workspace.id, members);
+  await upsertWorkspaceSubscription({
+    em: input.em,
+    workspaceId: workspace.id,
+    seatCount: members.length,
+    seed: buildRealisticSubscriptionSeed({
+      workspaceKey: input.slug,
+      workspaceName: workspace.name,
+      replicaIndex: 1,
+      template: { state: 'free' },
+    }),
+  });
+
+  const contentJson = buildBlockLimitLabContent(input.blockCount, input.limitLabel);
+  const document = await upsertDocument(input.em, {
+    key: 'limit-counter',
+    publicId: buildSeededPublicId(`${input.slug}:limit-counter`),
+    workspaceId: workspace.id,
+    title: input.documentTitle,
+    contentJson,
+    sortKey: 0,
+    createdById: owner.id,
+    updatedById: owner.id,
+  });
+
+  await seedWorkspacePreferences(input.em, workspace.id, [owner, member], [document]);
+  await seedFavoritesAndVisits(input.em, workspace.id, [owner, member], [document]);
+}
+
 async function seedWorkspaceScenario(
   em: EntityManager,
   state: RealisticSeedState,
@@ -1006,6 +1169,17 @@ async function seedWorkspaceScenario(
   ];
 
   await upsertWorkspaceMembers(em, workspace.id, memberUsers);
+  await upsertWorkspaceSubscription({
+    em,
+    workspaceId: workspace.id,
+    seatCount: memberUsers.length,
+    seed: buildRealisticSubscriptionSeed({
+      workspaceKey: template.key,
+      workspaceName,
+      replicaIndex,
+      template: template.subscription,
+    }),
+  });
   const teamspacesByKey = await upsertTeamspaces(em, workspace.id, template.teamspaces);
   await upsertTeamspaceMembers(
     em,
@@ -1077,6 +1251,27 @@ export async function seedRealisticData(em: EntityManager): Promise<void> {
       );
     }
   }
+
+  await seedBlockLimitLabWorkspace({
+    em,
+    users,
+    slug: 'seeded-block-limit-lab',
+    name: 'Seeded Block Limit Lab',
+    description: 'Free collaborative workspace seeded at the 1,000 block limit for upgrade prompt testing.',
+    documentTitle: 'Limit Counter',
+    blockCount: 1_000,
+    limitLabel: 'collaborative Free workspaces cannot create block 1,001.',
+  });
+  await seedBlockLimitLabWorkspace({
+    em,
+    users,
+    slug: 'seeded-over-limit-lab',
+    name: 'Seeded Over Limit Lab',
+    description: 'Free collaborative workspace seeded above the 1,000 block limit to test downgraded over-limit behavior.',
+    documentTitle: 'Over Limit Counter',
+    blockCount: 1_200,
+    limitLabel: 'over-limit Free workspaces keep existing content but cannot create more blocks.',
+  });
 
   console.log(`[seed][realistic] Total duration: ${formatDuration(Date.now() - startedAt)}`);
 }
