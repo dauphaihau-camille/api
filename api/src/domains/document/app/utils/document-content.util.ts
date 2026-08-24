@@ -1,7 +1,7 @@
 import { DEFAULT_DOCUMENT_CONTENT } from '../constants/document.constants';
 
-export function normalizeContent(value?: unknown[]): unknown[] {
-  if (!value || value.length === 0) {
+export function normalizeContent(value?: unknown): unknown[] {
+  if (!Array.isArray(value) || value.length === 0) {
     return DEFAULT_DOCUMENT_CONTENT;
   }
 
@@ -52,4 +52,29 @@ export function hasMeaningfulContent(content: unknown[]): boolean {
   }
 
   return false;
+}
+
+export function countContentBlocks(content: unknown): number {
+  if (!Array.isArray(content)) {
+    return 0;
+  }
+
+  return content.reduce<number>(
+    (count, block) => count + countBlockTree(block),
+    0,
+  );
+}
+
+function countBlockTree(value: unknown): number {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return 0;
+  }
+
+  const block = value as { children?: unknown };
+  const children = Array.isArray(block.children) ? block.children : [];
+
+  return 1 + children.reduce<number>(
+    (count, child) => count + countBlockTree(child),
+    0,
+  );
 }

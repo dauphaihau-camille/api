@@ -10,6 +10,7 @@ import { MikroOrmPublishRepository } from '../publish/infra/mikro-orm-publish.re
 import { PublishedDocumentEntity } from '../publish/infra/persistence/entities/published-document.entity';
 import { WorkspaceDefaultDocumentProvisioner } from '../workspace/app/ports/workspace-default-document-provisioner';
 import { WorkspaceModule } from '../workspace/workspace.module';
+import { SubscriptionModule } from '../subscription/subscription.module';
 import { WorkspaceMemberEntity } from '../workspace/infra/persistence/entities/workspace-member.entity';
 import { TeamspaceMemberEntity } from '../teamspace/infra/persistence/entities/teamspace-member.entity';
 import { TeamspaceEntity } from '../teamspace/infra/persistence/entities/teamspace.entity';
@@ -97,6 +98,7 @@ import { ClaimDocumentInvitationsOnUserCreatedListener } from './listeners/claim
     QueueModule,
     WsModule,
     forwardRef(() => WorkspaceModule),
+    forwardRef(() => SubscriptionModule),
     MikroOrmModule.forFeature([
       CurrentUserEntity,
       WorkspaceEntity,

@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 import * as Yjs from 'yjs';
+import type { BlockCreationGateService } from '~/domains/subscription/app/services/block-creation-gate.service';
+import { WorkspaceBlockLimitReachedError } from '~/domains/subscription/app/errors/subscription-app.error';
 import { TeamspaceAccessMode } from '../../../teamspace/domain/enums/teamspace-access-mode.enum';
 import { TeamspaceMemberRole } from '../../../teamspace/domain/enums/teamspace-member-role.enum';
 import type { AuthenticatedUser } from '../../../auth/app/auth.types';
@@ -94,6 +96,12 @@ describe('DocumentCollaborationService', () => {
     } as unknown as jest.Mocked<DocumentCollaborationReferenceSyncService>;
   }
 
+  function createBlockCreationGateService() {
+    return {
+      assertCanCreateBlocks: jest.fn(),
+    } as unknown as jest.Mocked<BlockCreationGateService>;
+  }
+
   it('migrates existing BlockNote content and returns the missing Yjs state', async () => {
     const repository = createRepository();
     const projector = createProjector();
@@ -103,6 +111,7 @@ describe('DocumentCollaborationService', () => {
       projector,
       new DocumentSubdocContentService(),
       createReferenceSyncService(),
+      createBlockCreationGateService(),
     );
     const clientDocument = new Yjs.Doc();
 
@@ -131,6 +140,7 @@ describe('DocumentCollaborationService', () => {
       projector,
       new DocumentSubdocContentService(),
       createReferenceSyncService(),
+      createBlockCreationGateService(),
     );
     const clientDocument = new Yjs.Doc();
     const synchronized = await service.synchronize(
@@ -166,6 +176,70 @@ describe('DocumentCollaborationService', () => {
     );
   });
 
+  it('does not persist collaborative block growth when the workspace limit is reached', async () => {
+    const repository = createRepository();
+    repository.getAccess.mockResolvedValue({
+      content: [{
+        id: 'block-1', type: 'paragraph', props: {}, children: [],
+      }],
+      documentOwnerUserId: 'user-1',
+      title: 'Initial title',
+      workspaceId: 'workspace-1',
+      workspaceRole: WorkspaceRole.OWNER,
+    });
+    const projector = createProjector();
+    projector.project.mockResolvedValue({
+      content: [
+        {
+          id: 'block-1', type: 'paragraph', props: {}, children: [],
+        },
+        {
+          id: 'block-2', type: 'heading', props: {}, children: [],
+        },
+      ],
+      title: 'Initial title',
+    });
+    const blockCreationGateService = createBlockCreationGateService();
+    blockCreationGateService.assertCanCreateBlocks.mockRejectedValue(
+      new WorkspaceBlockLimitReachedError({
+        plan: 'free',
+        blockCount: 1000,
+        blockLimit: 1000,
+        upgradeAvailable: true,
+      }),
+    );
+    const service = new DocumentCollaborationService(
+      repository,
+      new DocumentAccessResolver(),
+      projector,
+      new DocumentSubdocContentService(),
+      createReferenceSyncService(),
+      blockCreationGateService,
+    );
+    const clientDocument = new Yjs.Doc();
+    const synchronized = await service.synchronize(
+      'document-1',
+      user,
+      Yjs.encodeStateVector(clientDocument),
+    );
+    Yjs.applyUpdate(clientDocument, synchronized.update);
+
+    const stateVector = Yjs.encodeStateVector(clientDocument);
+    clientDocument.getText('content').insert(0, 'Updated content');
+    const update = Yjs.encodeStateAsUpdate(clientDocument, stateVector);
+
+    await expect(
+      service.applyUpdate('document-1', user, update),
+    ).rejects.toBeInstanceOf(WorkspaceBlockLimitReachedError);
+
+    expect(blockCreationGateService.assertCanCreateBlocks).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      newBlockCount: 1,
+    });
+    expect(repository.appendUpdate).not.toHaveBeenCalled();
+    expect(repository.saveProjection).not.toHaveBeenCalled();
+  });
+
   it('syncs referenced collaborative documents when the title changes', async () => {
     const repository = createRepository();
     const projector = createProjector();
@@ -176,6 +250,7 @@ describe('DocumentCollaborationService', () => {
       projector,
       new DocumentSubdocContentService(),
       referenceSyncService,
+      createBlockCreationGateService(),
     );
     const clientDocument = new Yjs.Doc();
     const synchronized = await service.synchronize(
@@ -209,6 +284,7 @@ describe('DocumentCollaborationService', () => {
       createProjector(),
       new DocumentSubdocContentService(),
       createReferenceSyncService(),
+      createBlockCreationGateService(),
     );
     const editingDocument = new Yjs.Doc();
     const synchronized = await service.synchronize(
@@ -252,6 +328,7 @@ describe('DocumentCollaborationService', () => {
       projector,
       new DocumentSubdocContentService(),
       createReferenceSyncService(),
+      createBlockCreationGateService(),
     );
 
     await service.synchronize(
@@ -291,6 +368,7 @@ describe('DocumentCollaborationService', () => {
       projector,
       new DocumentSubdocContentService(),
       createReferenceSyncService(),
+      createBlockCreationGateService(),
     );
 
     const synchronized = await service.synchronize(
@@ -319,6 +397,7 @@ describe('DocumentCollaborationService', () => {
       projector,
       new DocumentSubdocContentService(),
       createReferenceSyncService(),
+      createBlockCreationGateService(),
     );
 
     const synchronized = await service.synchronize(
@@ -348,6 +427,7 @@ describe('DocumentCollaborationService', () => {
       createProjector(),
       new DocumentSubdocContentService(),
       createReferenceSyncService(),
+      createBlockCreationGateService(),
     );
 
     await expect(
@@ -373,6 +453,7 @@ describe('DocumentCollaborationService', () => {
       createProjector(),
       new DocumentSubdocContentService(),
       createReferenceSyncService(),
+      createBlockCreationGateService(),
     );
     const clientDocument = new Yjs.Doc();
     const synchronized = await service.synchronize(

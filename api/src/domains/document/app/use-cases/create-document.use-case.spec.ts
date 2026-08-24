@@ -1,5 +1,7 @@
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { UserStatus } from '~/domains/auth/domain/enums/user-status.enum';
+import { WorkspaceBlockLimitReachedError } from '~/domains/subscription/app/errors/subscription-app.error';
+import type { BlockCreationGateService } from '~/domains/subscription/app/services/block-creation-gate.service';
 import type { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.enum';
 import type { DocumentCommandRepository } from '../ports/document-command.repository';
@@ -53,6 +55,12 @@ describe('CreateDocumentUseCase', () => {
     } as unknown as jest.Mocked<SyncDocumentSubdocReferencesUseCase>;
   }
 
+  function createBlockCreationGateService() {
+    return {
+      assertCanCreateBlocks: jest.fn(),
+    } as unknown as jest.Mocked<BlockCreationGateService>;
+  }
+
   it('creates a root document without a parent reference', async () => {
     const workspaceRepository = createWorkspaceRepository();
     const commandRepository = createCommandRepository();
@@ -61,6 +69,7 @@ describe('CreateDocumentUseCase', () => {
     const auditService = {
       record: jest.fn(),
     };
+    const blockCreationGateService = createBlockCreationGateService();
 
     const createdDocument = {
       id: 'doc-1',
@@ -97,6 +106,7 @@ describe('CreateDocumentUseCase', () => {
       commandRepository,
       syncDocumentSubdocReferencesUseCase,
       treeService,
+      blockCreationGateService,
     );
 
     const result = await useCase.execute(currentUser, {
@@ -107,10 +117,49 @@ describe('CreateDocumentUseCase', () => {
       createdDocument,
       { id: 'subdoc-repo' },
     );
+    expect(blockCreationGateService.assertCanCreateBlocks).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      newBlockCount: 1,
+    });
     expect(auditService.record).toHaveBeenCalledWith(expect.objectContaining({
       action: 'document.created',
       resourceId: 'doc-1',
     }));
     expect(result.parentDocumentId).toBeUndefined();
+  });
+
+  it('does not create a document when the workspace block limit is reached', async () => {
+    const workspaceRepository = createWorkspaceRepository();
+    const commandRepository = createCommandRepository();
+    const treeService = createTreeService();
+    const syncDocumentSubdocReferencesUseCase = createSyncDocumentSubdocReferencesUseCase();
+    const auditService = {
+      record: jest.fn(),
+    };
+    const blockCreationGateService = createBlockCreationGateService();
+    blockCreationGateService.assertCanCreateBlocks.mockRejectedValue(
+      new WorkspaceBlockLimitReachedError({
+        plan: 'free',
+        blockCount: 1000,
+        blockLimit: 1000,
+        upgradeAvailable: true,
+      }),
+    );
+
+    const useCase = new CreateDocumentUseCase(
+      auditService as never,
+      workspaceRepository,
+      commandRepository,
+      syncDocumentSubdocReferencesUseCase,
+      treeService,
+      blockCreationGateService,
+    );
+
+    await expect(useCase.execute(currentUser, {
+      workspaceId: 'workspace-1',
+    })).rejects.toBeInstanceOf(WorkspaceBlockLimitReachedError);
+
+    expect(commandRepository.withTransaction).not.toHaveBeenCalled();
+    expect(auditService.record).not.toHaveBeenCalled();
   });
 });

@@ -7,6 +7,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  isWorkspaceBlockLimitReachedAppError,
+  type WorkspaceBlockLimitReachedAppError,
+} from '~/domains/subscription/app/errors/subscription-app.error';
+import {
   ArchivedDocumentDuplicationError,
   DocumentAccessGrantUserNotFoundError,
   DocumentAppError,
@@ -26,11 +30,26 @@ import {
   ParentDocumentWorkspaceMismatchError,
 } from '../../app/errors/document-app.error';
 
-export function isDocumentAppError(error: unknown): error is DocumentAppError {
-  return error instanceof DocumentAppError;
+export function isDocumentAppError(
+  error: unknown,
+): error is DocumentAppError | WorkspaceBlockLimitReachedAppError {
+  return error instanceof DocumentAppError || isWorkspaceBlockLimitReachedAppError(error);
 }
 
-export function mapDocumentAppErrorToHttpException(error: DocumentAppError): HttpException {
+export function mapDocumentAppErrorToHttpException(
+  error: DocumentAppError | WorkspaceBlockLimitReachedAppError,
+): HttpException {
+  if (isWorkspaceBlockLimitReachedAppError(error)) {
+    return new ForbiddenException({
+      message: error.message,
+      code: error.code,
+      plan: error.metadata.plan,
+      block_count: error.metadata.blockCount,
+      block_limit: error.metadata.blockLimit,
+      upgrade_available: error.metadata.upgradeAvailable,
+    });
+  }
+
   if (
     error instanceof DocumentNotFoundError
     || error instanceof DocumentWorkspaceNotFoundError

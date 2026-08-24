@@ -1,6 +1,7 @@
 import { OptimisticLockError } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
+import { BlockCreationGateService } from '~/domains/subscription/app/services/block-creation-gate.service';
 import { AuditService } from '~/integrations/audit/audit.service';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import { DocumentCommandRepository } from '../ports/document-command.repository';
@@ -9,7 +10,7 @@ import { DEFAULT_CONTENT_FORMAT } from '../constants/document.constants';
 import type { CreateSubdocCommandResult } from '../contracts/document.contract';
 import { toDocumentSummary } from '../mappers/document-summary.mapper';
 import { extractDocumentSearchText } from '../utils/document-search-text.util';
-import { normalizeContent } from '../utils/document-content.util';
+import { countContentBlocks, normalizeContent } from '../utils/document-content.util';
 import { DocumentSubdocContentService } from '../services/document-subdoc-content.service';
 import { DocumentTreeService } from '../services/document-tree.service';
 import {
@@ -30,6 +31,7 @@ export class CreateSubdocCommandUseCase {
     private readonly documentSubdocContentService: DocumentSubdocContentService,
     private readonly syncDocumentSubdocReferencesUseCase: SyncDocumentSubdocReferencesUseCase,
     private readonly documentTreeService: DocumentTreeService,
+    private readonly blockCreationGateService: BlockCreationGateService,
   ) {}
 
   async execute(
@@ -105,7 +107,9 @@ export class CreateSubdocCommandUseCase {
 
         const parentContent = input.content !== undefined
           ? normalizeContent(input.content)
-          : transactionalParentDocument.contentJson;
+          : normalizeContent(transactionalParentDocument.contentJson);
+
+        const previousParentBlockCount = countContentBlocks(parentContent);
 
         transactionalParentDocument.contentJson = this.documentSubdocContentService.insertSubdocBlock(
           parentContent,
@@ -113,9 +117,26 @@ export class CreateSubdocCommandUseCase {
           input.anchorBlockId,
           input.slashCommandText,
         );
+
+        const nextParentBlockCount = countContentBlocks(
+          transactionalParentDocument.contentJson,
+        );
+
+        const childBlockCount = countContentBlocks(createdDocument.contentJson);
+
+        const newBlockCount =
+          Math.max(0, nextParentBlockCount - previousParentBlockCount) +
+          childBlockCount;
+
+        await this.blockCreationGateService.assertCanCreateBlocks({
+          workspaceId: workspace.id,
+          newBlockCount,
+        });
+
         transactionalParentDocument.searchText = extractDocumentSearchText(
           transactionalParentDocument.contentJson,
         );
+
         commandRepository.assignUpdatedByUser(
           transactionalParentDocument,
           currentUser.userId,

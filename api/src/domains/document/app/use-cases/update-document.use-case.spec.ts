@@ -1,4 +1,6 @@
 import type { AuditService } from '~/integrations/audit/audit.service';
+import type { BlockCreationGateService } from '~/domains/subscription/app/services/block-creation-gate.service';
+import { WorkspaceBlockLimitReachedError } from '~/domains/subscription/app/errors/subscription-app.error';
 import type { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.enum';
 import {
@@ -69,6 +71,12 @@ describe('UpdateDocumentUseCase collaboration boundary', () => {
     );
   }
 
+  function createBlockCreationGateService() {
+    return {
+      assertCanCreateBlocks: jest.fn(),
+    } as unknown as jest.Mocked<BlockCreationGateService>;
+  }
+
   it('rejects REST content replacement after collaboration state exists', async () => {
     const document = {
       id: 'document-1',
@@ -96,6 +104,7 @@ describe('UpdateDocumentUseCase collaboration boundary', () => {
       createDocumentAccessCapabilityService(workspaceRepository, accessGrantRepository, accessSettingRepository),
       {} as SyncDocumentSubdocReferencesUseCase,
       {} as SyncReferencedSubdocTitlesUseCase,
+      createBlockCreationGateService(),
     );
 
     await expect(useCase.execute('document-1', {
@@ -130,6 +139,7 @@ describe('UpdateDocumentUseCase collaboration boundary', () => {
       createDocumentAccessCapabilityService(workspaceRepository, accessGrantRepository, accessSettingRepository),
       {} as SyncDocumentSubdocReferencesUseCase,
       {} as SyncReferencedSubdocTitlesUseCase,
+      createBlockCreationGateService(),
     );
 
     await expect(useCase.execute('document-1', {
@@ -185,6 +195,7 @@ describe('UpdateDocumentUseCase collaboration boundary', () => {
       createDocumentAccessCapabilityService(workspaceRepository, accessGrantRepository, accessSettingRepository),
       {} as SyncDocumentSubdocReferencesUseCase,
       syncReferencedSubdocTitlesUseCase,
+      createBlockCreationGateService(),
     );
 
     await expect(useCase.execute('document-1', {
@@ -199,5 +210,118 @@ describe('UpdateDocumentUseCase collaboration boundary', () => {
     });
 
     expect(commandRepository.saveDocument).toHaveBeenCalledWith(document);
+  });
+
+  it('checks block growth before REST content replacement is saved', async () => {
+    const document = {
+      id: 'document-1',
+      ownerUser: { id: 'user-1' },
+      title: 'Document',
+      version: 1,
+      workspace: { id: 'workspace-1' },
+      contentFormat: 'blocknote_v1',
+      contentJson: [{
+        id: 'block-1', type: 'paragraph', props: {}, children: [],
+      }],
+      sortKey: 0,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    };
+    const workspaceRepository = createWorkspaceRepository(WorkspaceRole.OWNER);
+    const commandRepository = {
+      assignUpdatedByUser: jest.fn(),
+      findDocument: jest.fn().mockResolvedValue(document),
+      lockDocumentVersion: jest.fn(),
+      saveDocument: jest.fn(),
+    } as unknown as jest.Mocked<DocumentCommandRepository>;
+    const collaborationRepository = {
+      loadState: jest.fn().mockResolvedValue(null),
+    } as unknown as jest.Mocked<DocumentCollaborationRepository>;
+    const blockCreationGateService = createBlockCreationGateService();
+    const syncDocumentSubdocReferencesUseCase = {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<SyncDocumentSubdocReferencesUseCase>;
+    const accessGrantRepository = createAccessGrantRepository();
+    const accessSettingRepository = createAccessSettingRepository();
+    const useCase = new UpdateDocumentUseCase(
+      { record: jest.fn() } as unknown as AuditService,
+      commandRepository,
+      collaborationRepository,
+      createDocumentAccessCapabilityService(workspaceRepository, accessGrantRepository, accessSettingRepository),
+      syncDocumentSubdocReferencesUseCase,
+      {} as SyncReferencedSubdocTitlesUseCase,
+      blockCreationGateService,
+    );
+    const nextContent = [
+      ...document.contentJson,
+      {
+        id: 'block-2', type: 'heading', props: {}, children: [],
+      },
+    ];
+
+    await useCase.execute('document-1', { userId: 'user-1' } as never, {
+      version: 1,
+      content: nextContent,
+    });
+
+    expect(blockCreationGateService.assertCanCreateBlocks).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      newBlockCount: 1,
+    });
+    expect(commandRepository.saveDocument).toHaveBeenCalledWith(document);
+    expect(syncDocumentSubdocReferencesUseCase.execute).toHaveBeenCalledWith(document);
+  });
+
+  it('does not save REST content replacement when block growth is denied', async () => {
+    const document = {
+      id: 'document-1',
+      ownerUser: { id: 'user-1' },
+      workspace: { id: 'workspace-1' },
+      contentJson: [{
+        id: 'block-1', type: 'paragraph', props: {}, children: [],
+      }],
+    };
+    const workspaceRepository = createWorkspaceRepository(WorkspaceRole.OWNER);
+    const commandRepository = {
+      assignUpdatedByUser: jest.fn(),
+      findDocument: jest.fn().mockResolvedValue(document),
+      lockDocumentVersion: jest.fn(),
+      saveDocument: jest.fn(),
+    } as unknown as jest.Mocked<DocumentCommandRepository>;
+    const collaborationRepository = {
+      loadState: jest.fn().mockResolvedValue(null),
+    } as unknown as jest.Mocked<DocumentCollaborationRepository>;
+    const blockCreationGateService = createBlockCreationGateService();
+    blockCreationGateService.assertCanCreateBlocks.mockRejectedValue(
+      new WorkspaceBlockLimitReachedError({
+        plan: 'free',
+        blockCount: 1000,
+        blockLimit: 1000,
+        upgradeAvailable: true,
+      }),
+    );
+    const accessGrantRepository = createAccessGrantRepository();
+    const accessSettingRepository = createAccessSettingRepository();
+    const useCase = new UpdateDocumentUseCase(
+      { record: jest.fn() } as unknown as AuditService,
+      commandRepository,
+      collaborationRepository,
+      createDocumentAccessCapabilityService(workspaceRepository, accessGrantRepository, accessSettingRepository),
+      {} as SyncDocumentSubdocReferencesUseCase,
+      {} as SyncReferencedSubdocTitlesUseCase,
+      blockCreationGateService,
+    );
+
+    await expect(useCase.execute('document-1', { userId: 'user-1' } as never, {
+      version: 1,
+      content: [
+        ...document.contentJson,
+        {
+          id: 'block-2', type: 'paragraph', props: {}, children: [],
+        },
+      ],
+    })).rejects.toBeInstanceOf(WorkspaceBlockLimitReachedError);
+
+    expect(commandRepository.saveDocument).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,6 @@
 import { Scope } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { BlockCreationGateService } from '~/domains/subscription/app/services/block-creation-gate.service';
 import type { AuthenticatedUser } from '../../../auth/app/auth.types';
 import { WsAuthService } from '../../../../platform/ws/ws-auth.service';
 import { DocumentCollaborationProjector } from '../../app/ports/document-collaboration-projector';
@@ -256,6 +257,12 @@ describe('DocumentCollaborationGateway', () => {
         {
           provide: DocumentSubdocContentService,
           useValue: {},
+        },
+        {
+          provide: BlockCreationGateService,
+          useValue: {
+            assertCanCreateBlocks: jest.fn(),
+          },
         },
         {
           provide: DocumentCommandRepository,

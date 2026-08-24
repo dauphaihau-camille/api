@@ -10,6 +10,7 @@ import {
 } from '@nestjs/websockets';
 import type { Server, Socket } from 'socket.io';
 import type { AuthenticatedUser } from '../../../auth/app/auth.types';
+import { WorkspaceBlockLimitReachedError } from '../../../subscription/app/errors/subscription-app.error';
 import { WsAuthService } from '../../../../platform/ws/ws-auth.service';
 import {
   DocumentCollaborationNotFoundError,
@@ -29,7 +30,17 @@ type CollaborationSocketData = {
 
 type CollaborationResponse<T> =
   | { ok: true; data: T }
-  | { ok: false; error: { code: string; message: string } };
+  | {
+    ok: false;
+    error: {
+      blockCount?: number;
+      blockLimit?: number;
+      code: string;
+      message: string;
+      plan?: string;
+      upgradeAvailable?: boolean;
+    }
+  };
 
 type ServerToClientEvents = {
   'collab:awareness': (payload: { documentId: string; update: Buffer }) => void;
@@ -268,6 +279,20 @@ implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   private toErrorResponse(error: unknown): CollaborationResponse<never> {
+    if (error instanceof WorkspaceBlockLimitReachedError) {
+      return {
+        ok: false,
+        error: {
+          code: error.code,
+          message: error.message,
+          plan: error.metadata.plan,
+          blockCount: error.metadata.blockCount,
+          blockLimit: error.metadata.blockLimit,
+          upgradeAvailable: error.metadata.upgradeAvailable,
+        },
+      };
+    }
+
     if (
       error instanceof DocumentCollaborationNotFoundError
       || error instanceof DocumentCollaborationPermissionDeniedError

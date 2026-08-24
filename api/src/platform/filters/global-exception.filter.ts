@@ -26,10 +26,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       throw exception;
     }
 
-    const statusCode =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+    const statusCode = resolveStatusCode(exception);
 
     const responseBody = buildErrorResponse(exception, statusCode, request.url);
     const requestContext = this.requestContextService.get();
@@ -79,7 +76,31 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   }
 }
 
-function buildErrorResponse(
+export function resolveStatusCode(exception: unknown) {
+  if (exception instanceof HttpException) {
+    return exception.getStatus();
+  }
+
+  if (!exception || typeof exception !== 'object') {
+    return HttpStatus.INTERNAL_SERVER_ERROR;
+  }
+
+  const candidate = exception as {
+    status?: unknown;
+    statusCode?: unknown;
+  };
+  const statusCode = typeof candidate.statusCode === 'number'
+    ? candidate.statusCode
+    : candidate.status;
+
+  return typeof statusCode === 'number'
+    && statusCode >= 400
+    && statusCode < 600
+    ? statusCode
+    : HttpStatus.INTERNAL_SERVER_ERROR;
+}
+
+export function buildErrorResponse(
   exception: unknown,
   statusCode: number,
   path: string,
@@ -117,6 +138,7 @@ function buildErrorResponse(
 
     return {
       ...baseResponse,
+      ...responsePayload,
       error:
         typeof responsePayload.error === 'string'
           ? responsePayload.error

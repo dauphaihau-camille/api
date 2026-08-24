@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import type * as Yjs from 'yjs';
+import { BlockCreationGateService } from '~/domains/subscription/app/services/block-creation-gate.service';
 import type { AuthenticatedUser } from '../../../auth/app/auth.types';
 import {
   DocumentCollaborationNotFoundError,
@@ -10,6 +11,7 @@ import {
 import { DocumentCollaborationProjector } from '../ports/document-collaboration-projector';
 import { DocumentCollaborationRepository } from '../ports/document-collaboration.repository';
 import { DocumentAccessResolver } from '../policies/document-access.resolver';
+import { countContentBlocks } from '../utils/document-content.util';
 import { normalizeTitle } from '../utils/document-title.util';
 import { loadYjs } from '../utils/yjs-runtime';
 import { DocumentCollaborationReferenceSyncService } from './document-collaboration-reference-sync.service';
@@ -32,6 +34,7 @@ export class DocumentCollaborationService {
     private readonly projector: DocumentCollaborationProjector,
     private readonly subdocContentService: DocumentSubdocContentService,
     private readonly referenceSyncService: DocumentCollaborationReferenceSyncService,
+    private readonly blockCreationGateService: BlockCreationGateService,
   ) {}
 
   async synchronize(
@@ -130,6 +133,13 @@ export class DocumentCollaborationService {
     }
 
     const projection = await this.projector.project(candidateDocument);
+    const previousBlockCount = countContentBlocks(access.content);
+    const nextBlockCount = countContentBlocks(projection.content);
+
+    await this.blockCreationGateService.assertCanCreateBlocks({
+      workspaceId: access.workspaceId,
+      newBlockCount: Math.max(0, nextBlockCount - previousBlockCount),
+    });
 
     const referencedDocumentIds = Array.from(
       this.subdocContentService.extractTargetDocumentIds(projection.content),

@@ -1,5 +1,7 @@
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { UserStatus } from '~/domains/auth/domain/enums/user-status.enum';
+import type { BlockCreationGateService } from '~/domains/subscription/app/services/block-creation-gate.service';
+import { WorkspaceBlockLimitReachedError } from '~/domains/subscription/app/errors/subscription-app.error';
 import type { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.enum';
 import type { DocumentNavigationQueryRepository } from '../ports/document-navigation-query.repository';
@@ -67,6 +69,12 @@ describe('CreateSubdocCommandUseCase', () => {
     } as unknown as jest.Mocked<SyncDocumentSubdocReferencesUseCase>;
   }
 
+  function createBlockCreationGateService() {
+    return {
+      assertCanCreateBlocks: jest.fn(),
+    } as unknown as jest.Mocked<BlockCreationGateService>;
+  }
+
   it('creates a child document and updates the parent content in one command', async () => {
     const workspaceRepository = createWorkspaceRepository();
     const navigationQueryRepository = createNavigationQueryRepository();
@@ -74,6 +82,7 @@ describe('CreateSubdocCommandUseCase', () => {
     const treeService = createTreeService();
     const subdocContentService = createSubdocContentService();
     const syncDocumentSubdocReferencesUseCase = createSyncDocumentSubdocReferencesUseCase();
+    const blockCreationGateService = createBlockCreationGateService();
     const auditService = {
       record: jest.fn(),
     };
@@ -166,6 +175,7 @@ describe('CreateSubdocCommandUseCase', () => {
       subdocContentService,
       syncDocumentSubdocReferencesUseCase,
       treeService,
+      blockCreationGateService,
     );
 
     const result = await useCase.execute(currentUser, 'parent-1', {
@@ -181,6 +191,10 @@ describe('CreateSubdocCommandUseCase', () => {
       'anchor-block-1',
       '/doc',
     );
+    expect(blockCreationGateService.assertCanCreateBlocks).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      newBlockCount: 1,
+    });
     expect(parentDocument.contentJson).toEqual(nextParentContent);
     expect(parentDocument.updatedBy).toEqual({ id: currentUser.userId });
     expect(syncDocumentSubdocReferencesUseCase.execute).toHaveBeenNthCalledWith(
@@ -202,5 +216,191 @@ describe('CreateSubdocCommandUseCase', () => {
     }));
     expect(result.parentDocument.id).toBe('parent-1');
     expect(result.childDocument.id).toBe('child-1');
+  });
+
+  it('does not create the child document when subdoc placement would exceed the block limit', async () => {
+    const workspaceRepository = createWorkspaceRepository();
+    const navigationQueryRepository = createNavigationQueryRepository();
+    const commandRepository = createCommandRepository();
+    const treeService = createTreeService();
+    const subdocContentService = createSubdocContentService();
+    const syncDocumentSubdocReferencesUseCase = createSyncDocumentSubdocReferencesUseCase();
+    const blockCreationGateService = createBlockCreationGateService();
+    const saveDocuments = jest.fn();
+    const auditService = {
+      record: jest.fn(),
+    };
+
+    const parentDocument = {
+      id: 'parent-1',
+      workspace: { id: 'workspace-1' },
+      teamspace: undefined,
+      contentJson: [{
+        id: 'anchor', type: 'paragraph', props: {}, children: [],
+      }],
+    };
+    const childDocument = {
+      id: 'child-1',
+      publicId: 'public-child-1',
+      version: 1,
+      workspace: { id: 'workspace-1' },
+      teamspace: undefined,
+      parentDocument: { id: 'parent-1' },
+      title: 'Untitled',
+      contentFormat: 'blocknote_v1',
+      contentJson: DEFAULT_DOCUMENT_CONTENT,
+      searchText: '',
+      sortKey: 17,
+      createdBy: { id: 'user-1' },
+      ownerUser: { id: 'user-1' },
+      updatedBy: { id: 'user-1' },
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    };
+    const nextParentContent = [
+      ...parentDocument.contentJson,
+      {
+        id: 'subdoc', type: 'subdoc', props: {}, children: [],
+      },
+    ];
+
+    navigationQueryRepository.findDocument.mockResolvedValue(parentDocument as never);
+    subdocContentService.insertSubdocBlock.mockReturnValue(nextParentContent);
+    blockCreationGateService.assertCanCreateBlocks.mockRejectedValue(
+      new WorkspaceBlockLimitReachedError({
+        plan: 'free',
+        blockCount: 1000,
+        blockLimit: 1000,
+        upgradeAvailable: true,
+      }),
+    );
+    commandRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({
+        commandRepository: {
+          findDocument: jest.fn().mockResolvedValue(parentDocument),
+          lockDocumentVersion: jest.fn(),
+          createDocument: jest.fn().mockReturnValue(childDocument),
+          assignUpdatedByUser: jest.fn(),
+          saveDocuments,
+          flush: jest.fn(),
+        },
+        subdocReferenceRepository: { id: 'subdoc-repo' },
+      } as never));
+
+    const useCase = new CreateSubdocCommandUseCase(
+      auditService as never,
+      workspaceRepository,
+      commandRepository,
+      navigationQueryRepository,
+      subdocContentService,
+      syncDocumentSubdocReferencesUseCase,
+      treeService,
+      blockCreationGateService,
+    );
+
+    await expect(useCase.execute(currentUser, 'parent-1')).rejects.toBeInstanceOf(
+      WorkspaceBlockLimitReachedError,
+    );
+
+    expect(saveDocuments).not.toHaveBeenCalled();
+    expect(auditService.record).not.toHaveBeenCalled();
+  });
+
+  it('normalizes missing persisted parent content before checking the block limit', async () => {
+    const workspaceRepository = createWorkspaceRepository();
+    const navigationQueryRepository = createNavigationQueryRepository();
+    const commandRepository = createCommandRepository();
+    const treeService = createTreeService();
+    const subdocContentService = createSubdocContentService();
+    const syncDocumentSubdocReferencesUseCase = createSyncDocumentSubdocReferencesUseCase();
+    const blockCreationGateService = createBlockCreationGateService();
+    const saveDocuments = jest.fn();
+    const auditService = {
+      record: jest.fn(),
+    };
+
+    const parentDocument = {
+      id: 'parent-1',
+      workspace: { id: 'workspace-1' },
+      teamspace: undefined,
+      contentJson: null,
+    };
+    const childDocument = {
+      id: 'child-1',
+      publicId: 'public-child-1',
+      version: 1,
+      workspace: { id: 'workspace-1' },
+      teamspace: undefined,
+      parentDocument: { id: 'parent-1' },
+      title: 'Untitled',
+      contentFormat: 'blocknote_v1',
+      contentJson: DEFAULT_DOCUMENT_CONTENT,
+      searchText: '',
+      sortKey: 17,
+      createdBy: { id: 'user-1' },
+      ownerUser: { id: 'user-1' },
+      updatedBy: { id: 'user-1' },
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    };
+    const nextParentContent = [
+      ...DEFAULT_DOCUMENT_CONTENT,
+      {
+        id: 'subdoc',
+        type: 'subdoc',
+        props: {},
+        children: [],
+      },
+    ];
+
+    navigationQueryRepository.findDocument.mockResolvedValue(parentDocument as never);
+    subdocContentService.insertSubdocBlock.mockReturnValue(nextParentContent);
+    blockCreationGateService.assertCanCreateBlocks.mockRejectedValue(
+      new WorkspaceBlockLimitReachedError({
+        plan: 'free',
+        blockCount: 1000,
+        blockLimit: 1000,
+        upgradeAvailable: true,
+      }),
+    );
+    commandRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({
+        commandRepository: {
+          findDocument: jest.fn().mockResolvedValue(parentDocument),
+          lockDocumentVersion: jest.fn(),
+          createDocument: jest.fn().mockReturnValue(childDocument),
+          assignUpdatedByUser: jest.fn(),
+          saveDocuments,
+          flush: jest.fn(),
+        },
+        subdocReferenceRepository: { id: 'subdoc-repo' },
+      } as never));
+
+    const useCase = new CreateSubdocCommandUseCase(
+      auditService as never,
+      workspaceRepository,
+      commandRepository,
+      navigationQueryRepository,
+      subdocContentService,
+      syncDocumentSubdocReferencesUseCase,
+      treeService,
+      blockCreationGateService,
+    );
+
+    await expect(useCase.execute(currentUser, 'parent-1')).rejects.toBeInstanceOf(
+      WorkspaceBlockLimitReachedError,
+    );
+
+    expect(subdocContentService.insertSubdocBlock).toHaveBeenCalledWith(
+      DEFAULT_DOCUMENT_CONTENT,
+      childDocument,
+      undefined,
+      undefined,
+    );
+    expect(blockCreationGateService.assertCanCreateBlocks).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      newBlockCount: 2,
+    });
+    expect(saveDocuments).not.toHaveBeenCalled();
   });
 });

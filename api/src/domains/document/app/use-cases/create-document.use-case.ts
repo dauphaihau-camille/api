@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
+import { BlockCreationGateService } from '~/domains/subscription/app/services/block-creation-gate.service';
 import { AuditService } from '~/integrations/audit/audit.service';
 import { WorkspaceRepository } from '../../../workspace/app/ports/workspace.repository';
 import { DocumentCommandRepository } from '../ports/document-command.repository';
@@ -11,7 +12,7 @@ import { extractDocumentSearchText } from '../utils/document-search-text.util';
 import { DocumentTreeService } from '../services/document-tree.service';
 import { DocumentTeamspaceNotFoundError } from '../errors/document-app.error';
 import { resolveWorkspaceForUser } from '../policies/resolve-workspace-for-user';
-import { normalizeContent } from '../utils/document-content.util';
+import { countContentBlocks, normalizeContent } from '../utils/document-content.util';
 import { normalizeTitle } from '../utils/document-title.util';
 import { SyncDocumentSubdocReferencesUseCase } from './sync-document-subdoc-references.use-case';
 
@@ -23,6 +24,7 @@ export class CreateDocumentUseCase {
     private readonly documentCommandRepository: DocumentCommandRepository,
     private readonly syncDocumentSubdocReferencesUseCase: SyncDocumentSubdocReferencesUseCase,
     private readonly documentTreeService: DocumentTreeService,
+    private readonly blockCreationGateService: BlockCreationGateService,
   ) {}
 
   async execute(
@@ -40,6 +42,11 @@ export class CreateDocumentUseCase {
     }
 
     const normalizedContent = normalizeContent(input.content);
+
+    await this.blockCreationGateService.assertCanCreateBlocks({
+      workspaceId: workspace.id,
+      newBlockCount: countContentBlocks(normalizedContent),
+    });
 
     const document = await this.documentCommandRepository.withTransaction(async ({
       commandRepository,

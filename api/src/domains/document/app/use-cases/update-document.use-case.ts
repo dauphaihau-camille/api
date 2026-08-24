@@ -1,6 +1,7 @@
 import { OptimisticLockError } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
+import { BlockCreationGateService } from '~/domains/subscription/app/services/block-creation-gate.service';
 import { AuditService } from '~/integrations/audit/audit.service';
 import type { DocumentSummary } from '../contracts/document.contract';
 import type { UpdateDocumentInput } from '../contracts/document.input';
@@ -14,7 +15,7 @@ import {
   DocumentVersionConflictError,
 } from '../errors/document-app.error';
 import { DocumentAccessCapabilityService } from '../services/document-access-capability.service';
-import { normalizeContent } from '../utils/document-content.util';
+import { countContentBlocks, normalizeContent } from '../utils/document-content.util';
 import { normalizeTitle } from '../utils/document-title.util';
 import { SyncDocumentSubdocReferencesUseCase } from './sync-document-subdoc-references.use-case';
 import { SyncReferencedSubdocTitlesUseCase } from './sync-referenced-subdoc-titles.use-case';
@@ -28,6 +29,7 @@ export class UpdateDocumentUseCase {
     private readonly documentAccessCapabilityService: DocumentAccessCapabilityService,
     private readonly syncDocumentSubdocReferencesUseCase: SyncDocumentSubdocReferencesUseCase,
     private readonly syncReferencedSubdocTitlesUseCase: SyncReferencedSubdocTitlesUseCase,
+    private readonly blockCreationGateService: BlockCreationGateService,
   ) {}
 
   async execute(
@@ -68,7 +70,16 @@ export class UpdateDocumentUseCase {
     }
 
     if (input.content !== undefined) {
-      document.contentJson = normalizeContent(input.content);
+      const previousBlockCount = countContentBlocks(document.contentJson);
+      const nextContent = normalizeContent(input.content);
+      const nextBlockCount = countContentBlocks(nextContent);
+
+      await this.blockCreationGateService.assertCanCreateBlocks({
+        workspaceId: workspace.id,
+        newBlockCount: Math.max(0, nextBlockCount - previousBlockCount),
+      });
+
+      document.contentJson = nextContent;
       document.searchText = extractDocumentSearchText(document.contentJson);
     }
 
