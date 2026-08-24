@@ -1,5 +1,6 @@
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { UserStatus } from '~/domains/auth/domain/enums/user-status.enum';
+import type { SeatSyncService } from '~/domains/subscription/app/services/seat-sync.service';
 import type { AuditService } from '~/integrations/audit/audit.service';
 import type { WorkspaceMemberSummary } from '../../../workspace/app/contracts/workspace.contract';
 import { WorkspaceRole } from '../../../workspace/domain/enums/workspace-role.enum';
@@ -12,6 +13,7 @@ import type { MembershipRepository } from '../ports/membership.repository';
 import { MembershipRepositoryVersionConflictError } from '../ports/membership.repository';
 import { MembershipOwnerGuardService } from '../services/membership-owner-guard.service';
 import { AddWorkspaceMemberUseCase } from './add-workspace-member.use-case';
+import { RemoveWorkspaceMemberUseCase } from './remove-workspace-member.use-case';
 import { UpdateWorkspaceMemberUseCase } from './update-workspace-member.use-case';
 
 describe('Membership use cases', () => {
@@ -54,6 +56,12 @@ describe('Membership use cases', () => {
     } as unknown as jest.Mocked<AuditService>;
   }
 
+  function createSeatSyncService() {
+    return {
+      syncWorkspaceSeats: jest.fn(),
+    } as unknown as jest.Mocked<SeatSyncService>;
+  }
+
   function memberSummary(overrides: Partial<WorkspaceMemberSummary> = {}): WorkspaceMemberSummary {
     return {
       id: 'member-1',
@@ -71,13 +79,18 @@ describe('Membership use cases', () => {
   it('rejects duplicate workspace members before add', async () => {
     const membershipRepository = createMembershipRepository();
     const auditService = createAuditService();
+    const seatSyncService = createSeatSyncService();
     membershipRepository.findUserByEmail.mockResolvedValue({
       id: 'user-2',
       email: 'member@example.com',
     });
     membershipRepository.findMembers.mockResolvedValue([memberSummary()]);
 
-    const useCase = new AddWorkspaceMemberUseCase(membershipRepository, auditService);
+    const useCase = new AddWorkspaceMemberUseCase(
+      membershipRepository,
+      auditService,
+      seatSyncService,
+    );
 
     await expect(useCase.execute('workspace-1', currentUser, {
       email: 'member@example.com',
@@ -103,6 +116,50 @@ describe('Membership use cases', () => {
       version: 1,
       role: WorkspaceRole.ADMIN,
     })).rejects.toBeInstanceOf(MembershipVersionConflictError);
+  });
+
+  it('syncs seats after adding a workspace member', async () => {
+    const membershipRepository = createMembershipRepository();
+    const auditService = createAuditService();
+    const seatSyncService = createSeatSyncService();
+    membershipRepository.findUserByEmail.mockResolvedValue({
+      id: 'user-2',
+      email: 'member@example.com',
+    });
+    membershipRepository.findMembers.mockResolvedValue([]);
+    membershipRepository.addMember.mockResolvedValue(memberSummary());
+
+    const useCase = new AddWorkspaceMemberUseCase(
+      membershipRepository,
+      auditService,
+      seatSyncService,
+    );
+
+    await useCase.execute('workspace-1', currentUser, {
+      email: 'member@example.com',
+      role: WorkspaceRole.MEMBER,
+    });
+
+    expect(seatSyncService.syncWorkspaceSeats).toHaveBeenCalledWith('workspace-1');
+  });
+
+  it('syncs seats after removing a workspace member', async () => {
+    const membershipRepository = createMembershipRepository();
+    const auditService = createAuditService();
+    const seatSyncService = createSeatSyncService();
+    membershipRepository.findMemberById.mockResolvedValue(memberSummary());
+    membershipRepository.removeMember.mockResolvedValue(memberSummary());
+
+    const useCase = new RemoveWorkspaceMemberUseCase(
+      membershipRepository,
+      new MembershipOwnerGuardService(membershipRepository),
+      auditService,
+      seatSyncService,
+    );
+
+    await useCase.execute('workspace-1', 'member-1', currentUser);
+
+    expect(seatSyncService.syncWorkspaceSeats).toHaveBeenCalledWith('workspace-1');
   });
 
   it('prevents removing the last owner role from a workspace', async () => {

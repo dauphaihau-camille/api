@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuditModule } from '../../integrations/audit/audit.module';
+import { SubscriptionModule } from '../subscription/subscription.module';
 import { WorkspaceModule } from '../workspace/workspace.module';
 import { MembershipController } from './api/rest/membership.controller';
 import { MembershipRepository } from './app/ports/membership.repository';
@@ -12,7 +13,7 @@ import { UpdateWorkspaceMemberUseCase } from './app/use-cases/update-workspace-m
 import { WorkspaceMembershipRepository } from './infra/workspace-membership.repository';
 
 @Module({
-  imports: [WorkspaceModule, AuditModule],
+  imports: [WorkspaceModule, AuditModule, SubscriptionModule],
   controllers: [MembershipController],
   providers: [
     {

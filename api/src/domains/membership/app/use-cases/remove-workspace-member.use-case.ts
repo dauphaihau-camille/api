@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
+import { SeatSyncService } from '~/domains/subscription/app/services/seat-sync.service';
 import { AuditService } from '~/integrations/audit/audit.service';
 import {
   assertWorkspaceMemberManager,
@@ -18,6 +19,7 @@ export class RemoveWorkspaceMemberUseCase {
     private readonly membershipRepository: MembershipRepository,
     private readonly membershipOwnerGuardService: MembershipOwnerGuardService,
     private readonly auditService: AuditService,
+    private readonly seatSyncService: SeatSyncService,
   ) {}
 
   async execute(
@@ -59,6 +61,7 @@ export class RemoveWorkspaceMemberUseCase {
         role: removedMember.role,
       },
     });
+    await this.seatSyncService.syncWorkspaceSeats(workspace.id);
 
     return removedMember;
   }

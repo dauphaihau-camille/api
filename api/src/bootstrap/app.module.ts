@@ -18,6 +18,7 @@ import { FavoriteModule } from '../domains/favorite/favorite.module';
 import { MembershipModule } from '../domains/membership/membership.module';
 import { PublishModule } from '../domains/publish/publish.module';
 import { SearchModule } from '../domains/search/search.module';
+import { SubscriptionModule } from '../domains/subscription/subscription.module';
 import { TeamspaceModule } from '../domains/teamspace/teamspace.module';
 import { UserModule } from '../domains/user/user.module';
 import { WorkspaceModule } from '../domains/workspace/workspace.module';
@@ -76,6 +77,7 @@ import { AppJobRunnerModule } from './app-job-runner.module';
     WorkspaceModule,
     WorkspacePreferenceModule,
     MembershipModule,
+    SubscriptionModule,
     TeamspaceModule,
     DocumentModule,
     FavoriteModule,

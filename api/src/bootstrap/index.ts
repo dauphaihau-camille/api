@@ -47,6 +47,7 @@ async function bootstrap() {
 
   app.enableShutdownHooks();
   app.use(express.json({
+    limit: appRuntimeConfig.requestBodyLimit,
     verify: (req, _res, buffer) => {
       (req as express.Request & { rawBody?: Buffer }).rawBody = Buffer.from(buffer);
     },
