@@ -24,6 +24,21 @@ describe('validateAppEnv', () => {
     expect(env.DB_POOL_CONNECTION_TIMEOUT_MS).toBe('5000');
   });
 
+  it('defaults the request body limit for document command payloads', () => {
+    const env = validateAppEnv(validEnv);
+
+    expect(env.REQUEST_BODY_LIMIT).toBe('5mb');
+  });
+
+  it('accepts an explicit request body limit', () => {
+    const env = validateAppEnv({
+      ...validEnv,
+      REQUEST_BODY_LIMIT: '10mb',
+    });
+
+    expect(env.REQUEST_BODY_LIMIT).toBe('10mb');
+  });
+
   it('rejects a PostgreSQL pool minimum larger than the maximum', () => {
     expect(() =>
       validateAppEnv({

@@ -6,6 +6,7 @@ import {
 } from '~/platform/config/payment.config';
 import { PaymentProvider } from './app/ports/payment-provider';
 import { NoopPaymentProvider } from './infra/noop-payment-provider';
+import { StripePaymentProvider } from './infra/stripe-payment-provider';
 
 @Module({
   imports: [ConfigModule],
@@ -20,7 +21,9 @@ import { NoopPaymentProvider } from './infra/noop-payment-provider';
       provide: PaymentProvider,
       inject: [PAYMENT_CONFIG],
       useFactory: (paymentConfig: ReturnType<typeof buildPaymentConfig>) =>
-        new NoopPaymentProvider(paymentConfig),
+        paymentConfig.driver === 'stripe'
+          ? new StripePaymentProvider(paymentConfig)
+          : new NoopPaymentProvider(paymentConfig),
     },
   ],
   exports: [PAYMENT_CONFIG, PaymentProvider],

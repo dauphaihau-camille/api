@@ -49,6 +49,7 @@ const appEnvBaseSchema = z.object({
     .enum(['development', 'test', 'production'])
     .default('development'),
   TRUST_PROXY: z.enum(['true', 'false']).default('false'),
+  REQUEST_BODY_LIMIT: z.string().trim().min(1).default('5mb'),
   CORS_ALLOWED_ORIGINS: z
     .string()
     .trim()
@@ -102,10 +103,14 @@ const appEnvBaseSchema = z.object({
   GITHUB_OAUTH_CLIENT_SECRET: optionalTrimmedString(),
   AI_DEFAULT_TEXT_MODEL: z.string().trim().min(1).default('general-text'),
   AI_DEFAULT_EMBEDDING_MODEL: z.string().trim().min(1).default('text-embedding'),
+  PAYMENT_DRIVER: z.enum(['noop', 'stripe']).default('noop'),
   PAYMENT_PUBLIC_BASE_URL: optionalUrlString(),
   PAYMENT_WEBHOOK_SECRET: optionalTrimmedString(),
   PAYMENT_SUCCESS_PATH: z.string().trim().min(1).default('/payments/success'),
   PAYMENT_CANCEL_PATH: z.string().trim().min(1).default('/payments/cancel'),
+  STRIPE_SECRET_KEY: optionalTrimmedString(),
+  STRIPE_WEBHOOK_SECRET: optionalTrimmedString(),
+  STRIPE_PLUS_PRICE_ID: optionalTrimmedString(),
   METRICS_BEARER_TOKEN: optionalTrimmedString(),
   OTEL_ENABLED: z.enum(['true', 'false']).default('true'),
   OTEL_SERVICE_NAME: z.string().trim().min(1).default('camille-api'),
@@ -182,6 +187,33 @@ const appEnvSchema = appEnvBaseSchema.superRefine((env, context) => {
       message:
         'Expected MAIL_DEFAULT_FROM_EMAIL to use a verified sender domain when MAIL_DRIVER is resend.',
     });
+  }
+
+  if (env.PAYMENT_DRIVER === 'stripe') {
+    const requiredPaymentFields = [
+      'PAYMENT_PUBLIC_BASE_URL',
+      'STRIPE_SECRET_KEY',
+      'STRIPE_PLUS_PRICE_ID',
+    ] as const;
+
+    for (const field of requiredPaymentFields) {
+      if (!env[field]) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [field],
+          message: `Expected ${field} when PAYMENT_DRIVER is stripe.`,
+        });
+      }
+    }
+
+    if (!env.STRIPE_WEBHOOK_SECRET && !env.PAYMENT_WEBHOOK_SECRET) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['STRIPE_WEBHOOK_SECRET'],
+        message:
+          'Expected STRIPE_WEBHOOK_SECRET or PAYMENT_WEBHOOK_SECRET when PAYMENT_DRIVER is stripe.',
+      });
+    }
   }
 
   if (env.STORAGE_DRIVER === 'minio') {
