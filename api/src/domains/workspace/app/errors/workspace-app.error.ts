@@ -30,6 +30,12 @@ export class WorkspaceOwnerPermissionDeniedError extends WorkspaceAppError {
   }
 }
 
+export class WorkspaceDeletePermissionDeniedError extends WorkspaceAppError {
+  constructor() {
+    super('Only workspace owners can delete this workspace.');
+  }
+}
+
 export class WorkspaceSlugLengthError extends WorkspaceAppError {
   constructor() {
     super('Workspace domain must be 3 to 32 characters.');

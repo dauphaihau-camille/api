@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import {
   WorkspaceAppError,
+  WorkspaceDeletePermissionDeniedError,
   WorkspaceMemberManagerPermissionDeniedError,
   WorkspaceNotFoundError,
   WorkspaceOwnerPermissionDeniedError,
@@ -31,6 +32,7 @@ export function mapWorkspaceAppErrorToHttpException(error: WorkspaceAppError): H
     error instanceof WorkspacePermissionDeniedError
     || error instanceof WorkspaceMemberManagerPermissionDeniedError
     || error instanceof WorkspaceOwnerPermissionDeniedError
+    || error instanceof WorkspaceDeletePermissionDeniedError
   ) {
     return new ForbiddenException(error.message);
   }

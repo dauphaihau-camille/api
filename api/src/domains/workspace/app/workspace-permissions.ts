@@ -1,5 +1,6 @@
 import { WorkspaceRole } from '../domain/enums/workspace-role.enum';
 import {
+  WorkspaceDeletePermissionDeniedError,
   WorkspaceMemberManagerPermissionDeniedError,
   WorkspaceOwnerPermissionDeniedError,
   WorkspacePermissionDeniedError,
@@ -14,6 +15,10 @@ export function canManageMembers(role: WorkspaceRole): boolean {
 }
 
 export function canManageOwnerAssignments(role: WorkspaceRole): boolean {
+  return role === WorkspaceRole.OWNER;
+}
+
+export function canDeleteWorkspace(role: WorkspaceRole): boolean {
   return role === WorkspaceRole.OWNER;
 }
 
@@ -32,5 +37,11 @@ export function assertWorkspaceMemberManager(role: WorkspaceRole): void {
 export function assertWorkspaceOwner(role: WorkspaceRole): void {
   if (!canManageOwnerAssignments(role)) {
     throw new WorkspaceOwnerPermissionDeniedError();
+  }
+}
+
+export function assertWorkspaceDeletion(role: WorkspaceRole): void {
+  if (!canDeleteWorkspace(role)) {
+    throw new WorkspaceDeletePermissionDeniedError();
   }
 }

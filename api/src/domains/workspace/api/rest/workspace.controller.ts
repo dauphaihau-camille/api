@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Header,
+  HttpCode,
   Param,
   Patch,
   Post,
@@ -11,6 +13,7 @@ import {
 import {
   ApiCookieAuth,
   ApiCreatedResponse,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -20,6 +23,7 @@ import type { AuthenticatedUser } from '../../../auth/app/auth.types';
 import { JwtAuthGuard } from '../../../auth/api/guard/jwt-auth.guard';
 import { PermissionsGuard } from '../../../auth/api/guard/permissions.guard';
 import { CreateWorkspaceUseCase } from '../../app/use-cases/create-workspace.use-case';
+import { DeleteWorkspaceUseCase } from '../../app/use-cases/delete-workspace.use-case';
 import { GetWorkspaceUseCase } from '../../app/use-cases/get-workspace.use-case';
 import { ListUserWorkspacesUseCase } from '../../app/use-cases/list-user-workspaces.use-case';
 import { UpdateWorkspaceUseCase } from '../../app/use-cases/update-workspace.use-case';
@@ -41,6 +45,7 @@ export class WorkspaceController {
     private readonly createWorkspaceUseCase: CreateWorkspaceUseCase,
     private readonly getWorkspaceUseCase: GetWorkspaceUseCase,
     private readonly updateWorkspaceUseCase: UpdateWorkspaceUseCase,
+    private readonly deleteWorkspaceUseCase: DeleteWorkspaceUseCase,
   ) {}
 
   @Get('me/workspaces')
@@ -122,6 +127,22 @@ export class WorkspaceController {
         description: body.description,
       })
       .then(WorkspaceResponseDto.fromWorkspace)
+      .catch(this.rethrowWorkspaceAppError);
+  }
+
+  @Delete('workspaces/:workspaceId')
+  @HttpCode(204)
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    summary: 'Delete workspace',
+  })
+  @ApiNoContentResponse()
+  deleteWorkspace(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ): Promise<void> {
+    return this.deleteWorkspaceUseCase
+      .execute(workspaceId, currentUser)
       .catch(this.rethrowWorkspaceAppError);
   }
 

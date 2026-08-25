@@ -8,6 +8,7 @@ import { MikroOrmWorkspaceRepository } from './infra/mikro-orm-workspace.reposit
 import { WorkspaceRepository } from './app/ports/workspace.repository';
 import { WorkspaceProvisioningService } from './app/services/workspace-provisioning.service';
 import { CreateWorkspaceUseCase } from './app/use-cases/create-workspace.use-case';
+import { DeleteWorkspaceUseCase } from './app/use-cases/delete-workspace.use-case';
 import { GetWorkspaceUseCase } from './app/use-cases/get-workspace.use-case';
 import { ListUserWorkspacesUseCase } from './app/use-cases/list-user-workspaces.use-case';
 import { UpdateWorkspaceUseCase } from './app/use-cases/update-workspace.use-case';
@@ -33,6 +34,7 @@ import { WorkspaceMemberEntity } from './infra/persistence/entities/workspace-me
     GetWorkspaceUseCase,
     CreateWorkspaceUseCase,
     UpdateWorkspaceUseCase,
+    DeleteWorkspaceUseCase,
     {
       provide: WorkspaceRepository,
       useClass: MikroOrmWorkspaceRepository,

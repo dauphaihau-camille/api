@@ -161,6 +161,20 @@ export class MikroOrmWorkspaceRepository implements WorkspaceRepository {
     }
   }
 
+  async deleteWorkspace(workspaceId: string): Promise<boolean> {
+    const entityManager = this.entityManager.fork();
+    const workspaceRepository = entityManager.getRepository(WorkspaceEntity);
+    const workspace = await workspaceRepository.findOne({ id: workspaceId });
+
+    if (!workspace) {
+      return false;
+    }
+
+    await entityManager.remove(workspace).flush();
+
+    return true;
+  }
+
   async findMembers(workspaceId: string): Promise<WorkspaceMemberSummary[]> {
     const memberships = await this.entityManager.fork().find(
       WorkspaceMemberEntity,

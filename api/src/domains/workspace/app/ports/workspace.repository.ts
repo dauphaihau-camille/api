@@ -51,6 +51,8 @@ export abstract class WorkspaceRepository {
     description?: string;
   }): Promise<WorkspaceSummary | null>;
 
+  abstract deleteWorkspace(workspaceId: string): Promise<boolean>;
+
   abstract findMembers(workspaceId: string): Promise<WorkspaceMemberSummary[]>;
 
   abstract searchMembers(input: {
