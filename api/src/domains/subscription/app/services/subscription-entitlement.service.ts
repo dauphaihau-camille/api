@@ -10,7 +10,10 @@ export class SubscriptionEntitlementService {
     plan: SubscriptionPlan;
     seatCount: number;
   }): SubscriptionEntitlements {
-    if (input.plan === SubscriptionPlan.PLUS) {
+    if (
+      input.plan === SubscriptionPlan.PLUS
+      || input.plan === SubscriptionPlan.BUSINESS
+    ) {
       return { maxBlocks: null };
     }
 

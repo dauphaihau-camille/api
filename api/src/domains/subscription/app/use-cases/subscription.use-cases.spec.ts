@@ -108,6 +108,15 @@ describe('Subscription use cases', () => {
     })).toEqual({ maxBlocks: null });
   });
 
+  it('keeps Business workspaces unlimited', async () => {
+    const entitlementService = new SubscriptionEntitlementService();
+
+    expect(entitlementService.resolveEntitlements({
+      plan: SubscriptionPlan.BUSINESS,
+      seatCount: 25,
+    })).toEqual({ maxBlocks: null });
+  });
+
   it('blocks creating content when a collaborative Free workspace would exceed its block limit', async () => {
     const subscriptionRepository = createSubscriptionRepository();
     subscriptionRepository.countWorkspaceBlocks.mockResolvedValue(1000);
