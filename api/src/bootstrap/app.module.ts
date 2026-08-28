@@ -12,6 +12,7 @@ import {
 } from '../platform/config/app-runtime.config';
 import { validateAppEnv } from '../platform/config/app-env.config';
 import { buildDatabaseConfig } from '../platform/config/database.config';
+import { AiAssistanceModule } from '../domains/ai-assistance/ai-assistance.module';
 import { AuthModule } from '../domains/auth/auth.module';
 import { DocumentModule } from '../domains/document/document.module';
 import { FavoriteModule } from '../domains/favorite/favorite.module';
@@ -72,6 +73,7 @@ import { AppJobRunnerModule } from './app-job-runner.module';
     SseModule,
 
     // ----- domains
+    AiAssistanceModule,
     AuthModule,
     UserModule,
     WorkspaceModule,
