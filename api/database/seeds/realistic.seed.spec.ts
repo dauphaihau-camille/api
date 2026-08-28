@@ -87,7 +87,7 @@ describe('realistic seed content builders', () => {
     });
   });
 
-  it('builds deterministic Stripe-shaped Plus subscription seed data', () => {
+  it('builds deterministic Stripe-shaped Plus subscription demo data', () => {
     const seed = buildRealisticSubscriptionSeed({
       workspaceKey: 'acme-product',
       workspaceName: 'Camille AI',
@@ -102,11 +102,11 @@ describe('realistic seed content builders', () => {
       status: SubscriptionStatus.ACTIVE,
       cancelAtPeriodEnd: false,
       provider: 'stripe',
-      providerPriceId: 'price_seed_plus_monthly',
+      providerPriceId: 'price_demo_plus_monthly',
       providerStatus: 'active',
     });
-    expect(seed.providerCustomerId).toMatch(/^cus_seed_/);
-    expect(seed.providerSubscriptionId).toMatch(/^sub_seed_/);
+    expect(seed.providerCustomerId).toMatch(/^cus_demo_/);
+    expect(seed.providerSubscriptionId).toMatch(/^sub_demo_/);
   });
 
   it('uses replica subscription states for cancellation and past-due demos', () => {

@@ -1,6 +1,10 @@
 import 'reflect-metadata';
 import { MikroORM } from '@mikro-orm/postgresql';
 import { buildDatabaseConfig } from '../src/platform/config/database.config';
+import { AiChatTurnEntity } from '../src/domains/ai-assistance/infra/persistence/entities/ai-chat-turn.entity';
+import { AiConversationSessionEntity } from '../src/domains/ai-assistance/infra/persistence/entities/ai-conversation-session.entity';
+import { AiDocumentAttachmentEntity } from '../src/domains/ai-assistance/infra/persistence/entities/ai-document-attachment.entity';
+import { AiResponseReservationEntity } from '../src/domains/ai-assistance/infra/persistence/entities/ai-response-reservation.entity';
 import { CurrentUserCredentialEntity } from '../src/domains/auth/infra/persistence/entities/current-user-credential.entity';
 import { CurrentUserEntity } from '../src/domains/auth/infra/persistence/entities/current-user.entity';
 import { EmailVerificationTokenEntity } from '../src/domains/auth/infra/persistence/entities/email-verification-token.entity';
@@ -39,6 +43,10 @@ async function main() {
   const orm = await MikroORM.init({
     ...buildDatabaseConfig(process.env, { debug: false }),
     entities: [
+      AiConversationSessionEntity,
+      AiChatTurnEntity,
+      AiDocumentAttachmentEntity,
+      AiResponseReservationEntity,
       CurrentUserEntity,
       CurrentUserCredentialEntity,
       UserSessionEntity,

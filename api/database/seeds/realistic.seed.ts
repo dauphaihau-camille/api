@@ -27,6 +27,8 @@ import { WorkspaceEntity } from '../../src/domains/workspace/infra/persistence/e
 import { WorkspaceMemberEntity } from '../../src/domains/workspace/infra/persistence/entities/workspace-member.entity';
 import { WorkspacePreferenceEntity } from '../../src/domains/workspace-preference/infra/persistence/entities/workspace-preference.entity';
 import { seedAuth, seedAuthReferenceData } from './auth.seed';
+import { seedAiConversationSessions } from './realistic/ai-chat.seed';
+import { seedConsumedAiResponses, seedExhaustedAiTrialUsage } from './realistic/ai-usage.seed';
 import {
   REALISTIC_USER_FIXTURES,
   REALISTIC_WORKSPACE_TEMPLATES,
@@ -91,6 +93,7 @@ type RealisticSeedState = {
   users: SeedUserSummary[];
   config: RealisticSeedConfig;
 };
+
 
 type TextBlock = {
   type: 'paragraph' | 'heading';
@@ -206,9 +209,9 @@ export function buildRealisticSubscriptionSeed(input: {
     status: statusByState[state],
     cancelAtPeriodEnd: state === 'plus_canceling',
     provider: 'stripe',
-    providerCustomerId: buildSeededProviderId('cus_seed', providerSeed),
-    providerSubscriptionId: buildSeededProviderId('sub_seed', providerSeed),
-    providerPriceId: 'price_seed_plus_monthly',
+    providerCustomerId: buildSeededProviderId('cus_demo', providerSeed),
+    providerSubscriptionId: buildSeededProviderId('sub_demo', providerSeed),
+    providerPriceId: 'price_demo_plus_monthly',
     providerStatus: providerStatusByState[state],
   };
 }
@@ -1082,8 +1085,8 @@ async function seedSubdocReferences(
 }
 
 function buildBlockLimitLabContent(blockCount: number, limitLabel: string): unknown[] {
-  return Array.from({ length: blockCount }, (_, index) =>
-    paragraph(`Seed block ${index + 1}: ${limitLabel}`));
+  return Array.from({ length: blockCount }, (_unusedValue, index) =>
+    paragraph(`Usage block ${index + 1}: ${limitLabel}`));
 }
 
 async function seedBlockLimitLabWorkspace(input: {
@@ -1095,6 +1098,7 @@ async function seedBlockLimitLabWorkspace(input: {
   documentTitle: string;
   blockCount: number;
   limitLabel: string;
+  exhaustAiTrial?: boolean;
 }): Promise<void> {
   const owner = findUsersByEmail(input.users, ['maya.chen@example.com'])[0];
   const member = findUsersByEmail(input.users, ['jordan.lee@example.com'])[0];
@@ -1141,6 +1145,15 @@ async function seedBlockLimitLabWorkspace(input: {
 
   await seedWorkspacePreferences(input.em, workspace.id, [owner, member], [document]);
   await seedFavoritesAndVisits(input.em, workspace.id, [owner, member], [document]);
+
+  if (input.exhaustAiTrial) {
+    await seedExhaustedAiTrialUsage({
+      em: input.em,
+      workspaceId: workspace.id,
+      workspaceName: workspace.name,
+      seatCount: members.length,
+    });
+  }
 }
 
 async function seedWorkspaceScenario(
@@ -1214,6 +1227,19 @@ async function seedWorkspaceScenario(
       startingSortKey: template.documents.length + 100,
     })),
   );
+  const { countedResponses } = await seedAiConversationSessions({
+    em,
+    workspaceId: workspace.id,
+    templateKey: template.key,
+    memberUsers: memberSummaries,
+    documents,
+  });
+  await seedConsumedAiResponses({
+    em,
+    workspaceId: workspace.id,
+    workspaceName,
+    consumedResponses: countedResponses,
+  });
 
   await seedWorkspacePreferences(em, workspace.id, memberSummaries, documents);
   await seedDocumentAccessGrants(
@@ -1255,9 +1281,9 @@ export async function seedRealisticData(em: EntityManager): Promise<void> {
   await seedBlockLimitLabWorkspace({
     em,
     users,
-    slug: 'seeded-block-limit-lab',
-    name: 'Seeded Block Limit Lab',
-    description: 'Free collaborative workspace seeded at the 1,000 block limit for upgrade prompt testing.',
+    slug: 'block-limit-lab',
+    name: 'Block Limit Lab',
+    description: 'Free collaborative workspace at the 1,000 block limit for upgrade prompt testing.',
     documentTitle: 'Limit Counter',
     blockCount: 1_000,
     limitLabel: 'collaborative Free workspaces cannot create block 1,001.',
@@ -1265,12 +1291,23 @@ export async function seedRealisticData(em: EntityManager): Promise<void> {
   await seedBlockLimitLabWorkspace({
     em,
     users,
-    slug: 'seeded-over-limit-lab',
-    name: 'Seeded Over Limit Lab',
-    description: 'Free collaborative workspace seeded above the 1,000 block limit to test downgraded over-limit behavior.',
+    slug: 'over-limit-lab',
+    name: 'Over Limit Lab',
+    description: 'Free collaborative workspace above the 1,000 block limit to test downgraded over-limit behavior.',
     documentTitle: 'Over Limit Counter',
     blockCount: 1_200,
     limitLabel: 'over-limit Free workspaces keep existing content but cannot create more blocks.',
+  });
+  await seedBlockLimitLabWorkspace({
+    em,
+    users,
+    slug: 'ai-trial-limit-lab',
+    name: 'AI Trial Limit Lab',
+    description: 'Free collaborative workspace with exhausted AI trial responses for upgrade prompt testing.',
+    documentTitle: 'AI Usage Limit Notes',
+    blockCount: 12,
+    limitLabel: 'AI trial responses are exhausted; the next assistant response should be denied.',
+    exhaustAiTrial: true,
   });
 
   console.log(`[seed][realistic] Total duration: ${formatDuration(Date.now() - startedAt)}`);
