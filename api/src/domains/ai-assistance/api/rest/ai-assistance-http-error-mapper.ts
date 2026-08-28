@@ -29,8 +29,10 @@ export function mapAiAssistanceAppErrorToHttpException(
 
   if (error instanceof AiResponseEntitlementDeniedError) {
     return new ForbiddenException({
+      code: error.code,
       message: error.message,
       remaining_responses: error.remainingResponses,
+      upgrade_available: error.upgradeAvailable,
     });
   }
 

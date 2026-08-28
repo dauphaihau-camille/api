@@ -65,3 +65,19 @@ export type AiResponseReservationRecord = {
   createdAt: Date;
   updatedAt: Date;
 };
+
+export type AiResponseEntitlementSummary = {
+  workspaceId: string;
+  plan: string;
+  allowance: number | null;
+  usedResponses: number;
+  reservedResponses: number;
+  remainingResponses: number | null;
+  limitReached: boolean;
+  upgradeAvailable: boolean;
+};
+
+export type AiResponseUsage = {
+  usedResponses: number;
+  reservedResponses: number;
+};

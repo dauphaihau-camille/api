@@ -17,6 +17,7 @@ import {
   CreateAiChatTurnUseCase,
   type AiChatTurnStreamEvent,
 } from './create-ai-chat-turn.use-case';
+import { GetAiResponseEntitlementUseCase } from './get-ai-response-entitlement.use-case';
 import { ListAiChatTurnsUseCase } from './list-ai-chat-turns.use-case';
 import {
   CreateAiConversationSessionUseCase,
@@ -112,6 +113,10 @@ describe('AI assistance use cases', () => {
       }),
       consumeReservation: jest.fn().mockResolvedValue(undefined),
       releaseReservation: jest.fn().mockResolvedValue(undefined),
+      getTrialResponseUsage: jest.fn().mockResolvedValue({
+        usedResponses: 3,
+        reservedResponses: 1,
+      }),
     } as unknown as jest.Mocked<AiConversationRepository>;
   }
 
@@ -355,6 +360,53 @@ describe('AI assistance use cases', () => {
     expect(repository.releaseReservation).toHaveBeenCalledWith('reservation-1');
   });
 
+
+  it('returns AI entitlement summary after workspace access is validated', async () => {
+    const repository = createAiConversationRepository();
+    const useCase = new GetAiResponseEntitlementUseCase(
+      createWorkspaceRepository(),
+      new AiResponseGateService(createSubscriptionSummaryService(SubscriptionPlan.FREE), repository),
+    );
+
+    await expect(useCase.execute(currentUser, { workspaceId: 'workspace-1' }))
+      .resolves.toEqual({
+        workspaceId: 'workspace-1',
+        plan: SubscriptionPlan.FREE,
+        allowance: 20,
+        usedResponses: 3,
+        reservedResponses: 1,
+        remainingResponses: 16,
+        limitReached: false,
+        upgradeAvailable: false,
+      });
+    expect(repository.getTrialResponseUsage).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      now: expect.any(Date),
+    });
+  });
+
+  it('marks Free workspaces limited when all trial responses are used', async () => {
+    const repository = createAiConversationRepository();
+    repository.getTrialResponseUsage.mockResolvedValue({
+      usedResponses: 20,
+      reservedResponses: 0,
+    });
+    const gate = new AiResponseGateService(
+      createSubscriptionSummaryService(SubscriptionPlan.FREE),
+      repository,
+    );
+
+    await expect(gate.getEntitlementSummary('workspace-1')).resolves.toEqual({
+      workspaceId: 'workspace-1',
+      plan: SubscriptionPlan.FREE,
+      allowance: 20,
+      usedResponses: 20,
+      reservedResponses: 0,
+      remainingResponses: 0,
+      limitReached: true,
+      upgradeAvailable: false,
+    });
+  });
   it('denies Free and Plus workspaces after trial responses are exhausted', async () => {
     const repository = createAiConversationRepository();
     repository.reserveTrialResponse.mockResolvedValue(null);

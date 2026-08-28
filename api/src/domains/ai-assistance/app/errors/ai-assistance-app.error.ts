@@ -41,7 +41,12 @@ export class AiContextSizeLimitExceededError extends AiAssistanceAppError {
 }
 
 export class AiResponseEntitlementDeniedError extends AiAssistanceAppError {
-  constructor(public readonly remainingResponses: number) {
+  readonly code = 'ai_response_limit_reached';
+
+  constructor(
+    public readonly remainingResponses: number,
+    public readonly upgradeAvailable: boolean,
+  ) {
     super('Workspace AI trial responses are exhausted');
   }
 }

@@ -1,5 +1,7 @@
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { UserStatus } from '~/domains/auth/domain/enums/user-status.enum';
+import { AiResponseEntitlementDeniedError } from '../../app/errors/ai-assistance-app.error';
+import { mapAiAssistanceAppErrorToHttpException } from './ai-assistance-http-error-mapper';
 import { AiAssistanceController } from './ai-assistance.controller';
 
 describe('AiAssistanceController', () => {
@@ -22,6 +24,8 @@ describe('AiAssistanceController', () => {
     updatedAt: new Date('2026-01-01T00:01:00.000Z'),
   };
 
+  const unusedUseCase = { execute: jest.fn() } as never;
+
   it('returns conversation sessions with the external snake_case contract', async () => {
     const controller = new AiAssistanceController(
       {
@@ -37,9 +41,10 @@ describe('AiAssistanceController', () => {
           },
         }), 
       } as never,
-      { execute: jest.fn() } as never,
-      { execute: jest.fn() } as never,
-      { execute: jest.fn() } as never,
+      unusedUseCase,
+      unusedUseCase,
+      unusedUseCase,
+      unusedUseCase,
     );
 
     await expect(controller.listSessions('workspace-1', currentUser, {
@@ -68,6 +73,55 @@ describe('AiAssistanceController', () => {
     });
   });
 
+  it('returns AI entitlement with the external snake_case contract', async () => {
+    const getEntitlement = jest.fn().mockResolvedValue({
+      workspaceId: 'workspace-1',
+      plan: 'free',
+      allowance: 20,
+      usedResponses: 20,
+      reservedResponses: 0,
+      remainingResponses: 0,
+      limitReached: true,
+      upgradeAvailable: false,
+    });
+    const controller = new AiAssistanceController(
+      unusedUseCase,
+      unusedUseCase,
+      unusedUseCase,
+      unusedUseCase,
+      { execute: getEntitlement } as never,
+    );
+
+    await expect(controller.getEntitlement('workspace-1', currentUser))
+      .resolves.toEqual({
+        workspace_id: 'workspace-1',
+        plan: 'free',
+        allowance: 20,
+        used_responses: 20,
+        reserved_responses: 0,
+        remaining_responses: 0,
+        limit_reached: true,
+        upgrade_available: false,
+      });
+    expect(getEntitlement).toHaveBeenCalledWith(currentUser, {
+      workspaceId: 'workspace-1',
+    });
+  });
+
+  it('maps AI response limit errors to coded 403 payloads', () => {
+    const exception = mapAiAssistanceAppErrorToHttpException(
+      new AiResponseEntitlementDeniedError(0, false),
+    );
+
+    expect(exception.getStatus()).toBe(403);
+    expect(exception.getResponse()).toEqual({
+      code: 'ai_response_limit_reached',
+      message: 'Workspace AI trial responses are exhausted',
+      remaining_responses: 0,
+      upgrade_available: false,
+    });
+  });
+
   it('maps turn requests from snake_case body fields to app input', async () => {
     const createTurn = jest.fn().mockResolvedValue({
       id: 'turn-1',
@@ -80,10 +134,11 @@ describe('AiAssistanceController', () => {
       updatedAt: new Date('2026-01-01T00:01:00.000Z'),
     });
     const controller = new AiAssistanceController(
-      { execute: jest.fn() } as never,
-      { execute: jest.fn() } as never,
-      { execute: jest.fn() } as never,
+      unusedUseCase,
+      unusedUseCase,
+      unusedUseCase,
       { execute: createTurn } as never,
+      unusedUseCase,
     );
 
     await expect(controller.createTurn(
@@ -128,10 +183,11 @@ describe('AiAssistanceController', () => {
       },
     });
     const controller = new AiAssistanceController(
-      { execute: jest.fn() } as never,
-      { execute: jest.fn() } as never,
+      unusedUseCase,
+      unusedUseCase,
       { execute: listTurns } as never,
-      { execute: jest.fn() } as never,
+      unusedUseCase,
+      unusedUseCase,
     );
 
     await expect(controller.listTurns(
@@ -191,10 +247,11 @@ describe('AiAssistanceController', () => {
       write: jest.fn(),
     };
     const controller = new AiAssistanceController(
-      { execute: jest.fn() } as never,
-      { execute: jest.fn() } as never,
-      { execute: jest.fn() } as never,
+      unusedUseCase,
+      unusedUseCase,
+      unusedUseCase,
       createTurn as never,
+      unusedUseCase,
     );
 
     await controller.streamTurn(

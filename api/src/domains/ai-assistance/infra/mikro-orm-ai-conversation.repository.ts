@@ -12,6 +12,7 @@ import type {
   AiConversationSessionSummary,
   AiDocumentAttachment,
   AiResponseReservationRecord,
+  AiResponseUsage,
   ListAiConversationSessionsQuery,
 } from '../app/contracts/ai-assistance.contract';
 import { AiConversationRepository } from '../app/ports/ai-conversation.repository';
@@ -277,6 +278,29 @@ export class MikroOrmAiConversationRepository extends AiConversationRepository {
 
     reservation.status = 'released';
     await entityManager.flush();
+  }
+
+  async getTrialResponseUsage(input: {
+    workspaceId: string;
+    now: Date;
+  }): Promise<AiResponseUsage> {
+    const entityManager = this.entityManager.fork();
+    const [usedResponses, reservedResponses] = await Promise.all([
+      entityManager.count(AiResponseReservationEntity, {
+        workspace: input.workspaceId,
+        status: 'consumed',
+      }),
+      entityManager.count(AiResponseReservationEntity, {
+        workspace: input.workspaceId,
+        status: 'reserved',
+        expiresAt: { $gt: input.now },
+      }),
+    ]);
+
+    return {
+      usedResponses,
+      reservedResponses,
+    };
   }
 
   private toSessionSummary(session: AiConversationSessionEntity): AiConversationSessionSummary {

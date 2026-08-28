@@ -8,6 +8,7 @@ import type {
   AiChatTurnSummary,
   AiConversationSessionSummary,
   AiDocumentAttachment,
+  AiResponseEntitlementSummary,
 } from '../../../app/contracts/ai-assistance.contract';
 
 export class CreateAiChatTurnDto {
@@ -21,6 +22,45 @@ export class CreateAiChatTurnDto {
   @IsArray()
   @IsString({ each: true })
   document_ids?: string[];
+}
+
+export class AiResponseEntitlementResponseDto {
+  @ApiProperty()
+  workspace_id!: string;
+
+  @ApiProperty()
+  plan!: string;
+
+  @ApiProperty({ type: Number, nullable: true })
+  allowance!: number | null;
+
+  @ApiProperty()
+  used_responses!: number;
+
+  @ApiProperty()
+  reserved_responses!: number;
+
+  @ApiProperty({ type: Number, nullable: true })
+  remaining_responses!: number | null;
+
+  @ApiProperty()
+  limit_reached!: boolean;
+
+  @ApiProperty()
+  upgrade_available!: boolean;
+
+  static fromSummary(summary: AiResponseEntitlementSummary): AiResponseEntitlementResponseDto {
+    return {
+      workspace_id: summary.workspaceId,
+      plan: summary.plan,
+      allowance: summary.allowance,
+      used_responses: summary.usedResponses,
+      reserved_responses: summary.reservedResponses,
+      remaining_responses: summary.remainingResponses,
+      limit_reached: summary.limitReached,
+      upgrade_available: summary.upgradeAvailable,
+    };
+  }
 }
 
 export class AiDocumentAttachmentResponseDto {

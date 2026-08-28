@@ -8,6 +8,7 @@ import { AiAssistanceController } from './api/rest/ai-assistance.controller';
 import { AiConversationRepository } from './app/ports/ai-conversation.repository';
 import { AiResponseGateService } from './app/services/ai-response-gate.service';
 import { CreateAiChatTurnUseCase } from './app/use-cases/create-ai-chat-turn.use-case';
+import { GetAiResponseEntitlementUseCase } from './app/use-cases/get-ai-response-entitlement.use-case';
 import { ListAiChatTurnsUseCase } from './app/use-cases/list-ai-chat-turns.use-case';
 import {
   CreateAiConversationSessionUseCase,
@@ -39,6 +40,7 @@ import { AiResponseReservationEntity } from './infra/persistence/entities/ai-res
       useClass: MikroOrmAiConversationRepository,
     },
     AiResponseGateService,
+    GetAiResponseEntitlementUseCase,
     ListAiConversationSessionsUseCase,
     CreateAiConversationSessionUseCase,
     ListAiChatTurnsUseCase,

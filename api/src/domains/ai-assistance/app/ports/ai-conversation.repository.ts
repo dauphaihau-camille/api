@@ -5,6 +5,7 @@ import type {
   AiConversationSessionSummary,
   AiDocumentAttachment,
   AiResponseReservationRecord,
+  AiResponseUsage,
   ListAiConversationSessionsQuery,
 } from '../contracts/ai-assistance.contract';
 
@@ -55,4 +56,9 @@ export abstract class AiConversationRepository {
   abstract consumeReservation(reservationId: string): Promise<void>;
 
   abstract releaseReservation(reservationId: string): Promise<void>;
+
+  abstract getTrialResponseUsage(input: {
+    workspaceId: string;
+    now: Date;
+  }): Promise<AiResponseUsage>;
 }

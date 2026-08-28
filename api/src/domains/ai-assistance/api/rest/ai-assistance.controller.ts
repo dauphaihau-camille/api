@@ -27,6 +27,7 @@ import {
   CreateAiChatTurnUseCase,
   type AiChatTurnStreamEvent,
 } from '../../app/use-cases/create-ai-chat-turn.use-case';
+import { GetAiResponseEntitlementUseCase } from '../../app/use-cases/get-ai-response-entitlement.use-case';
 import { ListAiChatTurnsUseCase } from '../../app/use-cases/list-ai-chat-turns.use-case';
 import {
   CreateAiConversationSessionUseCase,
@@ -36,6 +37,7 @@ import { rethrowAiAssistanceAppError } from './ai-assistance-http-error-mapper';
 import {
   AiChatTurnResponseDto,
   AiConversationSessionResponseDto,
+  AiResponseEntitlementResponseDto,
   CreateAiChatTurnDto,
   CursorPaginatedAiChatTurnResponseDto,
   PaginatedAiConversationSessionResponseDto,
@@ -53,7 +55,22 @@ export class AiAssistanceController {
     private readonly createSessionUseCase: CreateAiConversationSessionUseCase,
     private readonly listTurnsUseCase: ListAiChatTurnsUseCase,
     private readonly createChatTurnUseCase: CreateAiChatTurnUseCase,
+    private readonly getAiResponseEntitlementUseCase: GetAiResponseEntitlementUseCase,
   ) {}
+
+  @Get('entitlement')
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({ summary: 'Get AI response entitlement status' })
+  @ApiOkResponse({ type: AiResponseEntitlementResponseDto })
+  async getEntitlement(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ): Promise<AiResponseEntitlementResponseDto> {
+    return this.getAiResponseEntitlementUseCase
+      .execute(currentUser, { workspaceId })
+      .then(AiResponseEntitlementResponseDto.fromSummary)
+      .catch(rethrowAiAssistanceAppError);
+  }
 
   @Get('conversations')
   @Header('Cache-Control', 'no-store')
