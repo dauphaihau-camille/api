@@ -144,6 +144,69 @@ describe('MikroOrmDocumentDetailQueryRepository', () => {
       currentUser,
     })).resolves.toBeNull();
   });
+
+  it('returns AI source documents in request order from one batched document lookup', async () => {
+    const { entityManager, scopedEntityManager } = createEntityManager();
+    const repository = new MikroOrmDocumentDetailQueryRepository(
+      entityManager,
+      new DocumentAccessResolver(),
+    );
+    const firstDocument = createDocument({
+      id: 'document-1',
+      publicId: 'public-document-1',
+      title: 'First document',
+      contentJson: [{ type: 'paragraph', content: [{ type: 'text', text: 'First' }] }],
+    });
+    const secondDocument = createDocument({
+      id: 'document-2',
+      publicId: 'public-document-2',
+      title: 'Second document',
+      contentJson: [{ type: 'paragraph', content: [{ type: 'text', text: 'Second' }] }],
+    });
+    const execute = jest.fn().mockResolvedValue([]);
+
+    scopedEntityManager.find.mockImplementation((entity: unknown) => {
+      if (entity === DocumentEntity) {
+        return Promise.resolve([secondDocument, firstDocument]);
+      }
+
+      return Promise.resolve([]);
+    });
+    scopedEntityManager.getConnection.mockReturnValue({ execute });
+
+    const result = await repository.findDocumentDetailsForAiSource({
+      documentIds: ['public-document-1', 'document-2'],
+      currentUser,
+    });
+
+    expect(entityManager.fork).toHaveBeenCalledTimes(1);
+    expect(scopedEntityManager.find).toHaveBeenCalledWith(
+      DocumentEntity,
+      {
+        $or: [
+          { id: { $in: ['public-document-1', 'document-2'] } },
+          { publicId: { $in: ['public-document-1', 'document-2'] } },
+        ],
+      },
+      {
+        populate: ['workspace', 'teamspace', 'parentDocument', 'ownerUser'],
+      },
+    );
+    expect(result).toEqual([
+      {
+        id: 'document-1',
+        workspaceId: 'workspace-1',
+        title: 'First document',
+        content: firstDocument.contentJson,
+      },
+      {
+        id: 'document-2',
+        workspaceId: 'workspace-1',
+        title: 'Second document',
+        content: secondDocument.contentJson,
+      },
+    ]);
+  });
 });
 
 function createEntityManager(): {

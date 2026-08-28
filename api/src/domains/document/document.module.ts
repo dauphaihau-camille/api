@@ -222,6 +222,7 @@ import { ClaimDocumentInvitationsOnUserCreatedListener } from './listeners/claim
     DocumentAccessGrantRepository,
     DocumentAccessSettingRepository,
     DocumentInvitationRepository,
+    DocumentDetailQueryRepository,
     DocumentAccessResolver,
     WorkspaceDefaultDocumentProvisioner,
   ],
