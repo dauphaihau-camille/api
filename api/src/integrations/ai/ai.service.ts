@@ -6,6 +6,7 @@ import type {
   EmbedTextResult,
   GenerateTextInput,
   GenerateTextResult,
+  StreamTextEvent,
 } from './app/ai.types';
 import { AiProvider } from './app/ports/ai-provider';
 
@@ -20,6 +21,13 @@ export class AiService {
     input: GenerateTextInput,
   ): Promise<GenerateTextResult> {
     return this.aiProvider.generateText({
+      ...input,
+      model: input.model ?? this.aiConfig.defaultTextModel,
+    });
+  }
+
+  streamText(input: GenerateTextInput): AsyncIterable<StreamTextEvent> {
+    return this.aiProvider.streamText({
       ...input,
       model: input.model ?? this.aiConfig.defaultTextModel,
     });

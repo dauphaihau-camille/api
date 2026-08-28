@@ -3,7 +3,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AI_CONFIG, buildAiConfig } from '~/platform/config/ai.config';
 import { AiProvider } from './app/ports/ai-provider';
 import { AiService } from './ai.service';
+import type { AiConfig } from '~/platform/config/ai.config';
 import { NoopAiProvider } from './infra/noop-ai-provider';
+import { OpenAiProvider } from './infra/openai-ai-provider';
 
 @Module({
   imports: [ConfigModule],
@@ -16,8 +18,10 @@ import { NoopAiProvider } from './infra/noop-ai-provider';
     {
       provide: AiProvider,
       inject: [AI_CONFIG],
-      useFactory: (aiConfig: ReturnType<typeof buildAiConfig>) =>
-        new NoopAiProvider(aiConfig),
+      useFactory: (aiConfig: AiConfig) =>
+        aiConfig.openaiApiKey
+          ? new OpenAiProvider(aiConfig)
+          : new NoopAiProvider(aiConfig),
     },
     AiService,
   ],

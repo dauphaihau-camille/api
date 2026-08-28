@@ -4,21 +4,27 @@ import { AiService } from './ai.service';
 
 describe('AiService', () => {
   const aiConfig: AiConfig = {
-    driver: 'noop',
-    defaultTextModel: 'general-text',
-    defaultEmbeddingModel: 'text-embedding',
+    defaultTextModel: 'openai:gpt-5.6',
+    defaultEmbeddingModel: 'openai:text-embedding-3-small',
+    defaultReasoningEffort: 'low',
+    defaultMaxTokens: 1200,
+    textModels: {},
+    embeddingModels: {},
   };
 
   function createProvider(): jest.Mocked<AiProvider> {
     return {
       generateText: jest.fn().mockResolvedValue({
         text: 'hello',
-        model: 'general-text',
+        model: 'gpt-5.6',
         finishReason: 'stop',
       }),
+      streamText: jest.fn().mockReturnValue((async function* streamText() {
+        yield { type: 'delta', text: 'hello' };
+      })()),
       embedText: jest.fn().mockResolvedValue({
         embeddings: [[0.1, 0.2]],
-        model: 'text-embedding',
+        model: 'text-embedding-3-small',
       }),
     };
   }
@@ -33,7 +39,23 @@ describe('AiService', () => {
 
     expect(provider.generateText).toHaveBeenCalledWith({
       prompt: 'Summarize this.',
-      model: 'general-text',
+      model: 'openai:gpt-5.6',
+    });
+  });
+
+  it('applies the default text model for streaming when none is supplied', async () => {
+    const provider = createProvider();
+    const service = new AiService(aiConfig, provider);
+
+    for await (const _event of service.streamText({
+      prompt: 'Summarize this.',
+    })) {
+      // consume stream
+    }
+
+    expect(provider.streamText).toHaveBeenCalledWith({
+      prompt: 'Summarize this.',
+      model: 'openai:gpt-5.6',
     });
   });
 
@@ -47,7 +69,7 @@ describe('AiService', () => {
 
     expect(provider.embedText).toHaveBeenCalledWith({
       values: ['first', 'second'],
-      model: 'text-embedding',
+      model: 'openai:text-embedding-3-small',
     });
   });
 });

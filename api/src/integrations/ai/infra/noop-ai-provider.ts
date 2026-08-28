@@ -6,6 +6,7 @@ import type {
   EmbedTextResult,
   GenerateTextInput,
   GenerateTextResult,
+  StreamTextEvent,
 } from '../app/ai.types';
 
 @Injectable()
@@ -15,6 +16,13 @@ export class NoopAiProvider implements AiProvider {
   async generateText(
     input: GenerateTextInput,
   ): Promise<GenerateTextResult> {
+    void input;
+    throw new Error(
+      `No AI text provider is configured. Replace NoopAiProvider and use model "${this.aiConfig.defaultTextModel}" as a starting default.`,
+    );
+  }
+
+  async *streamText(input: GenerateTextInput): AsyncIterable<StreamTextEvent> {
     void input;
     throw new Error(
       `No AI text provider is configured. Replace NoopAiProvider and use model "${this.aiConfig.defaultTextModel}" as a starting default.`,

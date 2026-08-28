@@ -20,6 +20,16 @@ export interface GenerateTextResult {
   finishReason?: 'stop' | 'length' | 'content_filter' | 'other';
 }
 
+export type StreamTextEvent =
+  | {
+    type: 'delta';
+    text: string;
+  }
+  | {
+    type: 'done';
+    result: GenerateTextResult;
+  };
+
 export interface EmbedTextInput {
   model?: string;
   values: string[];
