@@ -365,7 +365,7 @@ export class MikroOrmDocumentDetailQueryRepository extends DocumentDetailQueryRe
             array[child.id, parent.id] as path
           from documents child
           join documents parent on parent.id = child.parent_document_id
-          where child.id = any(?)
+          where child.id = any(array[?]::uuid[])
 
           union all
 
@@ -422,7 +422,7 @@ export class MikroOrmDocumentDetailQueryRepository extends DocumentDetailQueryRe
           count(*)::int as "activeGrantCount"
         from document_access_grants
         where
-          document_id = any(?)
+          document_id = any(array[?]::uuid[])
           and revoked_at is null
         group by document_id
       `,

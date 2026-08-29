@@ -192,6 +192,16 @@ describe('MikroOrmDocumentDetailQueryRepository', () => {
         populate: ['workspace', 'teamspace', 'parentDocument', 'ownerUser'],
       },
     );
+    expect(execute).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('where child.id = any(array[?]::uuid[])'),
+      [['document-1', 'document-2'], 100],
+    );
+    expect(execute).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('document_id = any(array[?]::uuid[])'),
+      [['document-1', 'document-2']],
+    );
     expect(result).toEqual([
       {
         id: 'document-1',
