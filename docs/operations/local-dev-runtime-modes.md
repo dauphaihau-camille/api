@@ -116,6 +116,44 @@ Use `Full Compose stack` when:
 - you want to verify the Docker image and `.env.docker`
 - you are reproducing an issue closer to deployment
 
+## Colima bind mounts for worktrees
+
+Colima runs Docker inside a VM. Docker bind mounts only work when the host path is mounted into that VM.
+
+If a repo or worktree lives outside Colima's mounted paths, Compose file mounts can fail before the container starts. A common symptom is:
+
+```text
+Are you trying to mount a directory onto a file (or vice-versa)?
+```
+
+This can happen when one checkout is under a mounted path such as `/Volumes/Local`, but a new worktree is under `/Users/<user>/orca`.
+
+Check which host paths Colima has mounted:
+
+```bash
+colima ssh -- mount
+```
+
+Start Colima with every local repo root that Docker needs to bind-mount:
+
+```bash
+colima stop
+colima start --mount /Volumes/Local:w --mount /Users/<user>/orca:w
+```
+
+Then recreate the Compose containers so stale bind mounts are not reused:
+
+```bash
+docker compose -f infra/docker-compose.yml down --remove-orphans
+just infra-up
+```
+
+Verify Colima sees config files as files, not directories:
+
+```bash
+colima ssh -- test -f /Users/<user>/orca/workspaces/api/feat-ai/infra/prometheus/prometheus.yml && echo ok
+```
+
 ## Operational Notes
 
 - `just infra-up` starts infra plus observability only.
