@@ -9,6 +9,32 @@ describe('buildAiConfig', () => {
     };
   }
 
+  it('defaults to OpenAI when OPENAI_API_KEY is set', () => {
+    const config = buildAiConfig(createConfigService({
+      OPENAI_API_KEY: 'openai-key',
+    }));
+
+    expect(config.driver).toBe('openai');
+  });
+
+  it('defaults to noop when OPENAI_API_KEY is not set', () => {
+    const config = buildAiConfig(createConfigService({}));
+
+    expect(config.driver).toBe('noop');
+  });
+
+  it('parses explicit fake provider settings', () => {
+    const config = buildAiConfig(createConfigService({
+      AI_PROVIDER: 'fake',
+      AI_FAKE_STREAM_DELAY_MS: '0',
+      OPENAI_API_KEY: 'openai-key',
+    }));
+
+    expect(config.driver).toBe('fake');
+    expect(config.fakeStreamDelayMs).toBe(0);
+  });
+
+
   it('parses provider-aware model defaults from AI_MODELS', () => {
     const config = buildAiConfig(createConfigService({
       AI_MODELS: JSON.stringify({

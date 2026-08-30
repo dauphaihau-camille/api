@@ -30,6 +30,7 @@ function createStream(events: OpenAiStreamEvent[], response: OpenAiResponse) {
 
 describe('OpenAiProvider', () => {
   const aiConfig: AiConfig = {
+    driver: 'openai',
     defaultTextModel: 'openai:gpt-5.6',
     defaultEmbeddingModel: 'openai:text-embedding-3-small',
     defaultReasoningEffort: 'low',
@@ -54,6 +55,7 @@ describe('OpenAiProvider', () => {
         providerModel: 'text-embedding-3-small',
       },
     },
+    fakeStreamDelayMs: 0,
     openaiApiKey: 'openai-key',
   };
 

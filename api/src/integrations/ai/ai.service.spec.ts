@@ -4,12 +4,14 @@ import { AiService } from './ai.service';
 
 describe('AiService', () => {
   const aiConfig: AiConfig = {
+    driver: 'noop',
     defaultTextModel: 'openai:gpt-5.6',
     defaultEmbeddingModel: 'openai:text-embedding-3-small',
     defaultReasoningEffort: 'low',
     defaultMaxTokens: 1200,
     textModels: {},
     embeddingModels: {},
+    fakeStreamDelayMs: 0,
   };
 
   function createProvider(): jest.Mocked<AiProvider> {

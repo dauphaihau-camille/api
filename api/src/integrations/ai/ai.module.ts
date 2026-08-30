@@ -5,6 +5,7 @@ import { AiProvider } from './app/ports/ai-provider';
 import { AiService } from './ai.service';
 import type { AiConfig } from '~/platform/config/ai.config';
 import { NoopAiProvider } from './infra/noop-ai-provider';
+import { FakeAiProvider } from './infra/fake-ai-provider';
 import { OpenAiProvider } from './infra/openai-ai-provider';
 
 @Module({
@@ -18,13 +19,22 @@ import { OpenAiProvider } from './infra/openai-ai-provider';
     {
       provide: AiProvider,
       inject: [AI_CONFIG],
-      useFactory: (aiConfig: AiConfig) =>
-        aiConfig.openaiApiKey
-          ? new OpenAiProvider(aiConfig)
-          : new NoopAiProvider(aiConfig),
+      useFactory: createAiProvider,
     },
     AiService,
   ],
   exports: [AI_CONFIG, AiProvider, AiService],
 })
 export class AiModule {}
+
+export function createAiProvider(aiConfig: AiConfig): AiProvider {
+  if (aiConfig.driver === 'fake') {
+    return new FakeAiProvider(aiConfig);
+  }
+
+  if (aiConfig.driver === 'openai') {
+    return new OpenAiProvider(aiConfig);
+  }
+
+  return new NoopAiProvider(aiConfig);
+}

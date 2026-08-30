@@ -2,6 +2,7 @@ import type { ConfigService } from '@nestjs/config';
 import { z } from 'zod';
 
 export type AiReasoningEffort = 'minimal' | 'low' | 'medium' | 'high';
+export type AiProviderDriver = 'openai' | 'fake' | 'noop';
 export type AiModelProvider = 'openai' | 'anthropic' | 'moonshot';
 
 export interface OpenAiModelOptions {
@@ -32,7 +33,11 @@ export interface AiEmbeddingModelConfig {
   moonshot?: Record<string, never>;
 }
 
+export const DEFAULT_AI_PROVIDER_DRIVER: AiProviderDriver = 'noop';
+export const DEFAULT_FAKE_STREAM_DELAY_MS = 40;
+
 export interface AiConfig {
+  driver: AiProviderDriver;
   defaultTextModel: string;
   defaultEmbeddingModel: string;
   defaultReasoningEffort: AiReasoningEffort;
@@ -41,11 +46,13 @@ export interface AiConfig {
   embeddingModels: Record<string, AiEmbeddingModelConfig>;
   openaiApiKey?: string;
   openaiBaseUrl?: string;
+  fakeStreamDelayMs: number;
 }
 
 export const AI_CONFIG = Symbol('AI_CONFIG');
 
 const reasoningEffortSchema = z.enum(['minimal', 'low', 'medium', 'high']);
+const providerDriverSchema = z.enum(['openai', 'fake', 'noop']);
 const modelProviderSchema = z.enum(['openai', 'anthropic', 'moonshot']);
 
 const textModelsSchema = z.record(
@@ -80,6 +87,10 @@ export function buildAiConfig(
   configService: Pick<ConfigService, 'get'>,
 ): AiConfig {
   return {
+    driver: providerDriverSchema.parse(configService.get<string>(
+      'AI_PROVIDER',
+      configService.get<string>('OPENAI_API_KEY') ? 'openai' : DEFAULT_AI_PROVIDER_DRIVER,
+    )),
     defaultTextModel: configService.get<string>(
       'AI_DEFAULT_TEXT_MODEL',
       'openai:gpt-5.6',
@@ -97,6 +108,11 @@ export function buildAiConfig(
     embeddingModels: parseEmbeddingModelsConfig(configService.get<string>('AI_EMBEDDING_MODELS')),
     openaiApiKey: configService.get<string>('OPENAI_API_KEY'),
     openaiBaseUrl: configService.get<string>('OPENAI_BASE_URL'),
+    fakeStreamDelayMs: parseNonNegativeIntegerConfig(
+      configService.get<string>('AI_FAKE_STREAM_DELAY_MS'),
+      DEFAULT_FAKE_STREAM_DELAY_MS,
+      'AI_FAKE_STREAM_DELAY_MS',
+    ),
   };
 }
 
@@ -132,4 +148,22 @@ function parseEmbeddingModelsConfig(value?: string): Record<string, AiEmbeddingM
         : 'Invalid AI_EMBEDDING_MODELS config.',
     );
   }
+}
+
+function parseNonNegativeIntegerConfig(
+  value: string | undefined,
+  defaultValue: number,
+  name: string,
+): number {
+  if (value === undefined) {
+    return defaultValue;
+  }
+
+  const parsedValue = Number(value);
+
+  if (!Number.isInteger(parsedValue) || parsedValue < 0) {
+    throw new Error(`${name} must be a non-negative integer.`);
+  }
+
+  return parsedValue;
 }
