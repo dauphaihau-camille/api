@@ -224,6 +224,30 @@ export class AiAssistanceController {
       };
     }
 
+    if (event.type === 'block_start') {
+      return {
+        type: 'block_start',
+        block_id: event.blockId,
+        block_type: event.blockType,
+        ...(event.props ? { props: event.props } : {}),
+      };
+    }
+
+    if (event.type === 'text_delta') {
+      return {
+        type: 'text_delta',
+        block_id: event.blockId,
+        content: event.content,
+      };
+    }
+
+    if (event.type === 'block_end') {
+      return {
+        type: 'block_end',
+        block_id: event.blockId,
+      };
+    }
+
     return event;
   }
 

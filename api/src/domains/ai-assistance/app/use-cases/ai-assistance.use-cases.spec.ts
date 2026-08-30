@@ -80,6 +80,11 @@ describe('AI assistance use cases', () => {
           sessionId: 'ai-session-1',
           userMessage: 'Summarize this',
           assistantResponse: 'Summary',
+          responseBlockPayload: [{
+            id: 'ai-block-1',
+            type: 'paragraph',
+            content: [{ type: 'text', text: 'Summary' }],
+          }],
           status: 'completed',
           attachments: [{ documentId: 'document-1', title: 'Doc 1' }],
           createdAt: new Date('2026-01-01T00:00:00.000Z'),
@@ -98,6 +103,11 @@ describe('AI assistance use cases', () => {
         sessionId: 'ai-session-1',
         userMessage: 'Summarize this',
         assistantResponse: 'Summary',
+        responseBlockPayload: [{
+          id: 'ai-block-1',
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'Summary' }],
+        }],
         status: 'completed',
         attachments: [{ documentId: 'document-1', title: 'Doc 1' }],
         createdAt: new Date('2026-01-01T00:00:00.000Z'),
@@ -305,12 +315,28 @@ describe('AI assistance use cases', () => {
 
     expect(events).toEqual([
       { type: 'started', sessionId: 'ai-session-1' },
-      { type: 'delta', text: 'Sum' },
-      { type: 'delta', text: 'mary' },
+      expect.objectContaining({
+        type: 'block_start',
+        blockId: 'ai-block-1',
+        blockType: 'paragraph',
+      }),
+      {
+        type: 'text_delta',
+        blockId: 'ai-block-1',
+        content: [{ type: 'text', text: 'Summary' }],
+      },
+      { type: 'block_end', blockId: 'ai-block-1' },
       expect.objectContaining({ type: 'done' }),
     ]);
     expect(repository.createCompletedTurn).toHaveBeenCalledWith(expect.objectContaining({
       assistantResponse: 'Summary',
+      responseBlockPayload: [
+        {
+          id: 'ai-block-1',
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'Summary' }],
+        },
+      ],
     }));
     expect(repository.consumeReservation).toHaveBeenCalledWith('reservation-1');
   });

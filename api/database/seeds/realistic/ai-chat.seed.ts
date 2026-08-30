@@ -2,6 +2,7 @@ import type { EntityManager } from '@mikro-orm/postgresql';
 import { AiChatTurnEntity } from '../../../src/domains/ai-assistance/infra/persistence/entities/ai-chat-turn.entity';
 import { AiConversationSessionEntity } from '../../../src/domains/ai-assistance/infra/persistence/entities/ai-conversation-session.entity';
 import { AiDocumentAttachmentEntity } from '../../../src/domains/ai-assistance/infra/persistence/entities/ai-document-attachment.entity';
+import { normalizeCompletedAiResponse } from '../../../src/domains/ai-assistance/app/services/ai-response-normalizer';
 import { CurrentUserEntity } from '../../../src/domains/auth/infra/persistence/entities/current-user.entity';
 import { DocumentEntity } from '../../../src/domains/document/infra/persistence/entities/document.entity';
 import { WorkspaceEntity } from '../../../src/domains/workspace/infra/persistence/entities/workspace.entity';
@@ -281,6 +282,7 @@ export async function seedAiConversationSessions(input: {
         session,
         userMessage: turnSeed.userMessage,
         assistantResponse: turnSeed.assistantResponse,
+        responseBlockPayload: normalizeCompletedAiResponse(turnSeed.assistantResponse),
         status: 'completed',
         metadata: {
           scenario: 'realistic-ai-chat',

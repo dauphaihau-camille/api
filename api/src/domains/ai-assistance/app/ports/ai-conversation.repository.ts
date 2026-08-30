@@ -4,6 +4,7 @@ import type {
   AiConversationSessionListRepositoryResult,
   AiConversationSessionSummary,
   AiDocumentAttachment,
+  AiResponseBlockPayload,
   AiResponseReservationRecord,
   AiResponseUsage,
   ListAiConversationSessionsQuery,
@@ -42,6 +43,7 @@ export abstract class AiConversationRepository {
     sessionId: string;
     userMessage: string;
     assistantResponse: string;
+    responseBlockPayload: AiResponseBlockPayload;
     attachments: AiDocumentAttachment[];
     metadata: Record<string, unknown>;
   }): Promise<AiChatTurnSummary>;

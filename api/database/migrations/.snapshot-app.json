@@ -324,6 +324,22 @@
           "comment": null,
           "enumItems": [],
           "mappedType": "json"
+        },
+        "response_block_payload": {
+          "name": "response_block_payload",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "'[]'",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "json"
         }
       },
       "name": "ai_chat_turns",

@@ -128,6 +128,11 @@ describe('AiAssistanceController', () => {
       sessionId: 'ai-session-1',
       userMessage: 'Summarize this',
       assistantResponse: 'Summary',
+      responseBlockPayload: [{
+        id: 'ai-block-1',
+        type: 'paragraph',
+        content: [{ type: 'text', text: 'Summary' }],
+      }],
       status: 'completed',
       attachments: [{ documentId: 'document-1', title: 'Doc 1' }],
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
@@ -151,6 +156,11 @@ describe('AiAssistanceController', () => {
       session_id: 'ai-session-1',
       user_message: 'Summarize this',
       assistant_response: 'Summary',
+      response_block_payload: [{
+        id: 'ai-block-1',
+        type: 'paragraph',
+        content: [{ type: 'text', text: 'Summary' }],
+      }],
       status: 'completed',
       attachments: [{ document_id: 'document-1', title: 'Doc 1' }],
       created_at: '2026-01-01T00:00:00.000Z',
@@ -171,6 +181,11 @@ describe('AiAssistanceController', () => {
         sessionId: 'ai-session-1',
         userMessage: 'Summarize this',
         assistantResponse: 'Summary',
+        responseBlockPayload: [{
+          id: 'ai-block-1',
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'Summary' }],
+        }],
         status: 'completed',
         attachments: [{ documentId: 'document-1', title: 'Doc 1' }],
         createdAt: new Date('2026-01-01T00:00:00.000Z'),
@@ -201,6 +216,11 @@ describe('AiAssistanceController', () => {
         session_id: 'ai-session-1',
         user_message: 'Summarize this',
         assistant_response: 'Summary',
+        response_block_payload: [{
+          id: 'ai-block-1',
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'Summary' }],
+        }],
         status: 'completed',
         attachments: [{ document_id: 'document-1', title: 'Doc 1' }],
         created_at: '2026-01-01T00:00:00.000Z',
@@ -224,7 +244,17 @@ describe('AiAssistanceController', () => {
     const createTurn = {
       executeStream: jest.fn().mockReturnValue((async function* streamTurn() {
         yield { type: 'started', sessionId: 'ai-session-1' };
-        yield { type: 'delta', text: 'Sum' };
+        yield {
+          type: 'block_start',
+          blockId: 'ai-block-1',
+          blockType: 'paragraph',
+        };
+        yield {
+          type: 'text_delta',
+          blockId: 'ai-block-1',
+          content: [{ type: 'text', text: 'Summary' }],
+        };
+        yield { type: 'block_end', blockId: 'ai-block-1' };
         yield {
           type: 'done',
           turn: {
@@ -234,6 +264,11 @@ describe('AiAssistanceController', () => {
             assistantResponse: 'Summary',
             status: 'completed',
             attachments: [{ documentId: 'document-1', title: 'Doc 1' }],
+            responseBlockPayload: [{
+              id: 'ai-block-1',
+              type: 'paragraph',
+              content: [{ type: 'text', text: 'Summary' }],
+            }],
             createdAt: new Date('2026-01-01T00:00:00.000Z'),
             updatedAt: new Date('2026-01-01T00:01:00.000Z'),
           },
@@ -263,27 +298,45 @@ describe('AiAssistanceController', () => {
     );
 
     expect(response.setHeader).toHaveBeenCalledWith('Content-Type', 'application/x-ndjson; charset=utf-8');
-    expect(response.write).toHaveBeenCalledWith(JSON.stringify({
-      type: 'started',
-      session_id: 'ai-session-1',
-    }) + '\n');
-    expect(response.write).toHaveBeenCalledWith(JSON.stringify({
-      type: 'delta',
-      text: 'Sum',
-    }) + '\n');
-    expect(response.write).toHaveBeenCalledWith(JSON.stringify({
-      type: 'done',
-      turn: {
-        id: 'turn-1',
+    const writtenEvents = response.write.mock.calls.map(([line]) => JSON.parse(String(line)));
+    expect(writtenEvents).toEqual([
+      {
+        type: 'started',
         session_id: 'ai-session-1',
-        user_message: 'Summarize this',
-        assistant_response: 'Summary',
-        status: 'completed',
-        attachments: [{ document_id: 'document-1', title: 'Doc 1' }],
-        created_at: '2026-01-01T00:00:00.000Z',
-        updated_at: '2026-01-01T00:01:00.000Z',
       },
-    }) + '\n');
+      {
+        type: 'block_start',
+        block_id: 'ai-block-1',
+        block_type: 'paragraph',
+      },
+      {
+        type: 'text_delta',
+        block_id: 'ai-block-1',
+        content: [{ type: 'text', text: 'Summary' }],
+      },
+      {
+        type: 'block_end',
+        block_id: 'ai-block-1',
+      },
+      {
+        type: 'done',
+        turn: {
+          id: 'turn-1',
+          session_id: 'ai-session-1',
+          user_message: 'Summarize this',
+          assistant_response: 'Summary',
+          response_block_payload: [{
+            id: 'ai-block-1',
+            type: 'paragraph',
+            content: [{ type: 'text', text: 'Summary' }],
+          }],
+          status: 'completed',
+          attachments: [{ document_id: 'document-1', title: 'Doc 1' }],
+          created_at: '2026-01-01T00:00:00.000Z',
+          updated_at: '2026-01-01T00:01:00.000Z',
+        },
+      },
+    ]);
     expect(response.end).toHaveBeenCalledTimes(1);
     expect(createTurn.executeStream).toHaveBeenCalledWith(currentUser, {
       workspaceId: 'workspace-1',

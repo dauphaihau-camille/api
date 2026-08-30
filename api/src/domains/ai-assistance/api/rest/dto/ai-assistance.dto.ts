@@ -8,6 +8,7 @@ import type {
   AiChatTurnSummary,
   AiConversationSessionSummary,
   AiDocumentAttachment,
+  AiResponseBlockPayload,
   AiResponseEntitlementSummary,
 } from '../../../app/contracts/ai-assistance.contract';
 
@@ -171,6 +172,9 @@ export class AiChatTurnResponseDto {
   assistant_response!: string;
 
   @ApiProperty()
+  response_block_payload!: AiResponseBlockPayload;
+
+  @ApiProperty()
   status!: string;
 
   @ApiProperty({ type: [AiDocumentAttachmentResponseDto] })
@@ -188,6 +192,7 @@ export class AiChatTurnResponseDto {
       session_id: turn.sessionId,
       user_message: turn.userMessage,
       assistant_response: turn.assistantResponse,
+      response_block_payload: turn.responseBlockPayload,
       status: turn.status,
       attachments: turn.attachments.map(AiDocumentAttachmentResponseDto.fromSummary),
       created_at: turn.createdAt.toISOString(),

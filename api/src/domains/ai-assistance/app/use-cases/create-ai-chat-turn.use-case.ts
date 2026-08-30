@@ -5,13 +5,20 @@ import {
   type AiSourceDocument,
   DocumentDetailQueryRepository,
 } from '~/domains/document/app/ports/document-detail-query.repository';
+import { WorkspaceRepository } from '~/domains/workspace/app/ports/workspace.repository';
 import { AiService } from '~/integrations/ai/ai.service';
 import type { GenerateTextResult } from '~/integrations/ai/app/ai.types';
-import { WorkspaceRepository } from '~/domains/workspace/app/ports/workspace.repository';
 import type {
   AiChatTurnSummary,
   AiDocumentAttachment,
+  AiResponseBlock,
+  AiResponseBlockPayload,
+  AiResponseInlineContent,
 } from '../contracts/ai-assistance.contract';
+import {
+  AiResponseStreamNormalizer,
+  normalizeCompletedAiResponse,
+} from '../services/ai-response-normalizer';
 import {
   AiContextSizeLimitExceededError,
   AiConversationSessionNotFoundError,
@@ -40,8 +47,19 @@ export type AiChatTurnStreamEvent =
     sessionId: string;
   }
   | {
-    type: 'delta';
-    text: string;
+    type: 'block_start';
+    blockId: string;
+    blockType: AiResponseBlock['type'];
+    props?: AiResponseBlock['props'];
+  }
+  | {
+    type: 'text_delta';
+    blockId: string;
+    content: AiResponseInlineContent[];
+  }
+  | {
+    type: 'block_end';
+    blockId: string;
   }
   | {
     type: 'done';
@@ -100,6 +118,7 @@ export class CreateAiChatTurnUseCase {
     const reservation = await this.aiResponseGateService.reserveResponse(input.workspaceId);
     let reservationSettled = false;
     let assistantResponse = '';
+    const normalizer = new AiResponseStreamNormalizer();
 
     try {
       yield {
@@ -113,14 +132,23 @@ export class CreateAiChatTurnUseCase {
       })) {
         if (event.type === 'delta') {
           assistantResponse += event.text;
-          yield event;
+
+          for (const blockEvent of normalizer.append(event.text)) {
+            yield blockEvent;
+          }
+
           continue;
         }
 
+        const completion = normalizer.complete();
+
+        for (const blockEvent of completion.events) {
+          yield blockEvent;
+        }
         const turn = await this.persistCompletedTurn(input, request.sourceDocuments, {
           ...event.result,
           text: assistantResponse || event.result.text,
-        });
+        }, completion.payload);
 
         await this.aiResponseGateService.consumeReservation(reservation);
         reservationSettled = true;
@@ -222,6 +250,8 @@ export class CreateAiChatTurnUseCase {
           'You are Camille AI, a concise workspace writing assistant.',
           'Use only the attached document context when document context is provided.',
           'Do not claim that hidden workspace retrieval was performed.',
+          'Return document content as clean Markdown using headings, paragraphs, bullets, numbered lists, bold, and italic where useful.',
+          'Do not wrap the response in a Markdown code fence.',
         ].join(' '),
       },
       ...(context.length > 0
@@ -246,11 +276,13 @@ export class CreateAiChatTurnUseCase {
     input: CreateAiChatTurnInput,
     sourceDocuments: SourceDocument[],
     result: GenerateTextResult,
+    responseBlockPayload: AiResponseBlockPayload = normalizeCompletedAiResponse(result.text),
   ): Promise<AiChatTurnSummary> {
     return this.aiConversationRepository.createCompletedTurn({
       sessionId: input.sessionId,
       userMessage: input.message,
       assistantResponse: result.text,
+      responseBlockPayload,
       attachments: sourceDocuments.map(({ documentId, title }) => ({ documentId, title })),
       metadata: {
         model: result.model,

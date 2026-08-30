@@ -8,6 +8,24 @@ export type AiDocumentAttachment = {
   title: string;
 };
 
+export type AiResponseInlineContent = {
+  type: 'text';
+  text: string;
+  styles?: {
+    bold?: true;
+    italic?: true;
+  };
+};
+
+export type AiResponseBlock = {
+  id: string;
+  type: 'paragraph' | 'bulletListItem' | 'numberedListItem' | 'heading';
+  content: AiResponseInlineContent[];
+  props?: { level: number };
+};
+
+export type AiResponseBlockPayload = AiResponseBlock[];
+
 export type AiChatTurnStatus = 'completed' | 'failed' | 'canceled';
 
 export type AiConversationSessionSummary = {
@@ -44,6 +62,7 @@ export type AiChatTurnSummary = {
   sessionId: string;
   userMessage: string;
   assistantResponse: string;
+  responseBlockPayload: AiResponseBlockPayload;
   status: AiChatTurnStatus;
   attachments: AiDocumentAttachment[];
   createdAt: Date;

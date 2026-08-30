@@ -6,7 +6,10 @@ import {
 } from '@mikro-orm/core';
 import { AbstractWorkspaceEntity } from '~/domains/workspace/infra/persistence/entities/abstract-workspace.entity';
 import { AiConversationSessionEntity } from './ai-conversation-session.entity';
-import type { AiChatTurnStatus } from '../../../app/contracts/ai-assistance.contract';
+import type {
+  AiChatTurnStatus,
+  AiResponseBlockPayload,
+} from '../../../app/contracts/ai-assistance.contract';
 
 @Entity({ tableName: 'ai_chat_turns' })
 export class AiChatTurnEntity extends AbstractWorkspaceEntity {
@@ -21,6 +24,9 @@ export class AiChatTurnEntity extends AbstractWorkspaceEntity {
 
   @Property({ fieldName: 'assistant_response', type: 'text' })
   assistantResponse!: string;
+
+  @Property({ fieldName: 'response_block_payload', type: 'json' })
+  responseBlockPayload: AiResponseBlockPayload = [];
 
   @Enum({ fieldName: 'status', items: ['completed', 'failed', 'canceled'] })
   status: AiChatTurnStatus = 'completed';

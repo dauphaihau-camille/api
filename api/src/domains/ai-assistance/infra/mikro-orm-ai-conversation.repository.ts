@@ -11,6 +11,7 @@ import type {
   AiConversationSessionListRepositoryResult,
   AiConversationSessionSummary,
   AiDocumentAttachment,
+  AiResponseBlockPayload,
   AiResponseReservationRecord,
   AiResponseUsage,
   ListAiConversationSessionsQuery,
@@ -190,6 +191,7 @@ export class MikroOrmAiConversationRepository extends AiConversationRepository {
     userMessage: string;
     assistantResponse: string;
     attachments: AiDocumentAttachment[];
+    responseBlockPayload: AiResponseBlockPayload;
     metadata: Record<string, unknown>;
   }): Promise<AiChatTurnSummary> {
     const entityManager = this.entityManager.fork();
@@ -200,6 +202,7 @@ export class MikroOrmAiConversationRepository extends AiConversationRepository {
       userMessage: input.userMessage,
       assistantResponse: input.assistantResponse,
       status: 'completed',
+      responseBlockPayload: input.responseBlockPayload,
       metadata: input.metadata,
     });
 
@@ -324,6 +327,7 @@ export class MikroOrmAiConversationRepository extends AiConversationRepository {
       sessionId: turn.session.id,
       userMessage: turn.userMessage,
       assistantResponse: turn.assistantResponse,
+      responseBlockPayload: turn.responseBlockPayload,
       status: turn.status,
       attachments,
       createdAt: turn.createdAt,
