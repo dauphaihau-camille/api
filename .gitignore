@@ -21,6 +21,9 @@ package-lock.json
 **/.env.local
 **/.env.*.local
 
+# Local seed data
+seed-data/documents.local/
+
 # Logs
 *.log
 npm-debug.log*

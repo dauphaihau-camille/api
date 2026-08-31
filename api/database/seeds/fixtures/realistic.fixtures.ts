@@ -188,6 +188,24 @@ export const REALISTIC_WORKSPACE_TEMPLATES: WorkspaceTemplate[] = [
             kind: 'spec',
             summary: 'Interaction states for grounded answers, citations, suggestions, corrections, and feedback capture.',
           },
+          {
+            key: 'launch-metrics',
+            title: 'Launch Metrics',
+            kind: 'tracker',
+            summary: 'Activation, answer usefulness, feedback rate, and retention signals for launch decisions.',
+          },
+          {
+            key: 'pricing-packaging',
+            title: 'Pricing Packaging',
+            kind: 'spec',
+            summary: 'Upgrade prompts, plan limits, trial messaging, and packaging tradeoffs for AI features.',
+          },
+          {
+            key: 'customer-comms',
+            title: 'Customer Comms',
+            kind: 'notes',
+            summary: 'Announcement copy, help-center notes, email drafts, and customer-facing launch language.',
+          },
         ],
       },
       {
@@ -222,7 +240,6 @@ export const REALISTIC_WORKSPACE_TEMPLATES: WorkspaceTemplate[] = [
         title: 'Customer Signals',
         kind: 'hub',
         summary: 'Voice-of-customer themes that shape AI assistant ranking, summarization, and launch priorities.',
-        teamspaceKey: 'product',
         children: [
           {
             key: 'theme-board',

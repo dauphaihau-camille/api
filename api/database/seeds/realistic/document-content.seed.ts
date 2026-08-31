@@ -15,7 +15,7 @@ export function paragraph(text: string): TextBlock {
   };
 }
 
-function heading(text: string, level: 2 | 3 = 2): TextBlock {
+export function heading(text: string, level: 1 | 2 | 3 = 2): TextBlock {
   return {
     type: 'heading',
     props: { level },
@@ -23,7 +23,7 @@ function heading(text: string, level: 2 | 3 = 2): TextBlock {
   };
 }
 
-function buildSubpageBlock(input: {
+export function buildSubpageBlock(input: {
   documentId: string;
   publicId: string;
   workspaceId: string;
@@ -43,7 +43,6 @@ function buildSubpageBlock(input: {
 }
 
 export function buildRealisticLeafContent(input: {
-  title: string;
   summary: string;
   kind: DocumentBlueprint['kind'];
 }): unknown[] {
@@ -79,7 +78,6 @@ export function buildRealisticLeafContent(input: {
   };
 
   return [
-    heading(input.title, 2),
     paragraph(input.summary),
     heading('Objective', 3),
     paragraph(focusLineByKind[input.kind]),
@@ -93,14 +91,12 @@ export function buildRealisticLeafContent(input: {
 }
 
 export function buildRealisticParentContent(input: {
-  title: string;
   summary: string;
   kind: DocumentBlueprint['kind'];
   childDocuments: SeedDocumentSummary[];
 }): unknown[] {
   return [
     ...buildRealisticLeafContent({
-      title: input.title,
       summary: input.summary,
       kind: input.kind,
     }),

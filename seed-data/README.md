@@ -7,6 +7,8 @@ Expected layout:
 - `seed-data/auth-role-permissions.tsv`
 - `seed-data/auth-users.tsv`
 - `seed-data/auth-users.local.tsv` (optional, local-only)
+- `seed-data/documents/<workspace-slug>/**/*.md` (optional tracked custom realistic documents)
+- `seed-data/documents.local/<workspace-slug>/**/*.md` (optional local-only custom realistic documents)
 
 Rules:
 
@@ -16,6 +18,11 @@ Rules:
 - `email_verified` must be `true` or `false`.
 - `role_key` must match a role seeded in `auth-roles.tsv`.
 - `auth-users.local.tsv` is intended for machine-specific demo accounts and should stay out of version control.
+- Optional tracked custom Markdown documents can live under `documents/<workspace-slug>/`.
+- Optional local-only custom Markdown documents can live under `documents.local/<workspace-slug>/`.
+- Each Markdown file becomes one document during `pnpm run db:seed:realistic`.
+- Nested folders create nested documents when the parent `<name>.md` exists beside the `<name>/` folder.
+- Root Markdown documents require `ownerEmail` frontmatter; child documents inherit `ownerEmail` and optional `teamspace` from ancestors.
 
 Seed modes:
 
@@ -48,6 +55,7 @@ Realistic scenario seed configuration:
 - `SEED_REALISTIC_WORKSPACE_REPLICAS`
 - `SEED_REALISTIC_EXTRA_MEMBERS_PER_WORKSPACE`
 - `SEED_REALISTIC_DEFAULT_PASSWORD`
+- `SEED_MARKDOWN_DOCUMENTS_DIR` (optional absolute or relative path to one custom Markdown documents directory; by default the realistic seed scans both `../seed-data/documents` and `../seed-data/documents.local` from the API package)
 
 Realistic subscription states:
 
@@ -57,3 +65,24 @@ Realistic subscription states:
 - Replica `2` of `Northstar GTM AI`: Plus past due.
 - `Seeded Block Limit Lab`: Free collaborative workspace seeded at exactly 1,000 content blocks.
 - `Seeded Over Limit Lab`: Free collaborative workspace seeded at 1,200 content blocks for downgrade-style over-limit checks.
+
+Markdown document seeds:
+
+- Default roots: `seed-data/documents/` and `seed-data/documents.local/`.
+- Recommended tracked layout:
+  - `seed-data/documents/acme-product/AI Launch Plan.md`
+  - `seed-data/documents/acme-product/AI Launch Plan/Evaluation Checklist.md`
+- Recommended local-only layout:
+  - `seed-data/documents.local/acme-product/Private Notes.md`
+- Frontmatter fields:
+  - `title` (optional; defaults to first `# Heading` or filename)
+  - `workspace` or `workspaceSlug` (optional when the first directory is the workspace slug)
+  - `teamspace` (optional teamspace name; inherited by children)
+  - `ownerEmail` (required on each root document or an ancestor)
+  - `sortKey` (optional integer)
+- Markdown conversion is intentionally conservative:
+  - headings become heading blocks
+  - ordered list items become numbered list blocks
+  - unordered list items become bullet list blocks
+  - paragraphs, tables, code fences, and image placeholders become paragraph blocks
+  - `**bold**` inline text becomes bold text spans

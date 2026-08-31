@@ -135,7 +135,6 @@ export async function seedDocumentTree(
     parentDocumentId: parentDocument?.id,
     title: blueprint.title,
     contentJson: buildRealisticLeafContent({
-      title: blueprint.title,
       summary: blueprint.summary,
       kind: blueprint.kind,
     }),
@@ -166,7 +165,6 @@ export async function seedDocumentTree(
   if (childDocuments.length > 0) {
     const existingDocument = await em.findOneOrFail(DocumentEntity, { id: summary.id });
     const nextContent = buildRealisticParentContent({
-      title: blueprint.title,
       summary: blueprint.summary,
       kind: blueprint.kind,
       childDocuments,
@@ -198,7 +196,6 @@ export async function seedMemberPersonalDocuments(input: {
         workspaceId: input.workspaceId,
         title: template.title,
         contentJson: buildRealisticLeafContent({
-          title: template.title,
           summary: template.summary,
           kind: template.kind,
         }),
@@ -218,7 +215,6 @@ export async function seedMemberPersonalDocuments(input: {
         workspaceId: input.workspaceId,
         title: sharedTitle,
         contentJson: buildRealisticLeafContent({
-          title: sharedTitle,
           summary: template.summary,
           kind: template.kind,
         }),

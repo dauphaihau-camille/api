@@ -22,6 +22,7 @@ import {
   seedDocumentTree,
   seedMemberPersonalDocuments,
 } from './realistic/documents.seed';
+import { seedMarkdownDocuments } from './realistic/markdown-documents.seed';
 import type {
   RealisticSeedConfig,
   SeedDocumentSummary,
@@ -184,6 +185,11 @@ export async function seedRealisticData(em: EntityManager): Promise<void> {
       users,
       ...labWorkspace,
     });
+  }
+
+  const markdownDocuments = await seedMarkdownDocuments({ em, users });
+  if (markdownDocuments.length > 0) {
+    console.log(`[seed][realistic] Seeded ${markdownDocuments.length} markdown documents`);
   }
 
   console.log(`[seed][realistic] Total duration: ${formatDuration(Date.now() - startedAt)}`);
