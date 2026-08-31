@@ -1,8 +1,8 @@
 import {
   buildRealisticLeafContent,
   buildRealisticParentContent,
-  buildRealisticSubscriptionSeed,
-} from './realistic.seed';
+} from './realistic/document-content.seed';
+import { buildRealisticSubscriptionSeed } from './realistic/workspaces.seed';
 import { SubscriptionPlan } from '../../src/domains/subscription/domain/enums/subscription-plan.enum';
 import { SubscriptionStatus } from '../../src/domains/subscription/domain/enums/subscription-status.enum';
 
