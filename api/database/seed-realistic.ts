@@ -5,8 +5,8 @@ import { AiChatTurnEntity } from '../src/domains/ai-assistance/infra/persistence
 import { AiConversationSessionEntity } from '../src/domains/ai-assistance/infra/persistence/entities/ai-conversation-session.entity';
 import { AiDocumentAttachmentEntity } from '../src/domains/ai-assistance/infra/persistence/entities/ai-document-attachment.entity';
 import { AiResponseReservationEntity } from '../src/domains/ai-assistance/infra/persistence/entities/ai-response-reservation.entity';
-import { CurrentUserCredentialEntity } from '../src/domains/auth/infra/persistence/entities/current-user-credential.entity';
-import { CurrentUserEntity } from '../src/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserCredentialEntity } from '../src/domains/auth/infra/persistence/entities/user-credential.entity';
+import { UserEntity } from '../src/domains/user/infra/persistence/entities/user.entity';
 import { EmailVerificationTokenEntity } from '../src/domains/auth/infra/persistence/entities/email-verification-token.entity';
 import { PermissionEntity } from '../src/domains/auth/infra/persistence/entities/permission.entity';
 import { PasswordResetTokenEntity } from '../src/domains/auth/infra/persistence/entities/password-reset-token.entity';
@@ -47,8 +47,8 @@ async function main() {
       AiChatTurnEntity,
       AiDocumentAttachmentEntity,
       AiResponseReservationEntity,
-      CurrentUserEntity,
-      CurrentUserCredentialEntity,
+      UserEntity,
+      UserCredentialEntity,
       UserSessionEntity,
       PasswordResetTokenEntity,
       EmailVerificationTokenEntity,

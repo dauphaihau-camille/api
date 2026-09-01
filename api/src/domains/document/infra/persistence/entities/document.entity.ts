@@ -6,7 +6,7 @@ import {
   Unique,
 } from '@mikro-orm/core';
 import { randomBytes } from 'node:crypto';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../../../user/infra/persistence/entities/user.entity';
 import { TeamspaceEntity } from '~/domains/teamspace/infra/persistence/entities/teamspace.entity';
 import { WorkspaceEntity } from '~/domains/workspace/infra/persistence/entities/workspace.entity';
 import { AbstractWorkspaceEntity } from '~/domains/workspace/infra/persistence/entities/abstract-workspace.entity';
@@ -50,12 +50,12 @@ export class DocumentEntity extends AbstractWorkspaceEntity {
   @Property({ fieldName: 'public_access_override', nullable: true })
   publicAccessOverride?: 'unpublished';
 
-  @ManyToOne(() => CurrentUserEntity, { fieldName: 'created_by' })
-  createdBy!: CurrentUserEntity;
+  @ManyToOne(() => UserEntity, { fieldName: 'created_by' })
+  createdBy!: UserEntity;
 
-  @ManyToOne(() => CurrentUserEntity, { fieldName: 'owner_user_id' })
-  ownerUser!: CurrentUserEntity;
+  @ManyToOne(() => UserEntity, { fieldName: 'owner_user_id' })
+  ownerUser!: UserEntity;
 
-  @ManyToOne(() => CurrentUserEntity, { fieldName: 'updated_by' })
-  updatedBy!: CurrentUserEntity;
+  @ManyToOne(() => UserEntity, { fieldName: 'updated_by' })
+  updatedBy!: UserEntity;
 }

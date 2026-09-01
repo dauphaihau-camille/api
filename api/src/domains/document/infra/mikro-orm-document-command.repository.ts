@@ -1,7 +1,7 @@
 import { LockMode } from '@mikro-orm/core';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable, Scope } from '@nestjs/common';
-import { CurrentUserEntity } from '../../auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../user/infra/persistence/entities/user.entity';
 import { TeamspaceEntity } from '../../teamspace/infra/persistence/entities/teamspace.entity';
 import {
   DocumentCommandRepository,
@@ -64,14 +64,14 @@ export class MikroOrmDocumentCommandRepository implements DocumentCommandReposit
       contentJson: input.contentJson,
       searchText: input.searchText,
       sortKey: input.sortKey,
-      createdBy: this.scopedEntityManager.getReference(CurrentUserEntity, input.createdByUserId),
-      ownerUser: this.scopedEntityManager.getReference(CurrentUserEntity, input.ownerUserId),
-      updatedBy: this.scopedEntityManager.getReference(CurrentUserEntity, input.updatedByUserId),
+      createdBy: this.scopedEntityManager.getReference(UserEntity, input.createdByUserId),
+      ownerUser: this.scopedEntityManager.getReference(UserEntity, input.ownerUserId),
+      updatedBy: this.scopedEntityManager.getReference(UserEntity, input.updatedByUserId),
     });
   }
 
   assignUpdatedByUser(document: DocumentEntity, userId: string): void {
-    document.updatedBy = this.scopedEntityManager.getReference(CurrentUserEntity, userId);
+    document.updatedBy = this.scopedEntityManager.getReference(UserEntity, userId);
   }
 
   async saveDocument(document: DocumentEntity): Promise<void> {

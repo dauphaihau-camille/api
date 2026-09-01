@@ -5,7 +5,7 @@ import {
   Property,
   Unique,
 } from '@mikro-orm/core';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../../../user/infra/persistence/entities/user.entity';
 import { WorkspaceEntity } from '~/domains/workspace/infra/persistence/entities/workspace.entity';
 import { AbstractWorkspaceEntity } from '~/domains/workspace/infra/persistence/entities/abstract-workspace.entity';
 import { DocumentAccessGrantPermission } from '../../../domain/enums/document-access-grant-permission.enum';
@@ -30,6 +30,6 @@ export class DocumentAccessSettingEntity extends AbstractWorkspaceEntity {
   })
   workspaceMemberPermission?: DocumentAccessGrantPermission;
 
-  @ManyToOne(() => CurrentUserEntity, { fieldName: 'updated_by' })
-  updatedBy!: CurrentUserEntity;
+  @ManyToOne(() => UserEntity, { fieldName: 'updated_by' })
+  updatedBy!: UserEntity;
 }

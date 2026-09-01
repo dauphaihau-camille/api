@@ -1,6 +1,6 @@
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../user/infra/persistence/entities/user.entity';
 import { WorkspaceEntity } from '~/domains/workspace/infra/persistence/entities/workspace.entity';
 import type { DocumentAccessGrantPermission } from '../domain/enums/document-access-grant-permission.enum';
 import {
@@ -66,11 +66,11 @@ export class MikroOrmDocumentAccessSettingRepository extends DocumentAccessSetti
       repository.create({
         workspace: entityManager.getReference(WorkspaceEntity, input.workspaceId),
         document: entityManager.getReference(DocumentEntity, input.documentId),
-        updatedBy: entityManager.getReference(CurrentUserEntity, input.updatedByUserId),
+        updatedBy: entityManager.getReference(UserEntity, input.updatedByUserId),
       });
 
     setting.workspaceMemberPermission = input.permission;
-    setting.updatedBy = entityManager.getReference(CurrentUserEntity, input.updatedByUserId);
+    setting.updatedBy = entityManager.getReference(UserEntity, input.updatedByUserId);
 
     await entityManager.persist(setting).flush();
     await entityManager.populate(setting, ['document', 'updatedBy']);

@@ -2,7 +2,7 @@ import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { forwardRef, Module } from '@nestjs/common';
 import { AuditModule } from '../../integrations/audit/audit.module';
 import { StorageModule } from '../../integrations/storage/storage.module';
-import { CurrentUserEntity } from '../auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../user/infra/persistence/entities/user.entity';
 import { DocumentModule } from '../document/document.module';
 import { MikroOrmWorkspaceRepository } from './infra/mikro-orm-workspace.repository';
 import { WorkspaceRepository } from './app/ports/workspace.repository';
@@ -22,7 +22,7 @@ import { WorkspaceMemberEntity } from './infra/persistence/entities/workspace-me
     StorageModule,
     forwardRef(() => DocumentModule),
     MikroOrmModule.forFeature([
-      CurrentUserEntity,
+      UserEntity,
       WorkspaceEntity,
       WorkspaceMemberEntity,
     ]),

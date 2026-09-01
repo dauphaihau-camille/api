@@ -8,7 +8,7 @@ import {
   sep,
 } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { CurrentUserEntity } from '../../../src/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../../src/domains/user/infra/persistence/entities/user.entity';
 import { extractDocumentSearchText } from '../../../src/domains/document/app/utils/document-search-text.util';
 import { DocumentEntity } from '../../../src/domains/document/infra/persistence/entities/document.entity';
 import { TeamspaceEntity } from '../../../src/domains/teamspace/infra/persistence/entities/teamspace.entity';
@@ -275,7 +275,7 @@ export async function seedMarkdownDocuments(input: {
 
     document.contentJson = nextContent;
     document.searchText = extractDocumentSearchText(nextContent);
-    document.updatedBy = input.em.getReference(CurrentUserEntity, node.owner.id);
+    document.updatedBy = input.em.getReference(UserEntity, node.owner.id);
     input.em.persist(document);
   }
 

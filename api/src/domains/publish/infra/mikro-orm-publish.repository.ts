@@ -1,6 +1,6 @@
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
-import { CurrentUserEntity } from '../../auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../user/infra/persistence/entities/user.entity';
 import { DocumentEntity } from '../../document/infra/persistence/entities/document.entity';
 import type {
   PublicBreadcrumbItem,
@@ -64,7 +64,7 @@ export class MikroOrmPublishRepository implements PublishRepository {
     const subtree = await this.findSubtreeDocuments(entityManager, rootDocument.workspace.id, rootDocument.id, {
       activeOnly: true,
     });
-    const actor = await entityManager.findOneOrFail(CurrentUserEntity, { id: userId });
+    const actor = await entityManager.findOneOrFail(UserEntity, { id: userId });
     const resolvedRootDocument = subtree[0];
 
     if (!resolvedRootDocument) {

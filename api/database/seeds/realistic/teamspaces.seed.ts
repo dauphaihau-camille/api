@@ -1,5 +1,5 @@
 import type { EntityManager } from '@mikro-orm/postgresql';
-import { CurrentUserEntity } from '../../../src/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../../src/domains/user/infra/persistence/entities/user.entity';
 import { TeamspaceAccessMode } from '../../../src/domains/teamspace/domain/enums/teamspace-access-mode.enum';
 import { TeamspaceMemberEntity } from '../../../src/domains/teamspace/infra/persistence/entities/teamspace-member.entity';
 import { TeamspaceEntity } from '../../../src/domains/teamspace/infra/persistence/entities/teamspace.entity';
@@ -83,7 +83,7 @@ export async function upsertTeamspaceMembers(
       const teamspaceMember = existingMember ??
         em.create(TeamspaceMemberEntity, {
           teamspace: em.getReference(TeamspaceEntity, teamspace.id),
-          user: em.getReference(CurrentUserEntity, user.id),
+          user: em.getReference(UserEntity, user.id),
           role: member.role,
         });
 

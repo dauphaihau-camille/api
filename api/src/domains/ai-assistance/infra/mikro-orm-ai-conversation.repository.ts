@@ -1,6 +1,6 @@
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../user/infra/persistence/entities/user.entity';
 import { DocumentEntity } from '~/domains/document/infra/persistence/entities/document.entity';
 import { buildCursorPaginationMeta } from '~/platform/application/cursor-pagination';
 import { WorkspaceEntity } from '~/domains/workspace/infra/persistence/entities/workspace.entity';
@@ -162,7 +162,7 @@ export class MikroOrmAiConversationRepository extends AiConversationRepository {
 
     const session = entityManager.create(AiConversationSessionEntity, {
       workspace: entityManager.getReference(WorkspaceEntity, input.workspaceId),
-      user: entityManager.getReference(CurrentUserEntity, input.userId),
+      user: entityManager.getReference(UserEntity, input.userId),
       lastActivityAt: new Date(),
     });
 

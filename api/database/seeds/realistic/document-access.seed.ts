@@ -1,5 +1,5 @@
 import type { EntityManager } from '@mikro-orm/postgresql';
-import { CurrentUserEntity } from '../../../src/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../../src/domains/user/infra/persistence/entities/user.entity';
 import { DocumentAccessGrantEntity } from '../../../src/domains/document/infra/persistence/entities/document-access-grant.entity';
 import { DocumentAccessSettingEntity } from '../../../src/domains/document/infra/persistence/entities/document-access-setting.entity';
 import { DocumentEntity } from '../../../src/domains/document/infra/persistence/entities/document.entity';
@@ -23,16 +23,16 @@ export async function upsertDocumentAccessGrant(input: UpsertDocumentAccessGrant
     input.em.create(DocumentAccessGrantEntity, {
       workspace: input.em.getReference(WorkspaceEntity, input.workspaceId),
       document: input.em.getReference(DocumentEntity, input.documentId),
-      user: input.em.getReference(CurrentUserEntity, input.userId),
+      user: input.em.getReference(UserEntity, input.userId),
       permission: input.permission,
-      grantedBy: input.em.getReference(CurrentUserEntity, input.grantedById),
+      grantedBy: input.em.getReference(UserEntity, input.grantedById),
     });
 
   grant.workspace = input.em.getReference(WorkspaceEntity, input.workspaceId);
   grant.document = input.em.getReference(DocumentEntity, input.documentId);
-  grant.user = input.em.getReference(CurrentUserEntity, input.userId);
+  grant.user = input.em.getReference(UserEntity, input.userId);
   grant.permission = input.permission;
-  grant.grantedBy = input.em.getReference(CurrentUserEntity, input.grantedById);
+  grant.grantedBy = input.em.getReference(UserEntity, input.grantedById);
   grant.revokedAt = undefined;
   input.em.persist(grant);
 }
@@ -106,13 +106,13 @@ export async function seedDocumentAccessSettings(
       em.create(DocumentAccessSettingEntity, {
         workspace: em.getReference(WorkspaceEntity, workspaceId),
         document: em.getReference(DocumentEntity, document.id),
-        updatedBy: em.getReference(CurrentUserEntity, updatedBy.id),
+        updatedBy: em.getReference(UserEntity, updatedBy.id),
       });
 
     setting.workspace = em.getReference(WorkspaceEntity, workspaceId);
     setting.document = em.getReference(DocumentEntity, document.id);
     setting.workspaceMemberPermission = settingTemplate.workspaceMemberPermission;
-    setting.updatedBy = em.getReference(CurrentUserEntity, updatedBy.id);
+    setting.updatedBy = em.getReference(UserEntity, updatedBy.id);
     em.persist(setting);
   }
 

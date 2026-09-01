@@ -209,7 +209,7 @@ For example, this is suspicious:
 
 ```ts
 abstract class DocumentCommandRepository {
-  abstract findCurrentUser(userId: string): Promise<CurrentUserEntity>;
+  abstract findCurrentUser(userId: string): Promise<UserEntity>;
 }
 ```
 

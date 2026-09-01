@@ -7,16 +7,16 @@ import {
 } from '@mikro-orm/core';
 import type { OAuthProvider } from '../../../app/auth.types';
 import { AbstractAuthEntity } from './abstract-auth.entity';
-import { CurrentUserEntity } from './current-user.entity';
+import { UserEntity } from '../../../../user/infra/persistence/entities/user.entity';
 
 @Entity({ tableName: 'user_oauth_accounts' })
 @Unique({ properties: ['provider', 'providerUserId'] })
 export class OAuthAccountEntity extends AbstractAuthEntity {
-  @ManyToOne(() => CurrentUserEntity, {
+  @ManyToOne(() => UserEntity, {
     fieldName: 'user_id',
     deleteRule: 'cascade',
   })
-  user!: CurrentUserEntity;
+  user!: UserEntity;
 
   @Enum({
     items: ['google', 'github'],

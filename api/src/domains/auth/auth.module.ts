@@ -38,8 +38,7 @@ import { GithubStrategy } from './infra/github.strategy';
 import { GoogleStrategy } from './infra/google.strategy';
 import { JwtStrategy } from './infra/jwt.strategy';
 import { AuthPasswordResetLinkBuilder } from './infra/password-reset-link-builder.service';
-import { CurrentUserEntity } from './infra/persistence/entities/current-user.entity';
-import { CurrentUserCredentialEntity } from './infra/persistence/entities/current-user-credential.entity';
+import { UserCredentialEntity } from './infra/persistence/entities/user-credential.entity';
 import { EmailLoginChallengeEntity } from './infra/persistence/entities/email-login-challenge.entity';
 import { EmailVerificationTokenEntity } from './infra/persistence/entities/email-verification-token.entity';
 import { MikroOrmAuthSessionRepository } from './infra/persistence/mikro-orm-auth-session.repository';
@@ -67,8 +66,7 @@ import {
 } from './infra/oauth-provider-config';
 
 const authEntities = [
-  CurrentUserEntity,
-  CurrentUserCredentialEntity,
+  UserCredentialEntity,
   UserSessionEntity,
   PasswordResetTokenEntity,
   EmailLoginChallengeEntity,

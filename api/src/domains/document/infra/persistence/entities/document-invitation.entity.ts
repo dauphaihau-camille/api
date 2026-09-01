@@ -5,7 +5,7 @@ import {
   Property,
   Unique,
 } from '@mikro-orm/core';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../../../user/infra/persistence/entities/user.entity';
 import { WorkspaceEntity } from '~/domains/workspace/infra/persistence/entities/workspace.entity';
 import { AbstractWorkspaceEntity } from '~/domains/workspace/infra/persistence/entities/abstract-workspace.entity';
 import { DocumentAccessGrantPermission } from '../../../domain/enums/document-access-grant-permission.enum';
@@ -29,14 +29,14 @@ export class DocumentInvitationEntity extends AbstractWorkspaceEntity {
   @Enum({ items: () => DocumentAccessGrantPermission, fieldName: 'permission' })
   permission!: DocumentAccessGrantPermission;
 
-  @ManyToOne(() => CurrentUserEntity, { fieldName: 'invited_by' })
-  invitedBy!: CurrentUserEntity;
+  @ManyToOne(() => UserEntity, { fieldName: 'invited_by' })
+  invitedBy!: UserEntity;
 
-  @ManyToOne(() => CurrentUserEntity, {
+  @ManyToOne(() => UserEntity, {
     fieldName: 'accepted_by',
     nullable: true,
   })
-  acceptedBy?: CurrentUserEntity;
+  acceptedBy?: UserEntity;
 
   @Property({ fieldName: 'accepted_at', nullable: true })
   acceptedAt?: Date;

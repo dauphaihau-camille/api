@@ -1,7 +1,7 @@
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 import { isUniqueConstraintError } from '~/platform/database/is-unique-constraint-error';
-import { CurrentUserEntity } from '../../auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../user/infra/persistence/entities/user.entity';
 import { WorkspaceEntity } from '../../workspace/infra/persistence/entities/workspace.entity';
 import { WorkspacePreferenceRepository } from '../app/ports/workspace-preference.repository';
 import type { ExpandedDocumentIdsByScope } from '../app/workspace-preference.types';
@@ -45,7 +45,7 @@ export class MikroOrmWorkspacePreferenceRepository implements WorkspacePreferenc
     const entityManager = this.entityManager.fork();
 
     const preference = entityManager.create(WorkspacePreferenceEntity, {
-      user: entityManager.getReference(CurrentUserEntity, input.userId),
+      user: entityManager.getReference(UserEntity, input.userId),
       workspace: entityManager.getReference(WorkspaceEntity, input.workspaceId),
       expandedDocumentIdsByScope: input.expandedDocumentIdsByScope,
     });
@@ -81,7 +81,7 @@ export class MikroOrmWorkspacePreferenceRepository implements WorkspacePreferenc
     const lastActiveAt = new Date();
 
     const preference = entityManager.create(WorkspacePreferenceEntity, {
-      user: entityManager.getReference(CurrentUserEntity, input.userId),
+      user: entityManager.getReference(UserEntity, input.userId),
       workspace: entityManager.getReference(WorkspaceEntity, input.workspaceId),
       expandedDocumentIdsByScope: {},
       lastActiveAt,

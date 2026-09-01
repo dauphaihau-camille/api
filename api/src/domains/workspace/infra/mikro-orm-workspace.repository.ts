@@ -1,7 +1,7 @@
 import { LockMode, OptimisticLockError } from '@mikro-orm/core';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../user/infra/persistence/entities/user.entity';
 import { StorageService } from '~/integrations/storage/app/ports/storage.service';
 import { resolveUserAvatarUrl } from '~/integrations/storage/app/user-avatar-url.util';
 import {
@@ -89,7 +89,7 @@ export class MikroOrmWorkspaceRepository implements WorkspaceRepository {
     const entityManager = this.entityManager.fork();
     const workspaceRepository = entityManager.getRepository(WorkspaceEntity);
     const membershipRepository = entityManager.getRepository(WorkspaceMemberEntity);
-    const userRepository = entityManager.getRepository(CurrentUserEntity);
+    const userRepository = entityManager.getRepository(UserEntity);
     const owner = await userRepository.findOneOrFail({ id: input.ownerUserId });
 
     const workspace = workspaceRepository.create({
@@ -283,7 +283,7 @@ export class MikroOrmWorkspaceRepository implements WorkspaceRepository {
   }
 
   async findUserByEmail(email: string): Promise<WorkspaceUserRecord | null> {
-    const user = await this.entityManager.fork().findOne(CurrentUserEntity, {
+    const user = await this.entityManager.fork().findOne(UserEntity, {
       email: email.toLowerCase(),
     });
 
@@ -304,7 +304,7 @@ export class MikroOrmWorkspaceRepository implements WorkspaceRepository {
   }): Promise<WorkspaceMemberSummary> {
     const entityManager = this.entityManager.fork();
     const membershipRepository = entityManager.getRepository(WorkspaceMemberEntity);
-    const userRepository = entityManager.getRepository(CurrentUserEntity);
+    const userRepository = entityManager.getRepository(UserEntity);
     const workspaceRepository = entityManager.getRepository(WorkspaceEntity);
     const workspace = await workspaceRepository.findOneOrFail({ id: input.workspaceId });
     const user = await userRepository.findOneOrFail({ id: input.userId });

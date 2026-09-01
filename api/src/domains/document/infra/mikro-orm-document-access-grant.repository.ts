@@ -1,6 +1,6 @@
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../user/infra/persistence/entities/user.entity';
 import { WorkspaceMemberEntity } from '~/domains/workspace/infra/persistence/entities/workspace-member.entity';
 import { WorkspaceEntity } from '~/domains/workspace/infra/persistence/entities/workspace.entity';
 import { DocumentAccessGrantPermission } from '../domain/enums/document-access-grant-permission.enum';
@@ -211,7 +211,7 @@ export class MikroOrmDocumentAccessGrantRepository extends DocumentAccessGrantRe
   }
 
   async findUserById(userId: string): Promise<DocumentAccessGrantUserSummary | null> {
-    const user = await this.entityManager.fork().findOne(CurrentUserEntity, {
+    const user = await this.entityManager.fork().findOne(UserEntity, {
       id: userId,
     });
 
@@ -225,7 +225,7 @@ export class MikroOrmDocumentAccessGrantRepository extends DocumentAccessGrantRe
   }
 
   async findUserByEmail(email: string): Promise<DocumentAccessGrantUserSummary | null> {
-    const user = await this.entityManager.fork().findOne(CurrentUserEntity, {
+    const user = await this.entityManager.fork().findOne(UserEntity, {
       email,
     });
 
@@ -259,7 +259,7 @@ export class MikroOrmDocumentAccessGrantRepository extends DocumentAccessGrantRe
 
     if (existingGrant) {
       existingGrant.permission = input.permission;
-      existingGrant.grantedBy = entityManager.getReference(CurrentUserEntity, input.grantedByUserId);
+      existingGrant.grantedBy = entityManager.getReference(UserEntity, input.grantedByUserId);
       existingGrant.revokedAt = undefined;
       await entityManager.persist(existingGrant).flush();
       await entityManager.populate(existingGrant, ['document', 'user', 'grantedBy']);
@@ -270,9 +270,9 @@ export class MikroOrmDocumentAccessGrantRepository extends DocumentAccessGrantRe
     const grant = grantRepository.create({
       workspace: entityManager.getReference(WorkspaceEntity, input.workspaceId),
       document: entityManager.getReference(DocumentEntity, input.documentId),
-      user: entityManager.getReference(CurrentUserEntity, input.userId),
+      user: entityManager.getReference(UserEntity, input.userId),
       permission: input.permission,
-      grantedBy: entityManager.getReference(CurrentUserEntity, input.grantedByUserId),
+      grantedBy: entityManager.getReference(UserEntity, input.grantedByUserId),
     });
 
     await entityManager.persist(grant).flush();

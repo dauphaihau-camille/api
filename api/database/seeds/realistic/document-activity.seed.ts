@@ -1,5 +1,5 @@
 import type { EntityManager } from '@mikro-orm/postgresql';
-import { CurrentUserEntity } from '../../../src/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../../src/domains/user/infra/persistence/entities/user.entity';
 import { DocumentEntity } from '../../../src/domains/document/infra/persistence/entities/document.entity';
 import { DocumentSubdocReferenceEntity } from '../../../src/domains/document/infra/persistence/entities/document-subdoc-reference.entity';
 import { DocumentVisitEntity } from '../../../src/domains/document/infra/persistence/entities/document-visit.entity';
@@ -52,7 +52,7 @@ export async function seedWorkspacePreferences(
     const preference = existingByUserId.get(memberUser.id) ??
       em.create(WorkspacePreferenceEntity, {
         workspace: em.getReference(WorkspaceEntity, workspaceId),
-        user: em.getReference(CurrentUserEntity, memberUser.id),
+        user: em.getReference(UserEntity, memberUser.id),
         expandedDocumentIdsByScope: {},
       });
 
@@ -88,7 +88,7 @@ export async function seedFavoritesAndVisits(
         em.persist(
           em.create(DocumentFavoriteEntity, {
             workspace: em.getReference(WorkspaceEntity, workspaceId),
-            user: em.getReference(CurrentUserEntity, memberUser.id),
+            user: em.getReference(UserEntity, memberUser.id),
             document: em.getReference(DocumentEntity, favoriteDocument.id),
           }),
         );
@@ -104,7 +104,7 @@ export async function seedFavoritesAndVisits(
       const visit = existingVisit ??
         em.create(DocumentVisitEntity, {
           workspace: em.getReference(WorkspaceEntity, workspaceId),
-          user: em.getReference(CurrentUserEntity, memberUser.id),
+          user: em.getReference(UserEntity, memberUser.id),
           document: em.getReference(DocumentEntity, visitDocument.id),
           lastVisitedAt: new Date(),
         });
@@ -142,7 +142,7 @@ export async function seedPublishedDocs(
       em.create(PublishedDocumentEntity, {
         workspace: em.getReference(WorkspaceEntity, workspaceId),
         document: em.getReference(DocumentEntity, document.id),
-        publishedBy: em.getReference(CurrentUserEntity, memberUsers[index % memberUsers.length]!.id),
+        publishedBy: em.getReference(UserEntity, memberUsers[index % memberUsers.length]!.id),
       }),
     );
   }

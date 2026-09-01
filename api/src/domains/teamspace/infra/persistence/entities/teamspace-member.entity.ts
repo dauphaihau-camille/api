@@ -5,7 +5,7 @@ import {
   Property,
   Unique,
 } from '@mikro-orm/core';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../../../user/infra/persistence/entities/user.entity';
 import { AbstractWorkspaceEntity } from '~/domains/workspace/infra/persistence/entities/abstract-workspace.entity';
 import { TeamspaceMemberRole } from '../../../domain/enums/teamspace-member-role.enum';
 import { TeamspaceEntity } from './teamspace.entity';
@@ -19,8 +19,8 @@ export class TeamspaceMemberEntity extends AbstractWorkspaceEntity {
   @ManyToOne(() => TeamspaceEntity, { fieldName: 'teamspace_id' })
   teamspace!: TeamspaceEntity;
 
-  @ManyToOne(() => CurrentUserEntity, { fieldName: 'user_id' })
-  user!: CurrentUserEntity;
+  @ManyToOne(() => UserEntity, { fieldName: 'user_id' })
+  user!: UserEntity;
 
   @Enum({ items: () => TeamspaceMemberRole, fieldName: 'role' })
   role!: TeamspaceMemberRole;

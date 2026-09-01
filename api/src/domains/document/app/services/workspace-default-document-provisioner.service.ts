@@ -1,6 +1,6 @@
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../../user/infra/persistence/entities/user.entity';
 import { WorkspaceEntity } from '~/domains/workspace/infra/persistence/entities/workspace.entity';
 import type {
   ProvisionDefaultWorkspaceDocumentInput,
@@ -53,7 +53,7 @@ implements WorkspaceDefaultDocumentProvisioner {
     workspaceId: string,
     ownerUserId: string,
   ): DocumentEntity {
-    const owner = entityManager.getReference(CurrentUserEntity, ownerUserId);
+    const owner = entityManager.getReference(UserEntity, ownerUserId);
     const workspace = entityManager.getReference(WorkspaceEntity, workspaceId);
     const contentJson = [...DEFAULT_WORKSPACE_DOCUMENT.content];
 

@@ -3,8 +3,8 @@ import { createHash } from 'node:crypto';
 import { buildAuthConfig } from '../../src/platform/config/auth.config';
 import { BcryptPasswordHasher } from '../../src/domains/auth/infra/security/bcrypt-password-hasher';
 import { UserStatus } from '../../src/domains/auth/domain/enums/user-status.enum';
-import { CurrentUserCredentialEntity } from '../../src/domains/auth/infra/persistence/entities/current-user-credential.entity';
-import { CurrentUserEntity } from '../../src/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserCredentialEntity } from '../../src/domains/auth/infra/persistence/entities/user-credential.entity';
+import { UserEntity } from '../../src/domains/user/infra/persistence/entities/user.entity';
 import { UserRoleEntity } from '../../src/domains/auth/infra/persistence/entities/user-role.entity';
 import { DocumentEntity } from '../../src/domains/document/infra/persistence/entities/document.entity';
 import { DocumentSubdocReferenceEntity } from '../../src/domains/document/infra/persistence/entities/document-subdoc-reference.entity';
@@ -345,9 +345,20 @@ async function seedGeneratedUsers(
   );
   const existingUsers =
     generatedEmails.length > 0
-      ? await em.find(CurrentUserEntity, { email: { $in: generatedEmails } }, { populate: ['credential'] })
+      ? await em.find(UserEntity, { email: { $in: generatedEmails } })
       : [];
   const existingUsersByEmail = new Map(existingUsers.map((user) => [user.email, user]));
+  const existingCredentials =
+    generatedEmails.length > 0
+      ? await em.find(
+        UserCredentialEntity,
+        { user: { email: { $in: generatedEmails } } },
+        { populate: ['user'] },
+      )
+      : [];
+  const existingCredentialsByEmail = new Map(
+    existingCredentials.map((credential) => [credential.user.email, credential]),
+  );
   const existingUserRoles =
     generatedEmails.length > 0
       ? await em.find(
@@ -375,7 +386,7 @@ async function seedGeneratedUsers(
     let user = existingUsersByEmail.get(email);
 
     if (!user) {
-      user = em.create(CurrentUserEntity, {
+      user = em.create(UserEntity, {
         email,
         displayName: buildUserDisplayName(index + 1),
         status: UserStatus.ACTIVE,
@@ -389,16 +400,18 @@ async function seedGeneratedUsers(
       user.emailVerifiedAt = new Date();
     }
 
-    if (!user.credential) {
-      user.credential = em.create(CurrentUserCredentialEntity, {
+    let credential = existingCredentialsByEmail.get(email);
+    if (!credential) {
+      credential = em.create(UserCredentialEntity, {
         user,
         passwordHash,
         passwordUpdatedAt: new Date(),
       });
+      existingCredentialsByEmail.set(email, credential);
     }
     else {
-      user.credential.passwordHash = passwordHash;
-      user.credential.passwordUpdatedAt = new Date();
+      credential.passwordHash = passwordHash;
+      credential.passwordUpdatedAt = new Date();
     }
 
     const authRole = index % 10 === 0 ? adminRole : memberRole;
@@ -496,7 +509,7 @@ async function seedWorkspaceMemberships(
     em.persist(
       em.create(WorkspaceMemberEntity, {
         workspace: em.getReference(WorkspaceEntity, workspaceId),
-        user: em.getReference(CurrentUserEntity, memberUser.id),
+        user: em.getReference(UserEntity, memberUser.id),
         role,
         joinedAt: new Date(),
       }),
@@ -584,9 +597,9 @@ async function upsertDocumentPayloads(
           contentJson: payload.contentJson,
           searchText: extractDocumentSearchText(payload.contentJson),
           sortKey: payload.sortKey,
-          createdBy: em.getReference(CurrentUserEntity, payload.createdById),
-          ownerUser: em.getReference(CurrentUserEntity, payload.createdById),
-          updatedBy: em.getReference(CurrentUserEntity, payload.updatedById),
+          createdBy: em.getReference(UserEntity, payload.createdById),
+          ownerUser: em.getReference(UserEntity, payload.createdById),
+          updatedBy: em.getReference(UserEntity, payload.updatedById),
         });
 
       document.workspace = em.getReference(WorkspaceEntity, payload.workspaceId);
@@ -602,9 +615,9 @@ async function upsertDocumentPayloads(
       document.searchText = extractDocumentSearchText(payload.contentJson);
       document.sortKey = payload.sortKey;
       document.archivedAt = undefined;
-      document.createdBy = em.getReference(CurrentUserEntity, payload.createdById);
-      document.ownerUser = em.getReference(CurrentUserEntity, payload.createdById);
-      document.updatedBy = em.getReference(CurrentUserEntity, payload.updatedById);
+      document.createdBy = em.getReference(UserEntity, payload.createdById);
+      document.ownerUser = em.getReference(UserEntity, payload.createdById);
+      document.updatedBy = em.getReference(UserEntity, payload.updatedById);
 
       em.persist(document);
       summaries.push({
@@ -788,7 +801,7 @@ async function seedWorkspacePreferences(
     const preference = existingByUserId.get(user.id) ??
       em.create(WorkspacePreferenceEntity, {
         workspace: em.getReference(WorkspaceEntity, workspaceId),
-        user: em.getReference(CurrentUserEntity, user.id),
+        user: em.getReference(UserEntity, user.id),
         expandedDocumentIdsByScope: {},
       });
 
@@ -846,7 +859,7 @@ async function seedDocumentFavorites(
     em.persist(
       em.create(DocumentFavoriteEntity, {
         workspace: em.getReference(WorkspaceEntity, workspaceId),
-        user: em.getReference(CurrentUserEntity, pair.userId),
+        user: em.getReference(UserEntity, pair.userId),
         document: em.getReference(DocumentEntity, pair.documentId),
       }),
     );
@@ -895,7 +908,7 @@ async function seedDocumentVisits(
     const visit = existingByKey.get(key) ??
       em.create(DocumentVisitEntity, {
         workspace: em.getReference(WorkspaceEntity, workspaceId),
-        user: em.getReference(CurrentUserEntity, pair.userId),
+        user: em.getReference(UserEntity, pair.userId),
         document: em.getReference(DocumentEntity, pair.documentId),
         lastVisitedAt: pair.lastVisitedAt,
       });
@@ -946,7 +959,7 @@ async function seedPublishedDocuments(
       em.create(PublishedDocumentEntity, {
         workspace: em.getReference(WorkspaceEntity, workspaceId),
         document: em.getReference(DocumentEntity, document.id),
-        publishedBy: em.getReference(CurrentUserEntity, publisher.id),
+        publishedBy: em.getReference(UserEntity, publisher.id),
       }),
     );
   }

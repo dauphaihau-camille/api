@@ -1,5 +1,5 @@
 import type { EntityManager } from '@mikro-orm/postgresql';
-import { CurrentUserEntity } from '../../../src/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../../src/domains/user/infra/persistence/entities/user.entity';
 import { DEFAULT_CONTENT_FORMAT } from '../../../src/domains/document/app/constants/document.constants';
 import { extractDocumentSearchText } from '../../../src/domains/document/app/utils/document-search-text.util';
 import { DocumentAccessGrantPermission } from '../../../src/domains/document/domain/enums/document-access-grant-permission.enum';
@@ -80,9 +80,9 @@ export async function upsertDocument(
       contentJson: payload.contentJson,
       searchText: extractDocumentSearchText(payload.contentJson),
       sortKey: payload.sortKey,
-      createdBy: em.getReference(CurrentUserEntity, payload.createdById),
-      ownerUser: em.getReference(CurrentUserEntity, payload.createdById),
-      updatedBy: em.getReference(CurrentUserEntity, payload.updatedById),
+      createdBy: em.getReference(UserEntity, payload.createdById),
+      ownerUser: em.getReference(UserEntity, payload.createdById),
+      updatedBy: em.getReference(UserEntity, payload.updatedById),
     });
 
   document.workspace = em.getReference(WorkspaceEntity, payload.workspaceId);
@@ -98,9 +98,9 @@ export async function upsertDocument(
   document.searchText = extractDocumentSearchText(payload.contentJson);
   document.sortKey = payload.sortKey;
   document.archivedAt = undefined;
-  document.createdBy = em.getReference(CurrentUserEntity, payload.createdById);
-  document.ownerUser = em.getReference(CurrentUserEntity, payload.createdById);
-  document.updatedBy = em.getReference(CurrentUserEntity, payload.updatedById);
+  document.createdBy = em.getReference(UserEntity, payload.createdById);
+  document.ownerUser = em.getReference(UserEntity, payload.createdById);
+  document.updatedBy = em.getReference(UserEntity, payload.updatedById);
   em.persist(document);
   await em.flush();
 

@@ -5,7 +5,7 @@ import {
   Property,
   Unique,
 } from '@mikro-orm/core';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../../../user/infra/persistence/entities/user.entity';
 import { WorkspaceRole } from '../../../domain/enums/workspace-role.enum';
 import { AbstractWorkspaceEntity } from './abstract-workspace.entity';
 import { WorkspaceEntity } from './workspace.entity';
@@ -19,8 +19,8 @@ export class WorkspaceMemberEntity extends AbstractWorkspaceEntity {
   @ManyToOne(() => WorkspaceEntity, { fieldName: 'workspace_id' })
   workspace!: WorkspaceEntity;
 
-  @ManyToOne(() => CurrentUserEntity, { fieldName: 'user_id' })
-  user!: CurrentUserEntity;
+  @ManyToOne(() => UserEntity, { fieldName: 'user_id' })
+  user!: UserEntity;
 
   @Enum({ items: () => WorkspaceRole, fieldName: 'role' })
   role!: WorkspaceRole;

@@ -2,7 +2,7 @@ import type { EntityManager } from '@mikro-orm/postgresql';
 import { SubscriptionPlan } from '../../../src/domains/subscription/domain/enums/subscription-plan.enum';
 import { SubscriptionStatus } from '../../../src/domains/subscription/domain/enums/subscription-status.enum';
 import { WorkspaceSubscriptionEntity } from '../../../src/domains/subscription/infra/persistence/entities/workspace-subscription.entity';
-import { CurrentUserEntity } from '../../../src/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../../src/domains/user/infra/persistence/entities/user.entity';
 import { WorkspaceEntity } from '../../../src/domains/workspace/infra/persistence/entities/workspace.entity';
 import { WorkspaceMemberEntity } from '../../../src/domains/workspace/infra/persistence/entities/workspace-member.entity';
 import type {
@@ -91,7 +91,7 @@ export async function upsertWorkspaceMembers(
     const membership = existingByUserId.get(member.user.id) ??
       em.create(WorkspaceMemberEntity, {
         workspace: em.getReference(WorkspaceEntity, workspaceId),
-        user: em.getReference(CurrentUserEntity, member.user.id),
+        user: em.getReference(UserEntity, member.user.id),
         role: member.role,
         joinedAt: new Date(),
       });

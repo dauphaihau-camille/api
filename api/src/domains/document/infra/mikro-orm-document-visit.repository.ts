@@ -1,6 +1,6 @@
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
-import { CurrentUserEntity } from '../../auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../user/infra/persistence/entities/user.entity';
 import { DocumentVisitRepository } from '../app/ports/document-visit.repository';
 import { DocumentEntity } from './persistence/entities/document.entity';
 import { WorkspaceEntity } from '../../workspace/infra/persistence/entities/workspace.entity';
@@ -30,7 +30,7 @@ export class MikroOrmDocumentVisitRepository implements DocumentVisitRepository 
   }): Promise<void> {
     const entityManager = this.entityManager.fork();
     const [user, existingVisit] = await Promise.all([
-      entityManager.findOneOrFail(CurrentUserEntity, { id: input.userId }),
+      entityManager.findOneOrFail(UserEntity, { id: input.userId }),
       entityManager.findOne(DocumentVisitEntity, {
         user: input.userId,
         document: input.documentId,

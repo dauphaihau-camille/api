@@ -2,7 +2,7 @@ import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 import { StorageService } from '~/integrations/storage/app/ports/storage.service';
 import { resolveUserAvatarUrl } from '~/integrations/storage/app/user-avatar-url.util';
-import { CurrentUserEntity } from '../../auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from './persistence/entities/user.entity';
 import { UserRepository } from '../app/ports/user.repository';
 import type {
   ListUsersQuery,
@@ -25,7 +25,7 @@ export class MikroOrmUserRepository implements UserRepository {
   ) {}
 
   async findAll(query: ListUsersQuery): Promise<ListUsersRepositoryResult> {
-    const userRepository = this.entityManager.fork().getRepository(CurrentUserEntity);
+    const userRepository = this.entityManager.fork().getRepository(UserEntity);
     const [users, total] = await userRepository.findAndCount({}, {
       limit: query.limit,
       offset: (query.page - 1) * query.limit,
@@ -41,13 +41,13 @@ export class MikroOrmUserRepository implements UserRepository {
   }
 
   async findById(id: string): Promise<UserSummary | null> {
-    const userRepository = this.entityManager.fork().getRepository(CurrentUserEntity);
+    const userRepository = this.entityManager.fork().getRepository(UserEntity);
     const user = await userRepository.findOne({ id });
 
     return user ? this.toSummary(user) : null;
   }
 
-  private toSummary(user: CurrentUserEntity): UserSummary {
+  private toSummary(user: UserEntity): UserSummary {
     const avatar = resolveUserAvatarUrl(user, this.storageService);
 
     return {

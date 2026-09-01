@@ -1,18 +1,18 @@
 import {
-  Entity, OneToOne, Property, Unique, 
+  Entity, OneToOne, Property, Unique,
 } from '@mikro-orm/core';
+import { UserEntity } from '~/domains/user/infra/persistence/entities/user.entity';
 import { AbstractAuthEntity } from './abstract-auth.entity';
-import { CurrentUserEntity } from './current-user.entity';
 
 @Entity({ tableName: 'user_credentials' })
-export class CurrentUserCredentialEntity extends AbstractAuthEntity {
-  @OneToOne(() => CurrentUserEntity, (user) => user.credential, {
+export class UserCredentialEntity extends AbstractAuthEntity {
+  @OneToOne(() => UserEntity, {
     owner: true,
     fieldName: 'user_id',
     deleteRule: 'cascade',
   })
   @Unique()
-  user!: CurrentUserEntity;
+  user!: UserEntity;
 
   @Property({ fieldName: 'password_hash' })
   passwordHash!: string;

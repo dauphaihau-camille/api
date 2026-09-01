@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { EntityManager } from '@mikro-orm/postgresql';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../user/infra/persistence/entities/user.entity';
 import { DocumentEntity } from '~/domains/document/infra/persistence/entities/document.entity';
 import type { TeamspaceMemberRole } from '~/domains/teamspace/domain/enums/teamspace-member-role.enum';
 import { TeamspaceMemberEntity } from '~/domains/teamspace/infra/persistence/entities/teamspace-member.entity';
@@ -81,7 +81,7 @@ export class MikroOrmFavoriteRepository implements FavoriteRepository {
     userId: string;
   }): Promise<DocumentFavoriteEntity> {
     const entityManager = this.entityManager.fork();
-    const user = await entityManager.findOneOrFail(CurrentUserEntity, { id: input.userId });
+    const user = await entityManager.findOneOrFail(UserEntity, { id: input.userId });
     const document = await entityManager.getReference(DocumentEntity, input.documentId);
 
     return entityManager.create(DocumentFavoriteEntity, {

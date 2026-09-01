@@ -1,6 +1,6 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { forwardRef, Module } from '@nestjs/common';
-import { CurrentUserEntity } from '../auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../user/infra/persistence/entities/user.entity';
 import { AuditModule } from '../../integrations/audit/audit.module';
 import { ObservabilityModule } from '../../platform/observability/observability.module';
 import { WsModule } from '../../platform/ws/ws.module';
@@ -100,7 +100,7 @@ import { ClaimDocumentInvitationsOnUserCreatedListener } from './listeners/claim
     forwardRef(() => WorkspaceModule),
     forwardRef(() => SubscriptionModule),
     MikroOrmModule.forFeature([
-      CurrentUserEntity,
+      UserEntity,
       WorkspaceEntity,
       WorkspaceMemberEntity,
       TeamspaceEntity,

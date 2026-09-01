@@ -1,6 +1,6 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { Module } from '@nestjs/common';
-import { CurrentUserEntity } from '../auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../user/infra/persistence/entities/user.entity';
 import { DocumentAccessResolver } from '../document/app/policies/document-access.resolver';
 import { DocumentEntity } from '../document/infra/persistence/entities/document.entity';
 import { WorkspaceEntity } from '../workspace/infra/persistence/entities/workspace.entity';
@@ -20,7 +20,7 @@ import { PublishedDocumentEntity } from './infra/persistence/entities/published-
     AuditModule,
     WorkspaceModule,
     MikroOrmModule.forFeature([
-      CurrentUserEntity,
+      UserEntity,
       WorkspaceEntity,
       DocumentEntity,
       PublishedDocumentEntity,

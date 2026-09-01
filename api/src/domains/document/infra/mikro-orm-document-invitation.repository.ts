@@ -1,6 +1,6 @@
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../user/infra/persistence/entities/user.entity';
 import { WorkspaceEntity } from '~/domains/workspace/infra/persistence/entities/workspace.entity';
 import { DocumentAccessGrantPermission } from '../domain/enums/document-access-grant-permission.enum';
 import {
@@ -32,7 +32,7 @@ export class MikroOrmDocumentInvitationRepository extends DocumentInvitationRepo
 
     if (existingInvitation) {
       existingInvitation.permission = input.permission;
-      existingInvitation.invitedBy = entityManager.getReference(CurrentUserEntity, input.invitedByUserId);
+      existingInvitation.invitedBy = entityManager.getReference(UserEntity, input.invitedByUserId);
       existingInvitation.acceptedAt = undefined;
       existingInvitation.acceptedBy = undefined;
       existingInvitation.revokedAt = undefined;
@@ -47,7 +47,7 @@ export class MikroOrmDocumentInvitationRepository extends DocumentInvitationRepo
       document: entityManager.getReference(DocumentEntity, input.documentId),
       email: input.email,
       permission: input.permission,
-      invitedBy: entityManager.getReference(CurrentUserEntity, input.invitedByUserId),
+      invitedBy: entityManager.getReference(UserEntity, input.invitedByUserId),
     });
 
     await entityManager.persist(invitation).flush();
@@ -106,7 +106,7 @@ export class MikroOrmDocumentInvitationRepository extends DocumentInvitationRepo
       return;
     }
 
-    invitation.acceptedBy = entityManager.getReference(CurrentUserEntity, input.userId);
+    invitation.acceptedBy = entityManager.getReference(UserEntity, input.userId);
     invitation.acceptedAt = new Date();
     await entityManager.persist(invitation).flush();
   }

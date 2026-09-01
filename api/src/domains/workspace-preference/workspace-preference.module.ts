@@ -1,6 +1,6 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { Module } from '@nestjs/common';
-import { CurrentUserEntity } from '../auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../user/infra/persistence/entities/user.entity';
 import { WorkspaceEntity } from '../workspace/infra/persistence/entities/workspace.entity';
 import { WorkspaceModule } from '../workspace/workspace.module';
 import { WorkspacePreferenceController } from './api/rest/workspace-preference.controller';
@@ -16,7 +16,7 @@ import { WorkspacePreferenceEntity } from './infra/persistence/entities/workspac
   imports: [
     WorkspaceModule,
     MikroOrmModule.forFeature([
-      CurrentUserEntity,
+      UserEntity,
       WorkspaceEntity,
       WorkspacePreferenceEntity,
     ]),

@@ -6,7 +6,7 @@ import {
   OAuthAccountRepository,
 } from '../../app/ports/oauth-account.repository';
 import type { OAuthProvider } from '../../app/auth.types';
-import { CurrentUserEntity } from './entities/current-user.entity';
+import { UserEntity } from '../../../user/infra/persistence/entities/user.entity';
 import { OAuthAccountEntity } from './entities/oauth-account.entity';
 
 @Injectable()
@@ -33,7 +33,7 @@ export class MikroOrmOAuthAccountRepository implements OAuthAccountRepository {
 
   async create(input: CreateOAuthAccountInput): Promise<OAuthAccount> {
     const entityManager = this.entityManager.fork();
-    const userRepository = entityManager.getRepository(CurrentUserEntity);
+    const userRepository = entityManager.getRepository(UserEntity);
     const oauthAccountRepository = entityManager.getRepository(OAuthAccountEntity);
     const user = await userRepository.findOneOrFail({ id: input.userId });
     const oauthAccount = oauthAccountRepository.create({

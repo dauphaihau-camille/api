@@ -5,8 +5,8 @@ import { AUTH_CONFIG, buildAuthConfig } from '../../platform/config/auth.config'
 import { CacheModule } from '../../integrations/cache/cache.module';
 import { QueueModule } from '../../integrations/queue/queue.module';
 import { StorageModule } from '../../integrations/storage/storage.module';
-import { CurrentUserEntity } from '../auth/infra/persistence/entities/current-user.entity';
-import { CurrentUserCredentialEntity } from '../auth/infra/persistence/entities/current-user-credential.entity';
+import { UserEntity } from './infra/persistence/entities/user.entity';
+import { UserCredentialEntity } from '../auth/infra/persistence/entities/user-credential.entity';
 import { PermissionEntity } from '../auth/infra/persistence/entities/permission.entity';
 import { RoleEntity } from '../auth/infra/persistence/entities/role.entity';
 import { RolePermissionEntity } from '../auth/infra/persistence/entities/role-permission.entity';
@@ -33,8 +33,8 @@ import { SendWelcomeEmailOnUserCreatedListener } from './listeners/send-welcome-
     QueueModule,
     StorageModule,
     MikroOrmModule.forFeature([
-      CurrentUserEntity,
-      CurrentUserCredentialEntity,
+      UserEntity,
+      UserCredentialEntity,
       RoleEntity,
       PermissionEntity,
       UserRoleEntity,

@@ -5,7 +5,7 @@ import {
   Property,
   Unique,
 } from '@mikro-orm/core';
-import { CurrentUserEntity } from '~/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserEntity } from '../../../../user/infra/persistence/entities/user.entity';
 import { WorkspaceEntity } from '~/domains/workspace/infra/persistence/entities/workspace.entity';
 import { AbstractWorkspaceEntity } from '~/domains/workspace/infra/persistence/entities/abstract-workspace.entity';
 import { DocumentAccessGrantPermission } from '../../../domain/enums/document-access-grant-permission.enum';
@@ -23,14 +23,14 @@ export class DocumentAccessGrantEntity extends AbstractWorkspaceEntity {
   @ManyToOne(() => DocumentEntity, { fieldName: 'document_id' })
   document!: DocumentEntity;
 
-  @ManyToOne(() => CurrentUserEntity, { fieldName: 'user_id' })
-  user!: CurrentUserEntity;
+  @ManyToOne(() => UserEntity, { fieldName: 'user_id' })
+  user!: UserEntity;
 
   @Enum({ items: () => DocumentAccessGrantPermission, fieldName: 'permission' })
   permission!: DocumentAccessGrantPermission;
 
-  @ManyToOne(() => CurrentUserEntity, { fieldName: 'granted_by' })
-  grantedBy!: CurrentUserEntity;
+  @ManyToOne(() => UserEntity, { fieldName: 'granted_by' })
+  grantedBy!: UserEntity;
 
   @Property({ fieldName: 'revoked_at', nullable: true })
   revokedAt?: Date;

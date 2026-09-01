@@ -1,8 +1,8 @@
 import type { EntityManager } from '@mikro-orm/postgresql';
 import { buildAuthConfig } from '../../../src/platform/config/auth.config';
 import { UserStatus } from '../../../src/domains/auth/domain/enums/user-status.enum';
-import { CurrentUserCredentialEntity } from '../../../src/domains/auth/infra/persistence/entities/current-user-credential.entity';
-import { CurrentUserEntity } from '../../../src/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserCredentialEntity } from '../../../src/domains/auth/infra/persistence/entities/user-credential.entity';
+import { UserEntity } from '../../../src/domains/user/infra/persistence/entities/user.entity';
 import { UserRoleEntity } from '../../../src/domains/auth/infra/persistence/entities/user-role.entity';
 import { BcryptPasswordHasher } from '../../../src/domains/auth/infra/security/bcrypt-password-hasher';
 import { REALISTIC_USER_FIXTURES } from '../fixtures/realistic.fixtures';
@@ -42,9 +42,20 @@ export async function seedRealisticUsers(em: EntityManager, password: string): P
   const fixtureEmails = REALISTIC_USER_FIXTURES.map((fixture) => fixture.email);
   const existingUsers =
     fixtureEmails.length > 0
-      ? await em.find(CurrentUserEntity, { email: { $in: fixtureEmails } }, { populate: ['credential'] })
+      ? await em.find(UserEntity, { email: { $in: fixtureEmails } })
       : [];
   const existingUsersByEmail = new Map(existingUsers.map((user) => [user.email, user]));
+  const existingCredentials =
+    fixtureEmails.length > 0
+      ? await em.find(
+        UserCredentialEntity,
+        { user: { email: { $in: fixtureEmails } } },
+        { populate: ['user'] },
+      )
+      : [];
+  const existingCredentialsByEmail = new Map(
+    existingCredentials.map((credential) => [credential.user.email, credential]),
+  );
   const existingUserRoles =
     fixtureEmails.length > 0
       ? await em.find(UserRoleEntity, { user: { email: { $in: fixtureEmails } } }, { populate: ['user', 'role'] })
@@ -57,7 +68,7 @@ export async function seedRealisticUsers(em: EntityManager, password: string): P
     let user = existingUsersByEmail.get(fixture.email);
 
     if (!user) {
-      user = em.create(CurrentUserEntity, {
+      user = em.create(UserEntity, {
         email: fixture.email,
         displayName: fixture.displayName,
         status: UserStatus.ACTIVE,
@@ -71,16 +82,18 @@ export async function seedRealisticUsers(em: EntityManager, password: string): P
       user.emailVerifiedAt = new Date();
     }
 
-    if (!user.credential) {
-      user.credential = em.create(CurrentUserCredentialEntity, {
+    let credential = existingCredentialsByEmail.get(fixture.email);
+    if (!credential) {
+      credential = em.create(UserCredentialEntity, {
         user,
         passwordHash,
         passwordUpdatedAt: new Date(),
       });
+      existingCredentialsByEmail.set(fixture.email, credential);
     }
     else {
-      user.credential.passwordHash = passwordHash;
-      user.credential.passwordUpdatedAt = new Date();
+      credential.passwordHash = passwordHash;
+      credential.passwordUpdatedAt = new Date();
     }
 
     const role = fixture.role === 'admin' ? adminRole : memberRole;

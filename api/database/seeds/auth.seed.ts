@@ -2,8 +2,8 @@ import type { EntityManager } from '@mikro-orm/postgresql';
 import * as path from 'node:path';
 import { buildAuthConfig } from '../../src/platform/config/auth.config';
 import { UserStatus } from '../../src/domains/auth/domain/enums/user-status.enum';
-import { CurrentUserCredentialEntity } from '../../src/domains/auth/infra/persistence/entities/current-user-credential.entity';
-import { CurrentUserEntity } from '../../src/domains/auth/infra/persistence/entities/current-user.entity';
+import { UserCredentialEntity } from '../../src/domains/auth/infra/persistence/entities/user-credential.entity';
+import { UserEntity } from '../../src/domains/user/infra/persistence/entities/user.entity';
 import { PermissionEntity } from '../../src/domains/auth/infra/persistence/entities/permission.entity';
 import { RoleEntity } from '../../src/domains/auth/infra/persistence/entities/role.entity';
 import { RolePermissionEntity } from '../../src/domains/auth/infra/persistence/entities/role-permission.entity';
@@ -201,7 +201,7 @@ function loadUserSeeds(): UserSeed[] {
 
 export async function seedAuth(
   em: EntityManager,
-): Promise<{ usersByEmail: Map<string, CurrentUserEntity> }> {
+): Promise<{ usersByEmail: Map<string, UserEntity> }> {
   const { roleByKey } = await seedAuthReferenceData(em);
   const userSeeds = loadUserSeeds();
   const authConfig = buildAuthConfig({
@@ -220,9 +220,20 @@ export async function seedAuth(
   const passwordHashByRawPassword = new Map<string, Promise<string>>();
   const existingUsers =
     userEmails.length > 0
-      ? await em.find(CurrentUserEntity, { email: { $in: userEmails } }, { populate: ['credential'] })
+      ? await em.find(UserEntity, { email: { $in: userEmails } })
       : [];
   const existingUsersByEmail = new Map(existingUsers.map((user) => [user.email, user]));
+  const existingCredentials =
+    userEmails.length > 0
+      ? await em.find(
+        UserCredentialEntity,
+        { user: { email: { $in: userEmails } } },
+        { populate: ['user'] },
+      )
+      : [];
+  const existingCredentialsByEmail = new Map(
+    existingCredentials.map((credential) => [credential.user.email, credential]),
+  );
   const existingUserRoles =
     userEmails.length > 0
       ? await em.find(
@@ -241,13 +252,13 @@ export async function seedAuth(
     `[seed][auth] Upserting ${userSeeds.length} users with ${uniquePasswords.size} unique password(s) at bcrypt rounds ${seedBcryptSaltRounds}`,
   );
 
-  const usersByEmail = new Map<string, CurrentUserEntity>();
+  const usersByEmail = new Map<string, UserEntity>();
 
   for (const [index, userSeed] of userSeeds.entries()) {
     let user = existingUsersByEmail.get(userSeed.email);
 
     if (!user) {
-      user = em.create(CurrentUserEntity, {
+      user = em.create(UserEntity, {
         email: userSeed.email,
         displayName: userSeed.displayName,
         status: UserStatus.ACTIVE,
@@ -269,17 +280,19 @@ export async function seedAuth(
     }
 
     const passwordHash = await passwordHashPromise;
-    if (!user.credential) {
-      user.credential = em.create(CurrentUserCredentialEntity, {
+    let credential = existingCredentialsByEmail.get(userSeed.email);
+    if (!credential) {
+      credential = em.create(UserCredentialEntity, {
         user,
         passwordHash,
         passwordUpdatedAt: new Date(),
       });
-      em.persist(user.credential);
+      existingCredentialsByEmail.set(userSeed.email, credential);
+      em.persist(credential);
     }
     else {
-      user.credential.passwordHash = passwordHash;
-      user.credential.passwordUpdatedAt = new Date();
+      credential.passwordHash = passwordHash;
+      credential.passwordUpdatedAt = new Date();
     }
 
     const role = roleByKey.get(userSeed.roleKey);
