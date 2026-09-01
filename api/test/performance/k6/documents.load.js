@@ -2,7 +2,7 @@ import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { forwardedIp, jsonHeaders, parseJson } from './helpers.js';
 
-const BASE_URL = __ENV.BASE_URL ?? 'http://127.0.0.1:3000/v1';
+const BASE_URL = __ENV.BASE_URL ?? 'http://127.0.0.1:5100/v1';
 const LOGIN_EMAIL = __ENV.LOGIN_EMAIL ?? 'member@example.com';
 const LOGIN_PASSWORD = __ENV.LOGIN_PASSWORD ?? 'password123';
 const WORKSPACE_ID = __ENV.WORKSPACE_ID;

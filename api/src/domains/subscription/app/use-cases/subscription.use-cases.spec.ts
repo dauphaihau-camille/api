@@ -143,7 +143,7 @@ describe('Subscription use cases', () => {
     );
 
     await useCase.execute('workspace-1', currentUser, {
-      returnUrl: 'http://localhost:4000/w/workspace-1/settings/billing',
+      returnUrl: 'http://localhost:5102/w/workspace-1/settings/billing',
     });
 
     expect(subscriptionRepository.getOrCreateFreeSubscription).toHaveBeenCalledWith({
@@ -155,7 +155,7 @@ describe('Subscription use cases', () => {
       workspaceName: 'Workspace 1',
       customerEmail: 'owner@example.com',
       seatCount: 2,
-      returnUrl: 'http://localhost:4000/w/workspace-1/settings/billing',
+      returnUrl: 'http://localhost:5102/w/workspace-1/settings/billing',
     });
   });
 

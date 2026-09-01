@@ -2,7 +2,7 @@ import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { forwardedIp } from './helpers.js';
 
-const BASE_URL = __ENV.BASE_URL ?? 'http://127.0.0.1:3000/v1';
+const BASE_URL = __ENV.BASE_URL ?? 'http://127.0.0.1:5100/v1';
 const LOGIN_EMAIL = __ENV.LOGIN_EMAIL ?? 'member@example.com';
 const LOGIN_PASSWORD = __ENV.LOGIN_PASSWORD ?? 'Password123!';
 const scenarioFile = __ENV.SCENARIO ?? 'normal-traffic.json';

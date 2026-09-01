@@ -4,7 +4,7 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 api_dir="$(cd "$script_dir/../.." && pwd)"
 compose_file="${1:-$api_dir/../infra/docker-compose.yml}"
-base_url="${BASE_URL:-http://127.0.0.1:3000}"
+base_url="${BASE_URL:-http://127.0.0.1:5100}"
 request_timeout="${REQUEST_TIMEOUT_SECONDS:-5}"
 health_url="$base_url/health/ready"
 env_file="${ENV_FILE:-$api_dir/.env}"

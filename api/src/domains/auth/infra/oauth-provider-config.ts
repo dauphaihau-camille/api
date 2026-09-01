@@ -2,7 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import type { OAuthProvider } from '../app/auth.types';
 
-const DEFAULT_API_BASE_URL = 'http://localhost:3000';
+const DEFAULT_API_BASE_URL = 'http://localhost:5100';
 
 const oauthProviderConfigKeys = {
   google: {

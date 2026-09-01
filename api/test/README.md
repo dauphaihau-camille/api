@@ -35,7 +35,7 @@ The performance runner uses `pnpm test:perf` and selects the k6 script through `
 Login flow example:
 
 ```bash
-BASE_URL=http://127.0.0.1:3000/v1 \
+BASE_URL=http://127.0.0.1:5100/v1 \
 LOGIN_EMAIL=member@example.com \
 LOGIN_PASSWORD=password123 \
 pnpm test:perf
@@ -53,7 +53,7 @@ The default script is `login.load.js`, and the default scenario file is [scenari
 Document traffic example:
 
 ```bash
-BASE_URL=http://127.0.0.1:3000/v1 \
+BASE_URL=http://127.0.0.1:5100/v1 \
 LOGIN_EMAIL=member@example.com \
 LOGIN_PASSWORD=password123 \
 K6_SCRIPT=documents.load.js \
@@ -67,7 +67,7 @@ First soak run example:
 ```bash
 RATE_LIMIT_LIMIT=100000 pnpm start:dev
 # in another shell
-BASE_URL=http://127.0.0.1:3000/v1 \
+BASE_URL=http://127.0.0.1:5100/v1 \
 LOGIN_EMAIL=member@example.com \
 LOGIN_PASSWORD=password123 \
 K6_SCRIPT=documents.load.js \

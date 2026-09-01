@@ -39,7 +39,7 @@ export function buildAuthConfig(
       7 * 24 * 60 * 60,
     ),
     appBaseUrl: configService
-      .get<string>('APP_BASE_URL', 'http://localhost:4000')
+      .get<string>('APP_BASE_URL', 'http://localhost:5102')
       .replace(/\/+$/, ''),
     accessCookieName: configService.get<string>(
       'AUTH_COOKIE_ACCESS_NAME',

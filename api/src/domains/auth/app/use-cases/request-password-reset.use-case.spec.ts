@@ -47,7 +47,7 @@ describe('RequestPasswordResetUseCase', () => {
       send: jest.fn().mockResolvedValue(undefined),
     };
     const passwordResetLinkBuilder: jest.Mocked<PasswordResetLinkBuilder> = {
-      build: jest.fn().mockReturnValue('http://localhost:4000/reset?t=raw-token'),
+      build: jest.fn().mockReturnValue('http://localhost:5102/reset?t=raw-token'),
     };
     const useCase = new RequestPasswordResetUseCase(
       authUserRepository,
@@ -78,8 +78,8 @@ describe('RequestPasswordResetUseCase', () => {
         channel: 'email',
         delivery: 'async',
         subject: 'Reset your password',
-        text: expect.stringContaining('http://localhost:4000/reset?t=raw-token'),
-        html: expect.stringContaining('http://localhost:4000/reset?t=raw-token'),
+        text: expect.stringContaining('http://localhost:5102/reset?t=raw-token'),
+        html: expect.stringContaining('http://localhost:5102/reset?t=raw-token'),
       }),
     );
   });

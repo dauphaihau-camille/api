@@ -136,12 +136,12 @@ Use this when you want container-runtime parity instead of the faster host-run d
 
 After startup, the main endpoints are:
 
-- API docs: `http://localhost:3000/docs`
-- OpenAPI JSON: `http://localhost:3000/docs/openapi.json`
-- Metrics: `http://localhost:3000/metrics` with `Authorization: Bearer local-dev-metrics-token`
-- Bull Board: `http://localhost:3000/ops/queues`
-- Health: `http://localhost:3000/health`
-- Readiness: `http://localhost:3000/health/ready`
+- API docs: `http://localhost:5100/docs`
+- OpenAPI JSON: `http://localhost:5100/docs/openapi.json`
+- Metrics: `http://localhost:5100/metrics` with `Authorization: Bearer local-dev-metrics-token`
+- Bull Board: `http://localhost:5100/ops/queues`
+- Health: `http://localhost:5100/health`
+- Readiness: `http://localhost:5100/health/ready`
 
 Prometheus is preconfigured to scrape `/metrics` with the same local development bearer token from `api/.env.example` and `api/.env.docker.example`.
 

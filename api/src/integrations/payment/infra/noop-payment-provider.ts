@@ -16,7 +16,7 @@ export class NoopPaymentProvider implements PaymentProvider {
   ): Promise<CheckoutSession> {
     const checkoutBaseUrl =
       this.paymentConfig.publicBaseUrl?.replace(/\/$/, '') ??
-      'http://localhost:3000';
+      'http://localhost:5102';
 
     return {
       sessionId: `noop_${input.orderId}`,
