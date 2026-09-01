@@ -9,7 +9,14 @@ export class AuthPasswordResetLinkBuilder implements PasswordResetLinkBuilder {
     @Inject(AUTH_CONFIG) private readonly authConfig: AuthConfig,
   ) {}
 
-  build(token: string): string {
-    return `${this.authConfig.appBaseUrl}/reset?t=${encodeURIComponent(token)}`;
+  build(token: string, redirectTo?: string): string {
+    const searchParams = new URLSearchParams();
+    searchParams.set('t', token);
+
+    if (redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//')) {
+      searchParams.set('redirectTo', redirectTo);
+    }
+
+    return `${this.authConfig.appBaseUrl}/reset?${searchParams.toString()}`;
   }
 }

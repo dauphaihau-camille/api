@@ -57,7 +57,10 @@ describe('RequestPasswordResetUseCase', () => {
       passwordResetLinkBuilder,
     );
 
-    await useCase.execute('member@example.com');
+    await useCase.execute({
+      email: 'member@example.com',
+      redirectTo: '/w/acme',
+    });
 
     expect(passwordResetTokenRepository.invalidateActiveTokensForUser).toHaveBeenCalledWith(
       'user-1',
@@ -69,7 +72,7 @@ describe('RequestPasswordResetUseCase', () => {
         expiresAt: expect.any(Date),
       }),
     );
-    expect(passwordResetLinkBuilder.build).toHaveBeenCalledWith(expect.any(String));
+    expect(passwordResetLinkBuilder.build).toHaveBeenCalledWith(expect.any(String), '/w/acme');
     expect(notificationService.send).toHaveBeenCalledWith(
       expect.objectContaining({
         channel: 'email',
@@ -116,7 +119,10 @@ describe('RequestPasswordResetUseCase', () => {
       passwordResetLinkBuilder,
     );
 
-    await useCase.execute('missing@example.com');
+    await useCase.execute({
+      email: 'missing@example.com',
+      redirectTo: '/w/acme',
+    });
 
     expect(passwordResetTokenRepository.create).not.toHaveBeenCalled();
     expect(passwordResetLinkBuilder.build).not.toHaveBeenCalled();

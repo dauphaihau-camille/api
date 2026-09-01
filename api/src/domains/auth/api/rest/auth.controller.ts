@@ -322,7 +322,10 @@ export class AuthController {
     description: 'Password reset request accepted.',
   })
   async forgotPassword(@Body() body: ForgotPasswordDto): Promise<void> {
-    await this.requestPasswordResetUseCase.execute(body.email);
+    await this.requestPasswordResetUseCase.execute({
+      email: body.email,
+      redirectTo: body.redirect_to,
+    });
   }
 
   @Get('verify-token')

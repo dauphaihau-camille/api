@@ -23,8 +23,8 @@ export class RequestPasswordResetUseCase {
     private readonly passwordResetLinkBuilder: PasswordResetLinkBuilder,
   ) {}
 
-  async execute(emailRaw: string): Promise<void> {
-    const email = Email.create(emailRaw);
+  async execute(input: { email: string; redirectTo?: string }): Promise<void> {
+    const email = Email.create(input.email);
     const user = await this.authUserRepository.findByEmail(email);
 
     if (!user) {
@@ -46,7 +46,7 @@ export class RequestPasswordResetUseCase {
       expiresAt,
     });
 
-    const resetUrl = this.passwordResetLinkBuilder.build(rawToken);
+    const resetUrl = this.passwordResetLinkBuilder.build(rawToken, input.redirectTo);
 
     await this.notificationService.send({
       channel: 'email',
