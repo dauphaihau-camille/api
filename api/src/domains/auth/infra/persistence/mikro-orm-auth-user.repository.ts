@@ -154,17 +154,28 @@ export class MikroOrmAuthUserRepository implements AuthUserRepository {
     passwordUpdatedAt: Date;
   }): Promise<void> {
     const entityManager = this.entityManager.fork();
+    const userRepository = entityManager.getRepository(CurrentUserEntity);
+
     const credentialRepository = entityManager.getRepository(
       CurrentUserCredentialEntity,
     );
-    const credential = await credentialRepository.findOneOrFail({
-      user: input.userId,
+
+    const user = await userRepository.findOneOrFail(
+      { id: input.userId },
+      { populate: ['credential'] },
+    );
+
+    const credential = user.credential ?? credentialRepository.create({
+      user,
+      passwordHash: input.passwordHash.toString(),
+      passwordUpdatedAt: input.passwordUpdatedAt,
     });
 
     credential.passwordHash = input.passwordHash.toString();
     credential.passwordUpdatedAt = input.passwordUpdatedAt;
+    user.credential = credential;
 
-    await entityManager.flush();
+    await entityManager.persist([user, credential]).flush();
   }
 
   async setEmailVerifiedAt(userId: string, emailVerifiedAt: Date): Promise<void> {
