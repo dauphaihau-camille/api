@@ -2,6 +2,40 @@ compose_file := "infra/docker-compose.yml"
 api_dir := "api"
 mcp_dir := "tools/mcp"
 
+# --------- Private helpers
+
+[private]
+_compose-down volume_args='':
+  docker compose -f {{ compose_file }} down {{ volume_args }}
+
+[private]
+_api-with-env command environment='':
+  env_file="{{ if environment == "" { ".env" } else { ".env." + environment } }}"; \
+  cd {{ api_dir }} && \
+  test -f "$env_file" && \
+  set -a && \
+  . "$env_file" && \
+  set +a && \
+  {{ command }}
+
+[private]
+_api-with-default-env command environment='':
+  env_file="{{ if environment == "" { ".env" } else { ".env." + environment } }}"; \
+  cd {{ api_dir }} && \
+  if [ ! -f "$env_file" ] && [ "$env_file" = ".env" ] && [ -f ".env.example" ]; then cp ".env.example" "$env_file"; fi && \
+  test -f "$env_file" && \
+  set -a && \
+  . "$env_file" && \
+  set +a && \
+  {{ command }}
+
+[private]
+_api-with-infisical project_id env_name command:
+  cd {{ api_dir }} && \
+  test -n "$INFISICAL_TOKEN" && \
+  ENV_ARG='{{ if env_name != "" { "--env=" + env_name } else { "" } }}' && \
+  pnpm exec infisical run --projectId="{{ project_id }}" $ENV_ARG --token="$INFISICAL_TOKEN" -- {{ command }}
+
 
 # --------- Infrastructure
 
@@ -9,10 +43,10 @@ infra-up:
   docker compose -f {{ compose_file }} up -d
 
 infra-down:
-  docker compose -f {{ compose_file }} down
+  just _compose-down
 
 infra-fresh:
-  docker compose -f {{ compose_file }} down -v
+  just _compose-down "-v"
   docker compose -f {{ compose_file }} up -d
 
 stack-up:
@@ -22,7 +56,7 @@ stack-up:
   docker compose -f {{ compose_file }} --profile app up -d --build
 
 stack-down:
-  docker compose -f {{ compose_file }} down
+  just _compose-down
 
 
 # --------- API app
@@ -31,220 +65,117 @@ api-install:
   @cd {{ api_dir }} && pnpm install
 
 api-up environment='':
-  env_file="{{ if environment == "" { ".env" } else { ".env." + environment } }}"; \
-  cd {{ api_dir }} && \
-  if [ ! -f "$env_file" ] && [ "$env_file" = ".env" ] && [ -f ".env.example" ]; then cp ".env.example" "$env_file"; fi && \
-  test -f "$env_file" && \
-  set -a && \
-  . "$env_file" && \
-  set +a && \
-  pnpm start:dev
+  just _api-with-default-env "pnpm start:dev" "{{ environment }}"
 
 api-up-infisical project_id *env_name:
-  cd {{ api_dir }} && \
-  test -n "$INFISICAL_TOKEN" && \
-  ENV_ARG='{{ if env_name != "" { "--env=" + env_name } else { "" } }}' && \
-  pnpm exec infisical run --projectId="{{ project_id }}" $ENV_ARG --token="$INFISICAL_TOKEN" -- pnpm start:dev
+  just _api-with-infisical "{{ project_id }}" "{{ env_name }}" "pnpm start:dev"
 
 api-up-observability environment='':
-  env_file="{{ if environment == "" { ".env" } else { ".env." + environment } }}"; \
-  cd {{ api_dir }} && \
-  mkdir -p logs && \
-  if [ ! -f "$env_file" ] && [ "$env_file" = ".env" ] && [ -f ".env.example" ]; then cp ".env.example" "$env_file"; fi && \
-  test -f "$env_file" && \
-  set -a && \
-  . "$env_file" && \
-  set +a && \
-  LOG_PRETTY=false pnpm start:dev 2>&1 | tee logs/api.log
+  just _api-with-default-env "mkdir -p logs && LOG_PRETTY=false pnpm start:dev 2>&1 | tee logs/api.log" "{{ environment }}"
 
 api-worker-up environment='':
-  env_file="{{ if environment == "" { ".env" } else { ".env." + environment } }}"; \
-  cd {{ api_dir }} && \
-  if [ ! -f "$env_file" ] && [ "$env_file" = ".env" ] && [ -f ".env.example" ]; then cp ".env.example" "$env_file"; fi && \
-  test -f "$env_file" && \
-  set -a && \
-  . "$env_file" && \
-  set +a && \
-  pnpm start:worker:dev
+  just _api-with-default-env "pnpm start:worker:dev" "{{ environment }}"
 
 api-worker-up-infisical project_id *env_name:
-  cd {{ api_dir }} && \
-  test -n "$INFISICAL_TOKEN" && \
-  ENV_ARG='{{ if env_name != "" { "--env=" + env_name } else { "" } }}' && \
-  pnpm exec infisical run --projectId="{{ project_id }}" $ENV_ARG --token="$INFISICAL_TOKEN" -- pnpm start:worker:dev
+  just _api-with-infisical "{{ project_id }}" "{{ env_name }}" "pnpm start:worker:dev"
 
 api-worker-up-observability environment='':
-  env_file="{{ if environment == "" { ".env" } else { ".env." + environment } }}"; \
-  cd {{ api_dir }} && \
-  mkdir -p logs && \
-  if [ ! -f "$env_file" ] && [ "$env_file" = ".env" ] && [ -f ".env.example" ]; then cp ".env.example" "$env_file"; fi && \
-  test -f "$env_file" && \
-  set -a && \
-  . "$env_file" && \
-  set +a && \
-  LOG_PRETTY=false pnpm start:worker:dev 2>&1 | tee logs/worker.log
+  just _api-with-default-env "mkdir -p logs && LOG_PRETTY=false pnpm start:worker:dev 2>&1 | tee logs/worker.log" "{{ environment }}"
 
-# List environment variables from Infisical
+# List environment variables from Infisical.
 api-env-infisical project_id *env_name:
-  cd {{ api_dir }} && \
-  test -n "$INFISICAL_TOKEN" && \
-  ENV_ARG='{{ if env_name != "" { "--env=" + env_name } else { "" } }}' && \
-  pnpm exec infisical run --projectId="{{ project_id }}" $ENV_ARG --token="$INFISICAL_TOKEN" -- env | sort
+  just _api-with-infisical "{{ project_id }}" "{{ env_name }}" "env | sort"
 
 
 # --------- Migrations
 
 db-migration-up environment='':
-  env_file="{{ if environment == "" { ".env" } else { ".env." + environment } }}"; \
-  cd {{ api_dir }} && \
-  test -f "$env_file" && \
-  set -a && \
-  . "$env_file" && \
-  set +a && \
-  pnpm db:migration:up
+  just _api-with-env "pnpm db:migration:up" "{{ environment }}"
 
 db-migration-up-infisical project_id *env_name:
-  cd {{ api_dir }} && \
-  test -n "$INFISICAL_TOKEN" && \
-  ENV_ARG='{{ if env_name != "" { "--env=" + env_name } else { "" } }}' && \
-  pnpm exec infisical run --projectId="{{ project_id }}" $ENV_ARG --token="$INFISICAL_TOKEN" -- pnpm db:migration:up
+  just _api-with-infisical "{{ project_id }}" "{{ env_name }}" "pnpm db:migration:up"
 
 db-migration-down environment='':
-  env_file="{{ if environment == "" { ".env" } else { ".env." + environment } }}"; \
-  cd {{ api_dir }} && \
-  test -f "$env_file" && \
-  set -a && \
-  . "$env_file" && \
-  set +a && \
-  pnpm db:migration:down
+  just _api-with-env "pnpm db:migration:down" "{{ environment }}"
 
 db-migration-down-infisical project_id *env_name:
-  cd {{ api_dir }} && \
-  test -n "$INFISICAL_TOKEN" && \
-  ENV_ARG='{{ if env_name != "" { "--env=" + env_name } else { "" } }}' && \
-  pnpm exec infisical run --projectId="{{ project_id }}" $ENV_ARG --token="$INFISICAL_TOKEN" -- pnpm db:migration:down
+  just _api-with-infisical "{{ project_id }}" "{{ env_name }}" "pnpm db:migration:down"
 
 db-migration-create environment='':
-  env_file="{{ if environment == "" { ".env" } else { ".env." + environment } }}"; \
-  cd {{ api_dir }} && \
-  test -f "$env_file" && \
-  set -a && \
-  . "$env_file" && \
-  set +a && \
-  pnpm db:migration:create
+  just _api-with-env "pnpm db:migration:create" "{{ environment }}"
 
 
 # -------------------- Seeding
 
-seed-full: db-clear
-  just db-seed-demo
+seed-full environment='':
+  just db-clear {{ environment }}
+  just db-seed-demo {{ environment }}
 
 seed-full-infisical project_id *env_name:
-  just db-clear-infisical {{project_id}} {{env_name}}
-  just db-seed-demo-infisical {{project_id}} {{env_name}}
+  just db-clear-infisical {{ project_id }} {{ env_name }}
+  just db-seed-demo-infisical {{ project_id }} {{ env_name }}
 
 db-clear environment='':
-  env_file="{{ if environment == "" { ".env" } else { ".env." + environment } }}"; \
-  cd {{ api_dir }} && \
-  test -f "$env_file" && \
-  set -a && \
-            . "$env_file" && \
-    set +a && \
-  pnpm db:clear
+  just _api-with-env "pnpm db:clear" "{{ environment }}"
 
 db-clear-infisical project_id *env_name:
-  cd {{ api_dir }} && \
-  test -n "$INFISICAL_TOKEN" && \
-  ENV_ARG='{{ if env_name != "" { "--env=" + env_name } else { "" } }}' && \
-  pnpm exec infisical run --projectId="{{ project_id }}" $ENV_ARG --token="$INFISICAL_TOKEN" -- pnpm db:clear
+  just _api-with-infisical "{{ project_id }}" "{{ env_name }}" "pnpm db:clear"
 
 db-seed environment='':
-  env_file="{{ if environment == "" { ".env" } else { ".env." + environment } }}"; \
-  cd {{ api_dir }} && \
-  test -f "$env_file" && \
-  set -a && \
-  . "$env_file" && \
-  set +a && \
-  pnpm db:seed
+  just _api-with-env "pnpm db:seed" "{{ environment }}"
 
 db-seed-infisical project_id *env_name:
-  cd {{ api_dir }} && \
-  test -n "$INFISICAL_TOKEN" && \
-  ENV_ARG='{{ if env_name != "" { "--env=" + env_name } else { "" } }}' && \
-  pnpm exec infisical run --projectId="{{ project_id }}" $ENV_ARG --token="$INFISICAL_TOKEN" -- pnpm db:seed
+  just _api-with-infisical "{{ project_id }}" "{{ env_name }}" "pnpm db:seed"
 
 db-seed-demo environment='':
-  env_file="{{ if environment == "" { ".env" } else { ".env." + environment } }}"; \
-  cd {{ api_dir }} && \
-  test -f "$env_file" && \
-  set -a && \
-  . "$env_file" && \
-  set +a && \
-  pnpm db:seed:demo
+  just _api-with-env "pnpm db:seed:demo" "{{ environment }}"
 
 db-seed-demo-infisical project_id *env_name:
-  cd {{ api_dir }} && \
-  test -n "$INFISICAL_TOKEN" && \
-  ENV_ARG='{{ if env_name != "" { "--env=" + env_name } else { "" } }}' && \
-  pnpm exec infisical run --projectId="{{ project_id }}" $ENV_ARG --token="$INFISICAL_TOKEN" -- pnpm db:seed:demo
+  just _api-with-infisical "{{ project_id }}" "{{ env_name }}" "pnpm db:seed:demo"
 
 db-seed-huge environment='':
-  env_file="{{ if environment == "" { ".env" } else { ".env." + environment } }}"; \
-  cd {{ api_dir }} && \
-  test -f "$env_file" && \
-  set -a && \
-  . "$env_file" && \
-  set +a && \
-  pnpm db:seed:huge
+  just _api-with-env "pnpm db:seed:huge" "{{ environment }}"
 
 db-seed-huge-infisical project_id *env_name:
-  cd {{ api_dir }} && \
-  test -n "$INFISICAL_TOKEN" && \
-  ENV_ARG='{{ if env_name != "" { "--env=" + env_name } else { "" } }}' && \
-  pnpm exec infisical run --projectId="{{ project_id }}" $ENV_ARG --token="$INFISICAL_TOKEN" -- pnpm db:seed:huge
+  just _api-with-infisical "{{ project_id }}" "{{ env_name }}" "pnpm db:seed:huge"
 
 db-seed-realistic environment='':
-  env_file="{{ if environment == "" { ".env" } else { ".env." + environment } }}"; \
-  cd {{ api_dir }} && \
-  test -f "$env_file" && \
-  set -a && \
-  . "$env_file" && \
-  set +a && \
-  pnpm db:seed:realistic
+  just _api-with-env "pnpm db:seed:realistic" "{{ environment }}"
 
 db-seed-realistic-infisical project_id *env_name:
-  cd {{ api_dir }} && \
-  test -n "$INFISICAL_TOKEN" && \
-  ENV_ARG='{{ if env_name != "" { "--env=" + env_name } else { "" } }}' && \
-  pnpm exec infisical run --projectId="{{ project_id }}" $ENV_ARG --token="$INFISICAL_TOKEN" -- pnpm db:seed:realistic
+  just _api-with-infisical "{{ project_id }}" "{{ env_name }}" "pnpm db:seed:realistic"
 
-db-fresh environment='': db-clear
+db-fresh environment='':
+  just db-clear {{ environment }}
   just db-seed {{ environment }}
 
 db-fresh-infisical project_id *env_name:
-  just db-clear-infisical {{project_id}} {{env_name}}
-  just db-seed-infisical {{project_id}} {{env_name}}
+  just db-clear-infisical {{ project_id }} {{ env_name }}
+  just db-seed-infisical {{ project_id }} {{ env_name }}
 
-db-fresh-demo environment='': db-clear
+db-fresh-demo environment='':
+  just db-clear {{ environment }}
   just db-seed-demo {{ environment }}
 
 db-fresh-demo-infisical project_id *env_name:
-  just db-clear-infisical {{project_id}} {{env_name}}
-  just db-seed-demo-infisical {{project_id}} {{env_name}}
+  just db-clear-infisical {{ project_id }} {{ env_name }}
+  just db-seed-demo-infisical {{ project_id }} {{ env_name }}
 
-db-fresh-huge environment='': db-clear
+db-fresh-huge environment='':
+  just db-clear {{ environment }}
   just db-seed-huge {{ environment }}
 
 db-fresh-huge-infisical project_id *env_name:
-  just db-clear-infisical {{project_id}} {{env_name}}
-  just db-seed-huge-infisical {{project_id}} {{env_name}}
+  just db-clear-infisical {{ project_id }} {{ env_name }}
+  just db-seed-huge-infisical {{ project_id }} {{ env_name }}
 
-db-fresh-realistic environment='': db-clear
+db-fresh-realistic environment='':
+  just db-clear {{ environment }}
   just db-seed-realistic {{ environment }}
 
 db-fresh-realistic-infisical project_id *env_name:
-  just db-clear-infisical {{project_id}} {{env_name}}
-  just db-seed-realistic-infisical {{project_id}} {{env_name}}
+  just db-clear-infisical {{ project_id }} {{ env_name }}
+  just db-seed-realistic-infisical {{ project_id }} {{ env_name }}
 
 
 # -------------------- Etc
