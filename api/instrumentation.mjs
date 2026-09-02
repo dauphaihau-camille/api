@@ -3,7 +3,6 @@ import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentation
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import { ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
-
 const otelEnabled = (process.env.OTEL_ENABLED ?? 'true') === 'true';
 
 if (otelEnabled) {
@@ -12,7 +11,7 @@ if (otelEnabled) {
   const traceExporter = shouldUseConsoleExporter
     ? new ConsoleSpanExporter()
     : hasOtlpTraceExportConfig()
-      ? new OTLPTraceExporter()
+      ? new OTLPTraceExporter({ url: resolveOtlpTracesEndpoint() })
       : undefined;
 
   const sdk = new NodeSDK({
@@ -51,3 +50,16 @@ if (otelEnabled) {
 function hasOtlpTraceExportConfig() {
   return Boolean(process.env.OTEL_EXPORTER_OTLP_ENDPOINT);
 }
+
+function resolveOtlpTracesEndpoint() {
+  const endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
+
+  if (!endpoint) {
+    return undefined;
+  }
+
+  return endpoint.replace(/\/$/, '').endsWith('/v1/traces')
+    ? endpoint
+    : `${endpoint.replace(/\/$/, '')}/v1/traces`;
+}
+
