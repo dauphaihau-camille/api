@@ -11,6 +11,14 @@ describe('FakeAiProvider', () => {
     defaultMaxTokens: 1200,
     textModels: {},
     embeddingModels: {},
+    routerTextProviders: ['gemini', 'groq', 'openrouter'],
+    routerEmbeddingProvider: 'openai',
+    geminiBaseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+    geminiDefaultTextModel: 'gemini-2.5-flash',
+    groqBaseUrl: 'https://api.groq.com',
+    groqDefaultTextModel: 'openai/gpt-oss-20b',
+    openrouterBaseUrl: 'https://openrouter.ai/api/v1',
+    openrouterDefaultTextModel: 'openai/gpt-oss-20b',
     fakeStreamDelayMs: 0,
   };
 

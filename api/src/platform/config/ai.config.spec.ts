@@ -34,6 +34,27 @@ describe('buildAiConfig', () => {
     expect(config.fakeStreamDelayMs).toBe(0);
   });
 
+  it('parses router provider settings', () => {
+    const config = buildAiConfig(createConfigService({
+      AI_PROVIDER: 'router',
+      AI_ROUTER_TEXT_PROVIDERS: 'gemini,groq,openrouter',
+      AI_ROUTER_EMBEDDING_PROVIDER: 'openai',
+      GEMINI_API_KEY: 'gemini-key',
+      GEMINI_DEFAULT_TEXT_MODEL: 'gemini-2.5-flash',
+      GROQ_API_KEY: 'groq-key',
+      GROQ_DEFAULT_TEXT_MODEL: 'openai/gpt-oss-20b',
+      OPENROUTER_API_KEY: 'openrouter-key',
+      OPENROUTER_DEFAULT_TEXT_MODEL: 'openai/gpt-oss-20b',
+    }));
+
+    expect(config.driver).toBe('router');
+    expect(config.routerTextProviders).toEqual(['gemini', 'groq', 'openrouter']);
+    expect(config.routerEmbeddingProvider).toBe('openai');
+    expect(config.geminiDefaultTextModel).toBe('gemini-2.5-flash');
+    expect(config.groqDefaultTextModel).toBe('openai/gpt-oss-20b');
+    expect(config.openrouterDefaultTextModel).toBe('openai/gpt-oss-20b');
+  });
+
 
   it('parses provider-aware model defaults from AI_MODELS', () => {
     const config = buildAiConfig(createConfigService({

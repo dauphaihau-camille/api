@@ -15,6 +15,7 @@ import type {
   StreamTextEvent,
 } from '../app/ai.types';
 import { AiProvider } from '../app/ports/ai-provider';
+import { startAiProviderSpan } from './ai-provider-telemetry';
 
 export type OpenAiResponse = {
   output_text: string;
@@ -98,71 +99,101 @@ export class OpenAiProvider implements AiProvider {
   async generateText(input: GenerateTextInput): Promise<GenerateTextResult> {
     const model = this.resolveTextModel(input);
 
-    const response = await this.openai.responses.create({
-      model: model.providerModel,
-      input: this.toOpenAiInput(input),
-      temperature: input.temperature,
-      max_output_tokens: input.maxTokens ?? model.maxTokens,
-      metadata: input.metadata,
-      reasoning: { effort: model.reasoningEffort },
-    });
+    const span = startAiProviderSpan({ provider: 'openai', operation: 'generate_text', model: model.providerModel });
 
-    if (response.error) {
-      throw new Error(response.error.message ?? 'OpenAI text generation failed');
+    try {
+      const response = await this.openai.responses.create({
+        model: model.providerModel,
+        input: this.toOpenAiInput(input),
+        temperature: input.temperature,
+        max_output_tokens: input.maxTokens ?? model.maxTokens,
+        metadata: input.metadata,
+        reasoning: { effort: model.reasoningEffort },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message ?? 'OpenAI text generation failed');
+      }
+
+      const result = this.toGenerateTextResult(response);
+      span.endSuccess(result);
+      return result;
     }
-
-    return this.toGenerateTextResult(response);
+    catch (error) {
+      span.endError(error);
+      throw error;
+    }
   }
 
   async *streamText(input: GenerateTextInput): AsyncIterable<StreamTextEvent> {
     const model = this.resolveTextModel(input);
 
-    const stream = this.openai.responses.stream({
-      model: model.providerModel,
-      input: this.toOpenAiInput(input),
-      temperature: input.temperature,
-      max_output_tokens: input.maxTokens ?? model.maxTokens,
-      metadata: input.metadata,
-      reasoning: { effort: model.reasoningEffort },
-    });
+    const span = startAiProviderSpan({ provider: 'openai', operation: 'stream_text', model: model.providerModel });
 
-    for await (const event of stream) {
-      if (
-        event.type === 'response.output_text.delta'
-        && typeof event.delta === 'string'
-      ) {
-        yield {
-          type: 'delta',
-          text: event.delta,
-        };
+    try {
+      const stream = this.openai.responses.stream({
+        model: model.providerModel,
+        input: this.toOpenAiInput(input),
+        temperature: input.temperature,
+        max_output_tokens: input.maxTokens ?? model.maxTokens,
+        metadata: input.metadata,
+        reasoning: { effort: model.reasoningEffort },
+      });
+
+      for await (const event of stream) {
+        if (
+          event.type === 'response.output_text.delta'
+          && typeof event.delta === 'string'
+        ) {
+          yield {
+            type: 'delta',
+            text: event.delta,
+          };
+        }
       }
+
+      const response = await stream.finalResponse();
+
+      if (response.error) {
+        throw new Error(response.error.message ?? 'OpenAI text generation failed');
+      }
+
+      const result = this.toGenerateTextResult(response);
+      span.endSuccess(result);
+      yield {
+        type: 'done',
+        result,
+      };
     }
-
-    const response = await stream.finalResponse();
-
-    if (response.error) {
-      throw new Error(response.error.message ?? 'OpenAI text generation failed');
+    catch (error) {
+      span.endError(error);
+      throw error;
     }
-
-    yield {
-      type: 'done',
-      result: this.toGenerateTextResult(response),
-    };
   }
 
   async embedText(input: EmbedTextInput): Promise<EmbedTextResult> {
     const model = this.resolveEmbeddingModel(input);
 
-    const response = await this.openai.embeddings.create({
-      model: model.providerModel,
-      input: input.values,
-      encoding_format: 'float',
-    });
+    const span = startAiProviderSpan({ provider: 'openai', operation: 'embed_text', model: model.providerModel });
 
-    return {
-      embeddings: response.data.map((item) => item.embedding),
-      model: response.model,
-    };
+    try {
+      const response = await this.openai.embeddings.create({
+        model: model.providerModel,
+        input: input.values,
+        encoding_format: 'float',
+      });
+      const result = {
+        embeddings: response.data.map((item) => item.embedding),
+        model: response.model,
+      };
+
+      span.endSuccess({ model: result.model });
+      return result;
+    }
+    catch (error) {
+      span.endError(error);
+      throw error;
+    }
   }
 
   private resolveTextModel(input: GenerateTextInput): ResolvedOpenAiTextModel {

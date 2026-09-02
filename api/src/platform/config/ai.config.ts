@@ -2,8 +2,10 @@ import type { ConfigService } from '@nestjs/config';
 import { z } from 'zod';
 
 export type AiReasoningEffort = 'minimal' | 'low' | 'medium' | 'high';
-export type AiProviderDriver = 'openai' | 'fake' | 'noop';
-export type AiModelProvider = 'openai' | 'anthropic' | 'moonshot';
+export type AiTextProviderDriver = 'openai' | 'gemini' | 'groq' | 'openrouter';
+export type AiEmbeddingProviderDriver = 'openai';
+export type AiProviderDriver = AiTextProviderDriver | 'router' | 'fake' | 'noop';
+export type AiModelProvider = AiTextProviderDriver | 'anthropic' | 'moonshot';
 
 export interface OpenAiModelOptions {
   reasoningEffort?: AiReasoningEffort;
@@ -13,6 +15,9 @@ export interface AnthropicModelOptions {
   thinkingBudgetTokens?: number;
 }
 
+export type GeminiModelOptions = Record<string, never>;
+export type GroqModelOptions = Record<string, never>;
+export type OpenRouterModelOptions = Record<string, never>;
 export type MoonshotModelOptions = Record<string, never>;
 
 export interface AiTextModelConfig {
@@ -21,6 +26,9 @@ export interface AiTextModelConfig {
   maxTokens?: number;
   openai?: OpenAiModelOptions;
   anthropic?: AnthropicModelOptions;
+  gemini?: GeminiModelOptions;
+  groq?: GroqModelOptions;
+  openrouter?: OpenRouterModelOptions;
   moonshot?: MoonshotModelOptions;
 }
 
@@ -30,6 +38,9 @@ export interface AiEmbeddingModelConfig {
   dimensions?: number;
   openai?: Record<string, never>;
   anthropic?: Record<string, never>;
+  gemini?: Record<string, never>;
+  groq?: Record<string, never>;
+  openrouter?: Record<string, never>;
   moonshot?: Record<string, never>;
 }
 
@@ -44,16 +55,29 @@ export interface AiConfig {
   defaultMaxTokens: number;
   textModels: Record<string, AiTextModelConfig>;
   embeddingModels: Record<string, AiEmbeddingModelConfig>;
+  routerTextProviders: AiTextProviderDriver[];
+  routerEmbeddingProvider: AiEmbeddingProviderDriver;
   openaiApiKey?: string;
   openaiBaseUrl?: string;
+  geminiApiKey?: string;
+  geminiBaseUrl: string;
+  geminiDefaultTextModel: string;
+  groqApiKey?: string;
+  groqBaseUrl: string;
+  groqDefaultTextModel: string;
+  openrouterApiKey?: string;
+  openrouterBaseUrl: string;
+  openrouterDefaultTextModel: string;
   fakeStreamDelayMs: number;
 }
 
 export const AI_CONFIG = Symbol('AI_CONFIG');
 
 const reasoningEffortSchema = z.enum(['minimal', 'low', 'medium', 'high']);
-const providerDriverSchema = z.enum(['openai', 'fake', 'noop']);
-const modelProviderSchema = z.enum(['openai', 'anthropic', 'moonshot']);
+const textProviderDriverSchema = z.enum(['openai', 'gemini', 'groq', 'openrouter']);
+const embeddingProviderDriverSchema = z.enum(['openai']);
+const providerDriverSchema = z.enum(['openai', 'gemini', 'groq', 'openrouter', 'router', 'fake', 'noop']);
+const modelProviderSchema = z.enum(['openai', 'gemini', 'groq', 'openrouter', 'anthropic', 'moonshot']);
 
 const textModelsSchema = z.record(
   z.string().trim().min(1),
@@ -67,6 +91,9 @@ const textModelsSchema = z.record(
     anthropic: z.object({
       thinkingBudgetTokens: z.number().int().positive().optional(),
     }).strict().optional(),
+    gemini: z.object({}).strict().optional(),
+    groq: z.object({}).strict().optional(),
+    openrouter: z.object({}).strict().optional(),
     moonshot: z.object({}).strict().optional(),
   }).strict(),
 );
@@ -79,6 +106,9 @@ const embeddingModelsSchema = z.record(
     dimensions: z.number().int().positive().optional(),
     openai: z.object({}).strict().optional(),
     anthropic: z.object({}).strict().optional(),
+    gemini: z.object({}).strict().optional(),
+    groq: z.object({}).strict().optional(),
+    openrouter: z.object({}).strict().optional(),
     moonshot: z.object({}).strict().optional(),
   }).strict(),
 );
@@ -106,14 +136,62 @@ export function buildAiConfig(
     defaultMaxTokens: Number(configService.get<string>('AI_DEFAULT_MAX_TOKENS', '1200')),
     textModels: parseTextModelsConfig(configService.get<string>('AI_MODELS')),
     embeddingModels: parseEmbeddingModelsConfig(configService.get<string>('AI_EMBEDDING_MODELS')),
+    routerTextProviders: parseRouterTextProvidersConfig(configService.get<string>(
+      'AI_ROUTER_TEXT_PROVIDERS',
+      'gemini,groq,openrouter',
+    )),
+    routerEmbeddingProvider: embeddingProviderDriverSchema.parse(configService.get<string>(
+      'AI_ROUTER_EMBEDDING_PROVIDER',
+      'openai',
+    )),
     openaiApiKey: configService.get<string>('OPENAI_API_KEY'),
     openaiBaseUrl: configService.get<string>('OPENAI_BASE_URL'),
+    geminiApiKey: configService.get<string>('GEMINI_API_KEY'),
+    geminiBaseUrl: configService.get<string>(
+      'GEMINI_BASE_URL',
+      'https://generativelanguage.googleapis.com',
+    ),
+    geminiDefaultTextModel: configService.get<string>(
+      'GEMINI_DEFAULT_TEXT_MODEL',
+      'gemini-3.6-flash',
+    ),
+    groqApiKey: configService.get<string>('GROQ_API_KEY'),
+    groqBaseUrl: configService.get<string>(
+      'GROQ_BASE_URL',
+      'https://api.groq.com',
+    ),
+    groqDefaultTextModel: configService.get<string>(
+      'GROQ_DEFAULT_TEXT_MODEL',
+      'openai/gpt-oss-20b',
+    ),
+    openrouterApiKey: configService.get<string>('OPENROUTER_API_KEY'),
+    openrouterBaseUrl: configService.get<string>(
+      'OPENROUTER_BASE_URL',
+      'https://openrouter.ai/api/v1',
+    ),
+    openrouterDefaultTextModel: configService.get<string>(
+      'OPENROUTER_DEFAULT_TEXT_MODEL',
+      'openai/gpt-oss-20b',
+    ),
     fakeStreamDelayMs: parseNonNegativeIntegerConfig(
       configService.get<string>('AI_FAKE_STREAM_DELAY_MS'),
       DEFAULT_FAKE_STREAM_DELAY_MS,
       'AI_FAKE_STREAM_DELAY_MS',
     ),
   };
+}
+
+function parseRouterTextProvidersConfig(value: string): AiTextProviderDriver[] {
+  const providers = value
+    .split(',')
+    .map((provider) => provider.trim())
+    .filter((provider) => provider.length > 0);
+
+  if (providers.length === 0) {
+    throw new Error('AI_ROUTER_TEXT_PROVIDERS must include at least one provider.');
+  }
+
+  return providers.map((provider) => textProviderDriverSchema.parse(provider));
 }
 
 function parseTextModelsConfig(value?: string): Record<string, AiTextModelConfig> {
