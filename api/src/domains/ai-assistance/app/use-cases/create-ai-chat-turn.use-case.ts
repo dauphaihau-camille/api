@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { hasMeaningfulContent } from '~/domains/document/app/utils/document-content.util';
 import {
@@ -75,6 +75,8 @@ type PreparedTurnRequest = {
 
 @Injectable()
 export class CreateAiChatTurnUseCase {
+  private readonly logger = new Logger(CreateAiChatTurnUseCase.name);
+
   constructor(
     private readonly workspaceRepository: WorkspaceRepository,
     private readonly aiConversationRepository: AiConversationRepository,
@@ -97,8 +99,12 @@ export class CreateAiChatTurnUseCase {
         metadata: this.buildMetadata(input, request.sourceDocuments),
       });
     }
-    catch {
+    catch (error) {
       await this.aiResponseGateService.releaseReservation(reservation);
+      this.logger.error(
+        `AI text generation failed for workspace ${input.workspaceId} session ${input.sessionId}: ${formatAiGenerationError(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new AiGenerationFailedError();
     }
 
@@ -160,12 +166,16 @@ export class CreateAiChatTurnUseCase {
         };
       }
     }
-    catch {
+    catch (error) {
       if (!reservationSettled) {
         await this.aiResponseGateService.releaseReservation(reservation);
         reservationSettled = true;
       }
 
+      this.logger.error(
+        `AI text streaming failed for workspace ${input.workspaceId} session ${input.sessionId}: ${formatAiGenerationError(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new AiGenerationFailedError();
     }
     finally {
@@ -304,4 +314,15 @@ export class CreateAiChatTurnUseCase {
       JSON.stringify(document.content),
     ].join('\n')).join('\n\n');
   }
+}
+
+
+// ---------- Private helpers ----------
+
+function formatAiGenerationError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return String(error);
 }

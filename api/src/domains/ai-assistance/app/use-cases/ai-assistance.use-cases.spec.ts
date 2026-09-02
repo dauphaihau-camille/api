@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import type { AuthenticatedUser } from '~/domains/auth/app/auth.types';
 import { UserStatus } from '~/domains/auth/domain/enums/user-status.enum';
 import type { DocumentDetailQueryRepository } from '~/domains/document/app/ports/document-detail-query.repository';
@@ -365,6 +366,8 @@ describe('AI assistance use cases', () => {
   });
 
   it('releases a reservation when provider generation fails', async () => {
+    const loggerErrorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+
     const repository = createAiConversationRepository();
     const aiService = {
       generateText: jest.fn().mockRejectedValue(new Error('provider failed')),
@@ -384,6 +387,11 @@ describe('AI assistance use cases', () => {
       documentIds: ['document-1'],
     })).rejects.toThrow('AI response could not be generated');
     expect(repository.releaseReservation).toHaveBeenCalledWith('reservation-1');
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('AI text generation failed for workspace workspace-1 session ai-session-1: provider failed'),
+      expect.any(String),
+    );
+    loggerErrorSpy.mockRestore();
   });
 
 
