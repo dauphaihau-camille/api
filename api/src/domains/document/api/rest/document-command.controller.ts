@@ -25,9 +25,26 @@ import { ArchiveSubdocCommandResponseDto } from './dto/archive-subdoc-command-re
 import { ArchiveSubdocCommandDto } from './dto/archive-subdoc-command.dto';
 import { CreateSubdocCommandResponseDto } from './dto/create-subdoc-command-response.dto';
 import { CreateSubdocCommandDto } from './dto/create-subdoc-command.dto';
+import {
+  conflictErrorExample,
+  forbiddenErrorExample,
+  internalServerErrorExample,
+  notFoundErrorExample,
+  unauthorizedErrorExample,
+  validationErrorExample,
+} from '~/platform/http/api-error-examples';
+import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
 
 @Controller()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
+@ApiErrorResponses({
+  400: [validationErrorExample],
+  401: [unauthorizedErrorExample],
+  403: [forbiddenErrorExample],
+  404: [notFoundErrorExample],
+  409: [conflictErrorExample],
+  500: [internalServerErrorExample],
+})
 @ApiCookieAuth('access_token')
 @ApiTags('Document')
 export class DocumentCommandController {

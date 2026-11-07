@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiCookieAuth,
+  ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -30,8 +31,19 @@ import {
   isPublishAppError,
   mapPublishAppErrorToHttpException,
 } from './publish-http-error-mapper';
+import {
+  forbiddenErrorExample,
+  internalServerErrorExample,
+  notFoundErrorExample,
+  unauthorizedErrorExample,
+} from '~/platform/http/api-error-examples';
+import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
 
 @Controller()
+@ApiErrorResponses({
+  404: [notFoundErrorExample],
+  500: [internalServerErrorExample],
+})
 @ApiTags('Publish')
 export class PublishController {
   constructor(
@@ -60,6 +72,10 @@ export class PublishController {
 
   @Get('documents/:documentId/publish')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+  })
   @ApiCookieAuth('access_token')
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
@@ -80,12 +96,16 @@ export class PublishController {
 
   @Post('documents/:documentId/publish')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+  })
   @ApiCookieAuth('access_token')
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Publish a document',
   })
-  @ApiOkResponse({
+  @ApiCreatedResponse({
     type: PublishedDocumentResponseDto,
   })
   async publishDocument(
@@ -100,6 +120,10 @@ export class PublishController {
 
   @Delete('documents/:documentId/publish')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+  })
   @ApiCookieAuth('access_token')
   @HttpCode(200)
   @Header('Cache-Control', 'no-store')

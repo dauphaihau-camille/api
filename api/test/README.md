@@ -28,6 +28,32 @@ pnpm test:perf
 
 The e2e bootstrap loads `api/.env` before each suite file runs, then creates a real temporary PostgreSQL database per suite. Make sure local Postgres is reachable before running e2e, typically through the workspace Docker stack on `127.0.0.1:55433`, or override `DB_HOST`, `DB_PORT`, `DB_USER`, and `DB_PASSWORD` in the shell to point at another local instance.
 
+## OpenAPI Contract Assertions
+
+The e2e suites validate real response bodies against the committed [`openapi.json`](../openapi.json) with `support/openapi-contract.ts`.
+
+- The spec is the artifact produced by `pnpm spec:generate`; the helper loads it once per Jest worker, resolving it from `process.cwd()` (override with `OPENAPI_SPEC_PATH`).
+- Concrete URLs are resolved to their registered templates, so `/v1/documents/abc` is validated against `/v1/documents/{documentId}`.
+- Assertions name the method, path, status and the first validation error on failure, for example:
+  `Response for POST /v1/auth/login (status 200) does not match OpenAPI path "/v1/auth/login": user/status: must be object`.
+
+Add an assertion next to the behaviour assertions you already have:
+
+```ts
+import { expectMatchesContract } from '../support/openapi-contract';
+
+const response = await request(app.getHttpServer()).get(`/v1/documents/${id}`).expect(200);
+
+expectMatchesContract({
+  method: 'get',
+  path: `/v1/documents/${id}`,
+  status: 200,
+  body: response.body,
+});
+```
+
+A red assertion means the emitted body and the generated contract disagree; fix the DTO/controller decorators and regenerate the spec rather than loosening the assertion.
+
 ## Performance Tests
 
 The performance runner uses `pnpm test:perf` and selects the k6 script through `K6_SCRIPT`.

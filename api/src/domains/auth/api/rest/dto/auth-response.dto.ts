@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type { AuthResponse, UserProfile } from '../../../app/auth.types';
+import { UserStatus } from '../../../domain/enums/user-status.enum';
 
 export class UserProfileResponseDto {
   @ApiProperty()
@@ -10,7 +11,10 @@ export class UserProfileResponseDto {
   display_name?: string;
   @ApiPropertyOptional()
   avatar?: string;
-  @ApiProperty()
+  @ApiProperty({
+    enum: UserStatus,
+    type: String,
+  })
   status!: UserProfile['status'];
   @ApiProperty()
   session_id!: string;

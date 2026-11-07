@@ -44,9 +44,24 @@ import {
 } from './dto/ai-assistance.dto';
 import { ListAiConversationSessionsQueryDto } from './dto/list-ai-conversation-sessions.query.dto';
 import { ListAiChatTurnsQueryDto } from './dto/list-ai-chat-turns.query.dto';
+import {
+  forbiddenErrorExample,
+  internalServerErrorExample,
+  notFoundErrorExample,
+  unauthorizedErrorExample,
+  validationErrorExample,
+} from '~/platform/http/api-error-examples';
+import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
 
 @Controller('workspaces/:workspaceId/ai')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
+@ApiErrorResponses({
+  400: [validationErrorExample],
+  401: [unauthorizedErrorExample],
+  403: [forbiddenErrorExample],
+  404: [notFoundErrorExample],
+  500: [internalServerErrorExample],
+})
 @ApiCookieAuth('access_token')
 @ApiTags('AI Assistance')
 export class AiAssistanceController {

@@ -30,9 +30,24 @@ import { CheckoutSessionResponseDto } from './dto/checkout-session-response.dto'
 import { CreateCheckoutSessionRequestDto } from './dto/create-checkout-session-request.dto';
 import { SubscriptionSummaryResponseDto } from './dto/subscription-summary-response.dto';
 import { rethrowSubscriptionAppError } from './subscription-http-error-mapper';
+import {
+  forbiddenErrorExample,
+  internalServerErrorExample,
+  notFoundErrorExample,
+  unauthorizedErrorExample,
+  validationErrorExample,
+} from '~/platform/http/api-error-examples';
+import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
 
 @Controller('workspaces/:workspaceId/subscription')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
+@ApiErrorResponses({
+  400: [validationErrorExample],
+  401: [unauthorizedErrorExample],
+  403: [forbiddenErrorExample],
+  404: [notFoundErrorExample],
+  500: [internalServerErrorExample],
+})
 @ApiCookieAuth('access_token')
 @ApiTags('Subscription')
 export class SubscriptionController {
@@ -90,6 +105,9 @@ export class SubscriptionController {
 }
 
 @Controller('billing/webhooks')
+@ApiErrorResponses({
+  500: [internalServerErrorExample],
+})
 @ApiTags('Subscription')
 export class BillingWebhookController {
   constructor(

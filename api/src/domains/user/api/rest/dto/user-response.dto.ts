@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type { PaginatedResult, PaginationMeta } from '~/platform/application/pagination';
 import type { UserSummary, UserListSort } from '../../../app/user.types';
+import { UserStatus } from '~/domains/auth/domain/enums/user-status.enum';
 
 export class UserSummaryResponseDto {
   @ApiProperty()
@@ -13,7 +14,10 @@ export class UserSummaryResponseDto {
   display_name?: string;
   @ApiPropertyOptional()
   avatar?: string;
-  @ApiProperty()
+  @ApiProperty({
+    enum: UserStatus,
+    type: String,
+  })
   status!: UserSummary['status'];
 
   static fromUserSummary(user: UserSummary): UserSummaryResponseDto {

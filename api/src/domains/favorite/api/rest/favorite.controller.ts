@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiCookieAuth,
+  ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -28,9 +29,22 @@ import {
   isFavoriteAppError,
   mapFavoriteAppErrorToHttpException,
 } from './favorite-http-error-mapper';
+import {
+  forbiddenErrorExample,
+  internalServerErrorExample,
+  notFoundErrorExample,
+  unauthorizedErrorExample,
+} from '~/platform/http/api-error-examples';
+import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
 
 @Controller()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
+@ApiErrorResponses({
+  401: [unauthorizedErrorExample],
+  403: [forbiddenErrorExample],
+  404: [notFoundErrorExample],
+  500: [internalServerErrorExample],
+})
 @ApiCookieAuth('access_token')
 @ApiTags('Favorite')
 export class FavoriteController {
@@ -99,7 +113,7 @@ export class FavoriteController {
   @ApiOperation({
     summary: 'Favorite a document',
   })
-  @ApiOkResponse({
+  @ApiCreatedResponse({
     type: FavoriteStatusResponseDto,
   })
   async favoriteDocument(

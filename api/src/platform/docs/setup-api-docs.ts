@@ -2,6 +2,7 @@ import type { INestApplication } from '@nestjs/common';
 import type { OpenAPIObject } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { API_GLOBAL_PREFIX } from '../http/api-global-prefix';
 
 const DOCS_PATH = '/docs';
 const OPENAPI_JSON_PATH = `${DOCS_PATH}/openapi.json`;
@@ -59,6 +60,16 @@ function sortDocumentTags(document: OpenAPIObject): void {
     .map((name) => existingTags.get(name) ?? { name });
 }
 
+function restrictToGlobalPrefix(document: OpenAPIObject): void {
+  const prefix = `/${API_GLOBAL_PREFIX}/`;
+
+  for (const documentPath of Object.keys(document.paths ?? {})) {
+    if (!documentPath.startsWith(prefix)) {
+      delete document.paths?.[documentPath];
+    }
+  }
+}
+
 export function createApiDocument(app: INestApplication): OpenAPIObject {
   const accessCookieName = process.env.AUTH_COOKIE_ACCESS_NAME ?? 'accessToken';
   const refreshCookieName = process.env.AUTH_COOKIE_REFRESH_NAME ?? 'refreshToken';
@@ -87,6 +98,7 @@ export function createApiDocument(app: INestApplication): OpenAPIObject {
     },
   );
 
+  restrictToGlobalPrefix(document);
   sortDocumentTags(document);
 
   return document;
