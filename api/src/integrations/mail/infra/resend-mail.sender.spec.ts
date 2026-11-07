@@ -55,7 +55,7 @@ describe('ResendMailSender', () => {
       driver: 'resend',
       resendApiKey: 'test-key',
       defaultFrom: {
-        email: 'no-reply@hautran.me',
+        email: 'no-reply@hau.sarl',
         name: 'Camille',
       },
     });
