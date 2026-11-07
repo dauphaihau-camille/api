@@ -38,6 +38,7 @@ describe('CreateDocumentUseCase', () => {
 
   function createCommandRepository() {
     return {
+      findDocument: jest.fn(),
       findTeamspaceByIdInWorkspace: jest.fn(),
       withTransaction: jest.fn(),
     } as unknown as jest.Mocked<DocumentCommandRepository>;
@@ -99,6 +100,14 @@ describe('CreateDocumentUseCase', () => {
         },
         subdocReferenceRepository: { id: 'subdoc-repo' },
       } as never));
+    commandRepository.findDocument.mockResolvedValue({
+      ...createdDocument,
+      ownerUser: {
+        id: 'user-1',
+        email: 'user@example.com',
+        displayName: 'Doc Owner',
+      },
+    } as never);
 
     const useCase = new CreateDocumentUseCase(
       auditService as never,
@@ -126,6 +135,11 @@ describe('CreateDocumentUseCase', () => {
       resourceId: 'doc-1',
     }));
     expect(result.parentDocumentId).toBeUndefined();
+    expect(result.ownerUser).toEqual({
+      id: 'user-1',
+      email: 'user@example.com',
+      displayName: 'Doc Owner',
+    });
   });
 
   it('does not create a document when the workspace block limit is reached', async () => {

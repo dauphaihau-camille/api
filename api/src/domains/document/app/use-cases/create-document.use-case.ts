@@ -89,6 +89,13 @@ export class CreateDocumentUseCase {
       },
     });
 
-    return toDocumentSummary(document);
+    // The created entity only holds a reference to the owner user; reload it
+    // with its relations so the response carries the owner's email and display
+    // name instead of a bare identifier.
+    const hydratedDocument = await this.documentCommandRepository.findDocument(
+      document.id,
+    );
+
+    return toDocumentSummary(hydratedDocument ?? document);
   }
 }

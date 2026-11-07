@@ -1,5 +1,6 @@
 import type { HttpException } from '@nestjs/common';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { toHttpErrorPayload } from '~/platform/http/api-error-code';
 import {
   SearchAppError,
   SearchWorkspaceNotFoundError,
@@ -13,8 +14,8 @@ export function mapSearchAppErrorToHttpException(
   error: SearchAppError,
 ): HttpException {
   if (error instanceof SearchWorkspaceNotFoundError) {
-    return new NotFoundException(error.message);
+    return new NotFoundException(toHttpErrorPayload(error));
   }
 
-  return new ForbiddenException(error.message);
+  return new ForbiddenException(toHttpErrorPayload(error));
 }

@@ -4,6 +4,8 @@ import { ApiErrorResponseDto } from '~/platform/http/api-error-response.dto';
 
 /** A single named error the endpoint can return at a given status. */
 export interface ApiErrorExample {
+  /** Stable machine-readable code emitted in the `code` field. */
+  code: string;
   /** Value emitted in the `error` field; also the name of the example. */
   error: string;
   /** Value emitted in the `message` field. */
@@ -57,6 +59,7 @@ export function ApiErrorResponses(
                     timestamp: EXAMPLE_TIMESTAMP,
                     path: EXAMPLE_PATH,
                     error: example.error,
+                    code: example.code,
                     message: example.message,
                   },
                 },

@@ -9,6 +9,7 @@ import type { Request, Response } from 'express';
 import { PinoLogger } from 'nestjs-pino';
 import { RequestContextService } from '~/platform/request-context/request-context.service';
 import { getActiveTraceContext } from '~/platform/observability/tracing';
+import { resolveErrorCode } from '~/platform/http/api-error-code';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -116,6 +117,7 @@ export function buildErrorResponse(
       ...baseResponse,
       error: 'Internal Server Error',
       message: 'Internal server error',
+      code: resolveErrorCode(statusCode),
     };
   }
 
@@ -126,6 +128,7 @@ export function buildErrorResponse(
       ...baseResponse,
       error: exception.name,
       message: exceptionResponse,
+      code: resolveErrorCode(statusCode),
     };
   }
 
@@ -135,19 +138,21 @@ export function buildErrorResponse(
     && !Array.isArray(exceptionResponse)
   ) {
     const responsePayload = exceptionResponse as Record<string, unknown>;
+    const { code: payloadCode, ...payloadFields } = responsePayload;
 
     return {
       ...baseResponse,
-      ...responsePayload,
+      ...payloadFields,
       error:
-        typeof responsePayload.error === 'string'
-          ? responsePayload.error
+        typeof payloadFields.error === 'string'
+          ? payloadFields.error
           : exception.name,
       message:
-        typeof responsePayload.message === 'string'
-        || Array.isArray(responsePayload.message)
-          ? responsePayload.message
+        typeof payloadFields.message === 'string'
+        || Array.isArray(payloadFields.message)
+          ? payloadFields.message
           : exception.message,
+      code: resolveErrorCode(statusCode, payloadCode),
     };
   }
 
@@ -155,5 +160,6 @@ export function buildErrorResponse(
     ...baseResponse,
     error: exception.name,
     message: exception.message,
+    code: resolveErrorCode(statusCode),
   };
 }

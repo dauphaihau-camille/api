@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { toHttpErrorPayload } from '~/platform/http/api-error-code';
 import {
   TeamspaceAppError,
   TeamspaceNotFoundError,
@@ -30,20 +31,20 @@ export function mapTeamspaceLayeredErrorToHttpException(
     error instanceof TeamspaceNotFoundError
     || error instanceof TeamspaceWorkspaceNotFoundError
   ) {
-    return new NotFoundException(error.message);
+    return new NotFoundException(toHttpErrorPayload(error));
   }
 
   if (error instanceof TeamspacePermissionDeniedError) {
-    return new ForbiddenException(error.message);
+    return new ForbiddenException(toHttpErrorPayload(error));
   }
 
   if (error instanceof TeamspaceVersionConflictError) {
-    return new ConflictException(error.message);
+    return new ConflictException(toHttpErrorPayload(error));
   }
 
   if (error instanceof TeamspaceNameTooShortError) {
-    return new BadRequestException(error.message);
+    return new BadRequestException(toHttpErrorPayload(error));
   }
 
-  return new BadRequestException(error.message);
+  return new BadRequestException(toHttpErrorPayload(error));
 }

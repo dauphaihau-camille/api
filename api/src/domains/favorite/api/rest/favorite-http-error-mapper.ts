@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { toHttpErrorPayload } from '~/platform/http/api-error-code';
 import {
   FavoriteAppError,
   FavoriteDocumentNotFoundError,
@@ -20,8 +21,8 @@ export function mapFavoriteAppErrorToHttpException(
     error instanceof FavoriteDocumentNotFoundError
     || error instanceof FavoriteWorkspaceNotFoundError
   ) {
-    return new NotFoundException(error.message);
+    return new NotFoundException(toHttpErrorPayload(error));
   }
 
-  return new ForbiddenException(error.message);
+  return new ForbiddenException(toHttpErrorPayload(error));
 }

@@ -21,6 +21,7 @@ import { ObservabilityService } from '../../src/platform/observability/observabi
 import { BULLMQ_QUEUE } from '../../src/integrations/queue/infra/queue.constants';
 import { RequestContextService } from '../../src/platform/request-context/request-context.service';
 import { createTestDatabase, dropTestDatabase } from '../support/test-postgres';
+import { expectMatchesContract } from '../support/openapi-contract';
 
 jest.setTimeout(30_000);
 
@@ -56,6 +57,7 @@ describe('Document mutation flow (e2e)', () => {
   let app: INestApplication<App>;
   let originalEnv: NodeJS.ProcessEnv;
   let testDb: Awaited<ReturnType<typeof createTestDatabase>>;
+  let sharedOwner: RegisteredUser;
 
   beforeAll(async () => {
     originalEnv = { ...process.env };
@@ -143,6 +145,10 @@ describe('Document mutation flow (e2e)', () => {
       app.get(BULLMQ_QUEUE, { strict: false }),
     );
     await app.init();
+
+    // Registering is rate limited to three calls per client IP and window, so
+    // the file shares one owner instead of registering per test.
+    sharedOwner = await registerUser('shared-owner');
   });
 
   afterAll(async () => {
@@ -159,7 +165,7 @@ describe('Document mutation flow (e2e)', () => {
 
   it('creates, updates, moves, archives, restores, and permanently deletes documents', async () => {
     const suffix = Date.now();
-    const owner = await registerUser('document-mutations-owner');
+    const owner = sharedOwner;
     const member = await registerUser('document-mutations-member');
     const workspace = await createWorkspace(owner.cookie, {
       name: 'Document Mutations',
@@ -213,6 +219,12 @@ describe('Document mutation flow (e2e)', () => {
     expect(updatedParent.content).toEqual([
       expect.objectContaining({ type: 'paragraph' }),
     ]);
+    expectMatchesContract({
+      method: 'patch',
+      path: `/v1/documents/${parentDocument.id}`,
+      status: 200,
+      body: updatedParentResponse.body,
+    });
 
     const staleUpdateResponse = await request(app.getHttpServer())
       .patch(`/v1/documents/${parentDocument.id}`)
@@ -240,6 +252,12 @@ describe('Document mutation flow (e2e)', () => {
     expect(memberUpdateResponse.body).toMatchObject({
       statusCode: 403,
       message: 'You do not have permission to update this workspace.',
+    });
+    expectMatchesContract({
+      method: 'patch',
+      path: `/v1/documents/${parentDocument.id}`,
+      status: 403,
+      body: memberUpdateResponse.body,
     });
 
     const movedChildResponse = await request(app.getHttpServer())
@@ -309,7 +327,7 @@ describe('Document mutation flow (e2e)', () => {
 
   it('rejects parent_document_id on root document creation', async () => {
     const suffix = `${Date.now()}-${uniqueSequence += 1}`;
-    const owner = await registerUser(`doc-root-owner-${suffix}`);
+    const owner = sharedOwner;
     const workspace = await createWorkspace(owner.cookie, {
       name: 'Document Root Contract',
       slug: `doc-root-${suffix}`,
@@ -328,6 +346,35 @@ describe('Document mutation flow (e2e)', () => {
         title: 'Should Fail',
       })
       .expect(400);
+  });
+
+  it('matches the OpenAPI contract for POST /v1/documents 201', async () => {
+    const suffix = `${Date.now()}-${uniqueSequence += 1}`;
+    const owner = sharedOwner;
+    const workspace = await createWorkspace(owner.cookie, {
+      name: 'Document Create Contract',
+      slug: `doc-create-${suffix}`,
+    });
+
+    const response = await request(app.getHttpServer())
+      .post('/v1/documents')
+      .set('Cookie', owner.cookie)
+      .send({
+        workspace_id: workspace.id,
+        title: 'Contract Document',
+      })
+      .expect(201);
+
+    expect(response.body.owner_user).toMatchObject({
+      id: owner.userId,
+      email: owner.email,
+    });
+    expectMatchesContract({
+      method: 'post',
+      path: '/v1/documents',
+      status: 201,
+      body: response.body,
+    });
   });
 
   async function registerUser(label: string): Promise<RegisteredUser> {

@@ -107,8 +107,11 @@ export class DocumentResponseDto {
   @ApiProperty()
   title!: string;
 
-  @ApiProperty()
-  content_format!: string;
+  @ApiProperty({
+    enum: ['blocknote_v1'],
+    example: 'blocknote_v1',
+  })
+  content_format!: 'blocknote_v1';
 
   @ApiProperty({
     type: 'array',

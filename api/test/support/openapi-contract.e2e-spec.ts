@@ -26,6 +26,7 @@ const validLoginBody = {
 
 const unauthorizedEnvelope = {
   statusCode: 401,
+  code: 'UNAUTHORIZED',
   timestamp: '2026-01-01T00:00:00.000Z',
   path: '/v1/auth/login',
   error: 'Unauthorized',

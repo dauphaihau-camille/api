@@ -1,5 +1,6 @@
 import type { HttpException } from '@nestjs/common';
 import { NotFoundException } from '@nestjs/common';
+import { toHttpErrorPayload } from '~/platform/http/api-error-code';
 import {
   WorkspacePreferenceAppError,
   WorkspacePreferenceWorkspaceNotFoundError,
@@ -15,8 +16,8 @@ export function mapWorkspacePreferenceAppErrorToHttpException(
   error: WorkspacePreferenceAppError,
 ): HttpException {
   if (error instanceof WorkspacePreferenceWorkspaceNotFoundError) {
-    return new NotFoundException(error.message);
+    return new NotFoundException(toHttpErrorPayload(error));
   }
 
-  return new NotFoundException(error.message);
+  return new NotFoundException(toHttpErrorPayload(error));
 }

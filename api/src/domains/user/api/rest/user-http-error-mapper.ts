@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { toHttpErrorPayload } from '~/platform/http/api-error-code';
 import {
   ActorNotAllowedToCreateUsersError,
   ActorNotAllowedToUpdateUsersError,
@@ -21,24 +22,24 @@ export function mapUserAppErrorToHttpException(
   error: UserAppError,
 ): HttpException {
   if (error instanceof ActorNotAllowedToCreateUsersError) {
-    return new ForbiddenException(error.message);
+    return new ForbiddenException(toHttpErrorPayload(error));
   }
 
   if (error instanceof ActorNotAllowedToUpdateUsersError) {
-    return new ForbiddenException(error.message);
+    return new ForbiddenException(toHttpErrorPayload(error));
   }
 
   if (error instanceof UserEmailAlreadyRegisteredError) {
-    return new ConflictException(error.message);
+    return new ConflictException(toHttpErrorPayload(error));
   }
 
   if (error instanceof UserVersionConflictError) {
-    return new ConflictException(error.message);
+    return new ConflictException(toHttpErrorPayload(error));
   }
 
   if (error instanceof UserNotFoundError) {
-    return new NotFoundException(error.message);
+    return new NotFoundException(toHttpErrorPayload(error));
   }
 
-  return new ForbiddenException(error.message);
+  return new ForbiddenException(toHttpErrorPayload(error));
 }

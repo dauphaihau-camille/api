@@ -29,14 +29,45 @@ pnpm spec:generate -- --check
   `src/platform/http/api-global-prefix.ts`.
 - The spec is emitted verbatim, so wire casing follows the DTO declarations.
 - Failure responses use the fixed envelope emitted by
-  `GlobalExceptionFilter`: `{ statusCode, timestamp, path, error, message }`,
-  where `message` is a string or a list of field errors. Document them with
+  `GlobalExceptionFilter`: `{ statusCode, timestamp, path, error, code, message }`,
+  where `message` is a string or a list of field errors and `code` is the
+  stable machine-readable code. Document them with
   `@ApiErrorResponses({ [status]: ApiErrorExample[] })` from
   `src/platform/http/api-error-responses.decorator.ts`, reusing the examples in
-  `src/platform/http/api-error-examples.ts`. Declare only statuses the
+  `src/platform/http/api-error-examples.ts` (every `ApiErrorExample` requires a
+  `code`). Declare only statuses the
   controller can actually produce: always `500`, plus `401`/`403` when a guard
   protects the route, `400` when a handler consumes a DTO, and `404`/`409` only
   when an error mapper proves them.
+- `code` is always `UPPER_SNAKE_CASE` and resolved by
+  `src/platform/http/api-error-code.ts` in this order:
+  1. a string `code` already present on the HTTP exception payload, when it is
+     already canonical `UPPER_SNAKE_CASE`;
+  2. the code preserved by the domain HTTP error mapper: every
+     `*-http-error-mapper.ts` builds its exception payload with
+     `toHttpErrorPayload(error)`, which derives the code from the domain
+     error's `code` (`DocumentNotFoundError` -> `DOCUMENT_NOT_FOUND`,
+     `workspace_block_limit_reached` -> `WORKSPACE_BLOCK_LIMIT_REACHED`);
+  3. the status fallback below.
+  Internal exception class names are never emitted as codes.
+
+  | Status | Fallback code          |
+  | ------ | ---------------------- |
+  | 400    | `BAD_REQUEST`          |
+  | 401    | `UNAUTHORIZED`         |
+  | 403    | `FORBIDDEN`            |
+  | 404    | `NOT_FOUND`            |
+  | 405    | `METHOD_NOT_ALLOWED`   |
+  | 409    | `CONFLICT`             |
+  | 422    | `UNPROCESSABLE_ENTITY` |
+  | 429    | `TOO_MANY_REQUESTS`    |
+  | 500    | `INTERNAL_SERVER_ERROR` |
+  | 501    | `NOT_IMPLEMENTED`      |
+  | 503    | `SERVICE_UNAVAILABLE`  |
+  | 504    | `GATEWAY_TIMEOUT`      |
+
+  Any other 4xx falls back to `BAD_REQUEST`; any other status falls back to
+  `INTERNAL_SERVER_ERROR`.
 - `openapi.json` takes `info.version` from `packages/api-spec/package.json`
   (`scripts/generate-openapi.ts`). Bump the manifest first, then regenerate;
   never hardcode the version in `setup-api-docs.ts`.
