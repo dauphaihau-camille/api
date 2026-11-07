@@ -21,6 +21,7 @@ import { ObservabilityService } from '../../src/platform/observability/observabi
 import { BULLMQ_QUEUE } from '../../src/integrations/queue/infra/queue.constants';
 import { RequestContextService } from '../../src/platform/request-context/request-context.service';
 import { createTestDatabase, dropTestDatabase } from '../support/test-postgres';
+import { expectMatchesContract } from '../support/openapi-contract';
 
 jest.setTimeout(30_000);
 
@@ -147,10 +148,17 @@ describe('Document flow (e2e)', () => {
       .expect(201);
     const document = createDocumentResponse.body as { id: string };
 
-    await request(app.getHttpServer())
+    const documentDetailResponse = await request(app.getHttpServer())
       .get(`/v1/documents/${document.id}`)
       .set('Cookie', owner.cookie)
       .expect(200);
+
+    expectMatchesContract({
+      method: 'get',
+      path: `/v1/documents/${document.id}`,
+      status: 200,
+      body: documentDetailResponse.body,
+    });
 
     const favoriteResponse = await request(app.getHttpServer())
       .post(`/v1/documents/${document.id}/favorite`)
@@ -225,6 +233,13 @@ describe('Document flow (e2e)', () => {
       published_document_id: expect.any(String),
     });
 
+    expectMatchesContract({
+      method: 'post',
+      path: `/v1/documents/${document.id}/publish`,
+      status: 201,
+      body: publishResponse.body,
+    });
+
     const publishedDocumentId = publishResponse.body.published_document_id as string;
 
     const publishStatusResponse = await request(app.getHttpServer())
@@ -257,9 +272,16 @@ describe('Document flow (e2e)', () => {
       .set('Cookie', owner.cookie)
       .expect(200);
 
-    await request(app.getHttpServer())
+    const unpublishedResponse = await request(app.getHttpServer())
       .get(`/v1/published/${publishedDocumentId}`)
       .expect(404);
+
+    expectMatchesContract({
+      method: 'get',
+      path: `/v1/published/${publishedDocumentId}`,
+      status: 404,
+      body: unpublishedResponse.body,
+    });
   });
 
   async function registerUser(name: string, email = `${name}-${Date.now()}@example.com`) {

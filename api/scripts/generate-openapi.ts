@@ -4,6 +4,7 @@ import {
 } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import { RequestMethod } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { OpenAPIObject } from '@nestjs/swagger';
 import type * as ApiDocsTypes from '~/platform/docs/setup-api-docs';
@@ -28,6 +29,12 @@ const DIST_SETUP_API_DOCS = path.join(
   'platform',
   'docs',
   'setup-api-docs.js',
+);
+const CONTRACT_MANIFEST = path.join(
+  path.resolve(APP_ROOT, '..'),
+  'packages',
+  'api-spec',
+  'package.json',
 );
 
 /**
@@ -166,6 +173,25 @@ function requireCompiled<T>(modulePath: string): T {
   return requireFromScript(modulePath) as T;
 }
 
+/**
+ * The document version is the published contract version, not a constant in
+ * `setup-api-docs.ts`: consumers compare `info.version` with the manifest they
+ * installed, so both must move together or the contract lies about itself.
+ */
+async function readContractVersion(): Promise<string> {
+  const raw = await readFile(CONTRACT_MANIFEST, 'utf8');
+  const manifest = JSON.parse(raw) as { version?: unknown };
+
+  if (typeof manifest.version !== 'string' || manifest.version.length === 0) {
+    throw new Error(
+      `Contract manifest at ${path.relative(APP_ROOT, CONTRACT_MANIFEST)} ` +
+      'must declare a version string.',
+    );
+  }
+
+  return manifest.version;
+}
+
 async function buildDocument(): Promise<OpenAPIObject> {
   applyPlaceholderEnv();
 
@@ -189,8 +215,20 @@ async function buildDocument(): Promise<OpenAPIObject> {
   });
 
   try {
-    app.setGlobalPrefix(API_GLOBAL_PREFIX);
-    return createApiDocument(app);
+    // Mirror `bootstrap/index.ts`: operational endpoints are served outside
+    // the API prefix, so documenting them here would invent `/v1/health`
+    // routes the runtime never exposes. `createApiDocument` then drops every
+    // path that is not part of the `/v1` contract.
+    app.setGlobalPrefix(API_GLOBAL_PREFIX, {
+      exclude: [
+        { path: 'health', method: RequestMethod.GET },
+        { path: 'health/ready', method: RequestMethod.GET },
+        { path: 'metrics', method: RequestMethod.GET },
+      ],
+    });
+    const document = createApiDocument(app);
+    document.info = { ...document.info, version: await readContractVersion() };
+    return document;
   }
   finally {
     await app.close();

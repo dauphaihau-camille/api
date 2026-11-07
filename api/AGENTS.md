@@ -28,6 +28,22 @@ pnpm spec:generate -- --check
   prefix comes from `API_GLOBAL_PREFIX` in
   `src/platform/http/api-global-prefix.ts`.
 - The spec is emitted verbatim, so wire casing follows the DTO declarations.
+- Failure responses use the fixed envelope emitted by
+  `GlobalExceptionFilter`: `{ statusCode, timestamp, path, error, message }`,
+  where `message` is a string or a list of field errors. Document them with
+  `@ApiErrorResponses({ [status]: ApiErrorExample[] })` from
+  `src/platform/http/api-error-responses.decorator.ts`, reusing the examples in
+  `src/platform/http/api-error-examples.ts`. Declare only statuses the
+  controller can actually produce: always `500`, plus `401`/`403` when a guard
+  protects the route, `400` when a handler consumes a DTO, and `404`/`409` only
+  when an error mapper proves them.
+- `openapi.json` takes `info.version` from `packages/api-spec/package.json`
+  (`scripts/generate-openapi.ts`). Bump the manifest first, then regenerate;
+  never hardcode the version in `setup-api-docs.ts`.
+- Every DTO property must carry an explicit `@ApiProperty` or
+  `@ApiPropertyOptional` annotation. The `@nestjs/swagger` CLI plugin is
+  intentionally disabled, so TypeScript types, class-validator decorators, and
+  comments are never inferred into the contract.
 - `@dauphaihau-camille/api-spec` is the published contract. `pnpm spec:package`
   copies `openapi.json` into `packages/api-spec/openapi.json` byte for byte
   (gitignored); `pnpm spec:package -- --check` fails when the copy is stale.

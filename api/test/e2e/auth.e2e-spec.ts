@@ -20,6 +20,7 @@ import { ObservabilityService } from '../../src/platform/observability/observabi
 import { BULLMQ_QUEUE } from '../../src/integrations/queue/infra/queue.constants';
 import { RequestContextService } from '../../src/platform/request-context/request-context.service';
 import { createTestDatabase, dropTestDatabase } from '../support/test-postgres';
+import { expectMatchesContract } from '../support/openapi-contract';
 
 jest.setTimeout(30_000);
 
@@ -176,6 +177,12 @@ describe('Auth flow (e2e)', () => {
     expect(String(registerResponse.headers['set-cookie'] ?? '')).toContain('refreshToken=');
     expect(registerBody.user.id).toEqual(expect.any(String));
     expect(registerBody.user.session_id).toEqual(expect.any(String));
+    expectMatchesContract({
+      method: 'post',
+      path: '/v1/auth/register',
+      status: 201,
+      body: registerResponse.body,
+    });
 
     const accessToken = registerBody.access_token;
     const refreshToken = registerBody.refresh_token;
@@ -210,6 +217,12 @@ describe('Auth flow (e2e)', () => {
     expect(String(loginResponse.headers['set-cookie'] ?? '')).toContain('refreshToken=');
     expect(loginBody.user.email).toBe(email);
     expect(loginBody.user.session_id).not.toBe(sessionId);
+    expectMatchesContract({
+      method: 'post',
+      path: '/v1/auth/login',
+      status: 200,
+      body: loginResponse.body,
+    });
 
     const refreshResponse = await request(app.getHttpServer())
       .post('/v1/auth/refresh')
@@ -225,11 +238,24 @@ describe('Auth flow (e2e)', () => {
     expect(refreshBody.user.email).toBe(email);
     expect(refreshBody.user.session_id).toBe(sessionId);
     expect(refreshBody.refresh_token).not.toBe(refreshToken);
+    expectMatchesContract({
+      method: 'post',
+      path: '/v1/auth/refresh',
+      status: 200,
+      body: refreshResponse.body,
+    });
 
-    await request(app.getHttpServer())
+    const revokedRefreshResponse = await request(app.getHttpServer())
       .post('/v1/auth/refresh')
       .send({ refresh_token: refreshToken })
       .expect(401);
+
+    expectMatchesContract({
+      method: 'post',
+      path: '/v1/auth/refresh',
+      status: 401,
+      body: revokedRefreshResponse.body,
+    });
 
     const logoutResponse = await request(app.getHttpServer())
       .post('/v1/auth/logout')

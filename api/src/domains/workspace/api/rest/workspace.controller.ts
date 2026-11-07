@@ -34,9 +34,26 @@ import {
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { WorkspaceResponseDto } from './dto/workspace-response.dto';
+import {
+  conflictErrorExample,
+  forbiddenErrorExample,
+  internalServerErrorExample,
+  notFoundErrorExample,
+  unauthorizedErrorExample,
+  validationErrorExample,
+} from '~/platform/http/api-error-examples';
+import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
 
 @Controller()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
+@ApiErrorResponses({
+  400: [validationErrorExample],
+  401: [unauthorizedErrorExample],
+  403: [forbiddenErrorExample],
+  404: [notFoundErrorExample],
+  409: [conflictErrorExample],
+  500: [internalServerErrorExample],
+})
 @ApiCookieAuth('access_token')
 @ApiTags('Workspace')
 export class WorkspaceController {

@@ -64,6 +64,15 @@ import { TokenQueryDto } from './dto/token-query.dto';
 import { VerifyEmailAuthDto } from './dto/verify-email-auth.dto';
 import { VerifyTokenDto } from './dto/verify-token.dto';
 import { IdempotencyKeyInterceptor } from '../../../../platform/interceptors/idempotency-key.interceptor';
+import {
+  conflictErrorExample,
+  forbiddenErrorExample,
+  internalServerErrorExample,
+  notFoundErrorExample,
+  unauthorizedErrorExample,
+  validationErrorExample,
+} from '~/platform/http/api-error-examples';
+import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
 
 const authRouteRateLimits = {
   register: {
@@ -100,6 +109,14 @@ const authRouteRateLimits = {
 
 @Controller('auth')
 @UseFilters(AuthHttpExceptionFilter)
+@ApiErrorResponses({
+  400: [validationErrorExample],
+  401: [unauthorizedErrorExample],
+  403: [forbiddenErrorExample],
+  404: [notFoundErrorExample],
+  409: [conflictErrorExample],
+  500: [internalServerErrorExample],
+})
 @ApiTags('Auth')
 export class AuthController {
   constructor(
