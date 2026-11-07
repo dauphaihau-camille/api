@@ -6,6 +6,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { toHttpErrorPayload } from '~/platform/http/api-error-code';
 import {
   isWorkspaceBlockLimitReachedAppError,
   type WorkspaceBlockLimitReachedAppError,
@@ -41,8 +42,7 @@ export function mapDocumentAppErrorToHttpException(
 ): HttpException {
   if (isWorkspaceBlockLimitReachedAppError(error)) {
     return new ForbiddenException({
-      message: error.message,
-      code: error.code,
+      ...toHttpErrorPayload(error),
       plan: error.metadata.plan,
       block_count: error.metadata.blockCount,
       block_limit: error.metadata.blockLimit,
@@ -57,22 +57,22 @@ export function mapDocumentAppErrorToHttpException(
     || error instanceof DocumentAccessGrantUserNotFoundError
     || error instanceof DocumentInvitationNotFoundError
   ) {
-    return new NotFoundException(error.message);
+    return new NotFoundException(toHttpErrorPayload(error));
   }
 
   if (error instanceof DocumentPermissionDeniedError) {
-    return new ForbiddenException(error.message);
+    return new ForbiddenException(toHttpErrorPayload(error));
   }
 
   if (
     error instanceof DocumentVersionConflictError
     || error instanceof DocumentContentManagedByCollaborationError
   ) {
-    return new ConflictException(error.message);
+    return new ConflictException(toHttpErrorPayload(error));
   }
 
   if (error instanceof DocumentDuplicationInvariantError) {
-    return new InternalServerErrorException(error.message);
+    return new InternalServerErrorException(toHttpErrorPayload(error));
   }
 
   if (
@@ -84,10 +84,10 @@ export function mapDocumentAppErrorToHttpException(
     || error instanceof DocumentNotArchivedError
     || error instanceof DocumentShareRecipientRequiredError
   ) {
-    return new BadRequestException(error.message);
+    return new BadRequestException(toHttpErrorPayload(error));
   }
 
-  return new BadRequestException(error.message);
+  return new BadRequestException(toHttpErrorPayload(error));
 }
 
 export function rethrowDocumentAppError(error: unknown): never {

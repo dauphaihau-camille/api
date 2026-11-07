@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { toHttpErrorPayload } from '~/platform/http/api-error-code';
 import {
   AiAssistanceAppError,
   AiContextSizeLimitExceededError,
@@ -24,13 +25,12 @@ export function mapAiAssistanceAppErrorToHttpException(
     || error instanceof AiConversationSessionNotFoundError
     || error instanceof AiDocumentAttachmentNotFoundError
   ) {
-    return new NotFoundException(error.message);
+    return new NotFoundException(toHttpErrorPayload(error));
   }
 
   if (error instanceof AiResponseEntitlementDeniedError) {
     return new ForbiddenException({
-      code: error.code,
-      message: error.message,
+      ...toHttpErrorPayload(error),
       remaining_responses: error.remainingResponses,
       upgrade_available: error.upgradeAvailable,
     });
@@ -42,10 +42,10 @@ export function mapAiAssistanceAppErrorToHttpException(
     || error instanceof AiContextSizeLimitExceededError
     || error instanceof AiGenerationFailedError
   ) {
-    return new BadRequestException(error.message);
+    return new BadRequestException(toHttpErrorPayload(error));
   }
 
-  return new BadRequestException(error.message);
+  return new BadRequestException(toHttpErrorPayload(error));
 }
 
 export function rethrowAiAssistanceAppError(error: unknown): never {

@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { toHttpErrorPayload } from '~/platform/http/api-error-code';
 import {
   ArchivedDocumentPublicAccessDeniedError,
   PublishAppError,
@@ -24,15 +25,15 @@ export function mapPublishAppErrorToHttpException(
     || error instanceof PublishWorkspaceNotFoundError
     || error instanceof PublishedDocumentNotFoundError
   ) {
-    return new NotFoundException(error.message);
+    return new NotFoundException(toHttpErrorPayload(error));
   }
 
   if (
     error instanceof PublishPermissionDeniedError
     || error instanceof ArchivedDocumentPublicAccessDeniedError
   ) {
-    return new ForbiddenException(error.message);
+    return new ForbiddenException(toHttpErrorPayload(error));
   }
 
-  return new ForbiddenException(error.message);
+  return new ForbiddenException(toHttpErrorPayload(error));
 }

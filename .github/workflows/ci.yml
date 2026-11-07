@@ -181,7 +181,7 @@ jobs:
             -p 9000:9000 \
             -e MINIO_ROOT_USER=minio \
             -e MINIO_ROOT_PASSWORD=minio123 \
-            minio/minio:latest server /data
+            cgr.dev/chainguard/minio@sha256:869ca3178831d9f521ea02258a0f0d4fbc1e9f84302e707514e1f861b860865d server /data
 
       - name: Wait for MinIO
         run: |

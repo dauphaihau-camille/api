@@ -9,7 +9,7 @@ describe('buildErrorResponse', () => {
     const response = buildErrorResponse(
       new ForbiddenException({
         message: 'Workspace block limit reached.',
-        code: 'workspace_block_limit_reached',
+        code: 'WORKSPACE_BLOCK_LIMIT_REACHED',
         plan: 'free',
         block_count: 1000,
         block_limit: 1000,
@@ -25,7 +25,7 @@ describe('buildErrorResponse', () => {
       path: '/v1/documents/document-1/commands/create-subdoc',
       error: 'ForbiddenException',
       message: 'Workspace block limit reached.',
-      code: 'workspace_block_limit_reached',
+      code: 'WORKSPACE_BLOCK_LIMIT_REACHED',
       plan: 'free',
       block_count: 1000,
       block_limit: 1000,

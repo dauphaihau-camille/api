@@ -21,6 +21,7 @@ import { ObservabilityService } from '../../src/platform/observability/observabi
 import { BULLMQ_QUEUE } from '../../src/integrations/queue/infra/queue.constants';
 import { RequestContextService } from '../../src/platform/request-context/request-context.service';
 import { createTestDatabase, dropTestDatabase } from '../support/test-postgres';
+import { expectMatchesContract } from '../support/openapi-contract';
 
 jest.setTimeout(30_000);
 
@@ -161,6 +162,12 @@ describe('Workspace and membership flow (e2e)', () => {
       slug: 'camille-product',
       current_user_role: 'owner',
     });
+    expectMatchesContract({
+      method: 'post',
+      path: '/v1/workspaces',
+      status: 201,
+      body: createWorkspaceResponse.body,
+    });
 
     const myWorkspacesResponse = await request(app.getHttpServer())
       .get('/v1/me/workspaces')
@@ -175,6 +182,12 @@ describe('Workspace and membership flow (e2e)', () => {
         }),
       ]),
     );
+    expectMatchesContract({
+      method: 'get',
+      path: '/v1/me/workspaces',
+      status: 200,
+      body: myWorkspacesResponse.body,
+    });
 
     const detailResponse = await request(app.getHttpServer())
       .get(`/v1/workspaces/${workspace.id}`)
@@ -185,6 +198,12 @@ describe('Workspace and membership flow (e2e)', () => {
       id: workspace.id,
       name: 'Camille Product',
       description: 'Shared docs and planning.',
+    });
+    expectMatchesContract({
+      method: 'get',
+      path: `/v1/workspaces/${workspace.id}`,
+      status: 200,
+      body: detailResponse.body,
     });
 
     const detailBySlugResponse = await request(app.getHttpServer())

@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { toHttpErrorPayload } from '~/platform/http/api-error-code';
 import {
   WorkspaceAppError,
   WorkspaceDeletePermissionDeniedError,
@@ -25,7 +26,7 @@ export function isWorkspaceAppError(error: unknown): error is WorkspaceAppError 
 
 export function mapWorkspaceAppErrorToHttpException(error: WorkspaceAppError): HttpException {
   if (error instanceof WorkspaceNotFoundError) {
-    return new NotFoundException(error.message);
+    return new NotFoundException(toHttpErrorPayload(error));
   }
 
   if (
@@ -34,7 +35,7 @@ export function mapWorkspaceAppErrorToHttpException(error: WorkspaceAppError): H
     || error instanceof WorkspaceOwnerPermissionDeniedError
     || error instanceof WorkspaceDeletePermissionDeniedError
   ) {
-    return new ForbiddenException(error.message);
+    return new ForbiddenException(toHttpErrorPayload(error));
   }
 
   if (
@@ -42,15 +43,15 @@ export function mapWorkspaceAppErrorToHttpException(error: WorkspaceAppError): H
     || error instanceof WorkspaceSlugReservedError
     || error instanceof WorkspaceVersionConflictAppError
   ) {
-    return new ConflictException(error.message);
+    return new ConflictException(toHttpErrorPayload(error));
   }
 
   if (
     error instanceof WorkspaceSlugLengthError
     || error instanceof WorkspaceSlugInvalidError
   ) {
-    return new BadRequestException(error.message);
+    return new BadRequestException(toHttpErrorPayload(error));
   }
 
-  return new BadRequestException(error.message);
+  return new BadRequestException(toHttpErrorPayload(error));
 }

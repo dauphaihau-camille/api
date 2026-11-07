@@ -21,6 +21,7 @@ import { ObservabilityService } from '../../src/platform/observability/observabi
 import { BULLMQ_QUEUE } from '../../src/integrations/queue/infra/queue.constants';
 import { RequestContextService } from '../../src/platform/request-context/request-context.service';
 import { createTestDatabase, dropTestDatabase } from '../support/test-postgres';
+import { expectMatchesContract } from '../support/openapi-contract';
 
 jest.setTimeout(30_000);
 
@@ -181,6 +182,12 @@ describe('Workspace update edge cases (e2e)', () => {
     });
     expect(updatedWorkspace.version).toBe(primaryWorkspace.version + 1);
     expect(updateResponse.headers['cache-control']).toBe('no-store');
+    expectMatchesContract({
+      method: 'patch',
+      path: `/v1/workspaces/${primaryWorkspace.slug}`,
+      status: 200,
+      body: updateResponse.body,
+    });
 
     await request(app.getHttpServer())
       .patch(`/v1/workspaces/${updatedWorkspace.slug}`)
@@ -254,6 +261,12 @@ describe('Workspace update edge cases (e2e)', () => {
     expect(memberUpdateResponse.body).toMatchObject({
       statusCode: 403,
       message: 'You do not have permission to update this workspace.',
+    });
+    expectMatchesContract({
+      method: 'patch',
+      path: `/v1/workspaces/${updatedWorkspace.slug}`,
+      status: 403,
+      body: memberUpdateResponse.body,
     });
   });
 

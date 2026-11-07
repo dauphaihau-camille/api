@@ -35,6 +35,15 @@ export class ApiErrorResponseDto {
 
   @ApiProperty({
     description:
+      'Stable machine-readable error code in `UPPER_SNAKE_CASE`. ' +
+      'Derived from the domain error code, the exception payload, or the ' +
+      'HTTP status fallback; internal class names are never exposed.',
+    example: 'DOCUMENT_NOT_FOUND',
+  })
+  code!: string;
+
+  @ApiProperty({
+    description:
       'Human-readable error message. Validation failures return one entry ' +
       'per invalid field instead of a single string.',
     oneOf: [

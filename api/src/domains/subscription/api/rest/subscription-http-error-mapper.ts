@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { toHttpErrorPayload } from '~/platform/http/api-error-code';
 import {
   BillingWebhookVerificationError,
   isWorkspaceBlockLimitReachedAppError,
@@ -24,7 +25,7 @@ export function mapSubscriptionAppErrorToHttpException(
   error: SubscriptionAppError | WorkspaceBlockLimitReachedAppError,
 ): HttpException {
   if (error instanceof SubscriptionWorkspaceNotFoundError) {
-    return new NotFoundException(error.message);
+    return new NotFoundException(toHttpErrorPayload(error));
   }
 
   if (
@@ -32,8 +33,7 @@ export function mapSubscriptionAppErrorToHttpException(
     || isWorkspaceBlockLimitReachedAppError(error)
   ) {
     return new ForbiddenException({
-      message: error.message,
-      code: error.code,
+      ...toHttpErrorPayload(error),
       ...(isWorkspaceBlockLimitReachedAppError(error)
         ? {
           plan: error.metadata.plan,
@@ -49,10 +49,10 @@ export function mapSubscriptionAppErrorToHttpException(
     error instanceof BillingWebhookVerificationError
     || error instanceof SubscriptionInvalidReturnUrlError
   ) {
-    return new BadRequestException(error.message);
+    return new BadRequestException(toHttpErrorPayload(error));
   }
 
-  return new BadRequestException(error.message);
+  return new BadRequestException(toHttpErrorPayload(error));
 }
 
 export function rethrowSubscriptionAppError(error: unknown): never {

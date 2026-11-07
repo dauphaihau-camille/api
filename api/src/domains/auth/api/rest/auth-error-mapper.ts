@@ -5,6 +5,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { toHttpErrorPayload } from '~/platform/http/api-error-code';
 import {
   AuthAppError,
   EmailAuthAccountNotFoundError,
@@ -45,20 +46,20 @@ export function mapAuthAppErrorToHttpException(
     || error instanceof RefreshSessionInactiveError
     || error instanceof RefreshTokenMismatchError
   ) {
-    return new UnauthorizedException(error.message);
+    return new UnauthorizedException(toHttpErrorPayload(error));
   }
 
   if (error instanceof InactiveUserError) {
-    return new ForbiddenException(error.message);
+    return new ForbiddenException(toHttpErrorPayload(error));
   }
 
   if (error instanceof EmailAuthAccountNotFoundError) {
-    return new NotFoundException(error.message);
+    return new NotFoundException(toHttpErrorPayload(error));
   }
 
   if (error instanceof EmailAlreadyRegisteredError) {
-    return new ConflictException(error.message);
+    return new ConflictException(toHttpErrorPayload(error));
   }
 
-  return new UnauthorizedException(error.message);
+  return new UnauthorizedException(toHttpErrorPayload(error));
 }

@@ -3,6 +3,7 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
+import { toHttpErrorPayload } from '~/platform/http/api-error-code';
 import {
   MembershipAlreadyExistsError,
   MembershipAppError,
@@ -25,7 +26,7 @@ export function mapMembershipAppErrorToHttpException(
     || error instanceof MembershipUserNotFoundError
     || error instanceof MembershipNotFoundError
   ) {
-    return new NotFoundException(error.message);
+    return new NotFoundException(toHttpErrorPayload(error));
   }
 
   if (
@@ -33,8 +34,8 @@ export function mapMembershipAppErrorToHttpException(
     || error instanceof MembershipVersionConflictError
     || error instanceof MembershipLastOwnerConflictError
   ) {
-    return new ConflictException(error.message);
+    return new ConflictException(toHttpErrorPayload(error));
   }
 
-  return new ConflictException(error.message);
+  return new ConflictException(toHttpErrorPayload(error));
 }
