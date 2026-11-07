@@ -19,8 +19,7 @@ import { AppModule } from './app.module';
 import { ObservabilityService } from '../platform/observability/observability.service';
 import { BULLMQ_QUEUE } from '../integrations/queue/infra/queue.constants';
 import { RequestContextService } from '../platform/request-context/request-context.service';
-
-const API_PREFIX = 'v1';
+import { API_GLOBAL_PREFIX } from '../platform/http/api-global-prefix';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -73,7 +72,7 @@ async function bootstrap() {
       requestLogger,
     ),
   );
-  app.setGlobalPrefix(API_PREFIX, {
+  app.setGlobalPrefix(API_GLOBAL_PREFIX, {
     exclude: [
       {
         path: 'health',

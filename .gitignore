@@ -35,6 +35,11 @@ yarn-error.log*
 .idea/
 .vscode/
 
+# API spec package artifact: `api/openapi.json` is the committed source of
+# truth, the package copy is generated and must never be edited by hand.
+packages/api-spec/openapi.json
+packages/api-spec/*.tgz
+
 # Temporary ignore
 packages/mcp/
 

@@ -59,15 +59,14 @@ function sortDocumentTags(document: OpenAPIObject): void {
     .map((name) => existingTags.get(name) ?? { name });
 }
 
-export function setupApiDocs(app: INestApplication): void {
+export function createApiDocument(app: INestApplication): OpenAPIObject {
   const accessCookieName = process.env.AUTH_COOKIE_ACCESS_NAME ?? 'accessToken';
   const refreshCookieName = process.env.AUTH_COOKIE_REFRESH_NAME ?? 'refreshToken';
-  const httpAdapter = app.getHttpAdapter().getInstance();
   const document = SwaggerModule.createDocument(
     app,
     new DocumentBuilder()
-      .setTitle('Nest Template API')
-      .setDescription('REST API reference for the Nest template backend.')
+      .setTitle('Camille API')
+      .setDescription('REST API reference for the Camille backend.')
       .setVersion('1.0.0')
       .addSecurity('accessCookie', {
         type: 'apiKey',
@@ -89,6 +88,13 @@ export function setupApiDocs(app: INestApplication): void {
   );
 
   sortDocumentTags(document);
+
+  return document;
+}
+
+export function setupApiDocs(app: INestApplication): void {
+  const httpAdapter = app.getHttpAdapter().getInstance();
+  const document = createApiDocument(app);
 
   SwaggerModule.setup(DOCS_PATH, app, document, {
     ui: false,

@@ -44,7 +44,53 @@ jobs:
 
       - name: Build
         run: pnpm build
+      - name: Verify OpenAPI spec is current
+        run: pnpm spec:generate -- --check
 
+  contract:
+    name: Contract gate (breaking changes and version bump)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_READ_TOKEN || secrets.GITHUB_TOKEN }}
+      REGISTRY_TOKEN_SOURCE: ${{ secrets.NPM_READ_TOKEN && 'NPM_READ_TOKEN' || 'GITHUB_TOKEN' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9.3.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.0.0
+          registry-url: https://npm.pkg.github.com
+          scope: "@dauphaihau-camille"
+
+      - name: Verify package registry access
+        shell: bash
+        run: |
+          set -euo pipefail
+          STATUS="$(curl -sS -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer ${NODE_AUTH_TOKEN}" \
+            -H "Accept: application/vnd.npm.install-v1+json" \
+            https://npm.pkg.github.com/@dauphaihau-camille%2Fapi-spec)"
+          case "${STATUS}" in
+            200) echo "Registry access verified." ;;
+            401) echo "::error::Registry authentication failed (401). The credential from ${REGISTRY_TOKEN_SOURCE} is empty, expired, or not valid for GitHub Packages. Set NPM_READ_TOKEN to a token with read:packages for the dauphaihau-camille account." ; exit 1 ;;
+            403) echo "::error::Registry access denied (403). The token is valid but cannot read @dauphaihau-camille/api-spec. Grant the package read access to dauphaihau-camille/api or set NPM_READ_TOKEN with read:packages." ; exit 1 ;;
+            404) echo "::notice::Registry returned 404 for @dauphaihau-camille/api-spec. The package has not been published yet, so the contract gate will compare against no baseline and pass. After the first publication, a 404 here means the token cannot see the package, not that the package is missing." ;;
+            *) echo "::error::Unexpected registry response HTTP ${STATUS}." ; exit 1 ;;
+          esac
+
+      - name: Check contract changes and version bump
+        run: node api/scripts/check-contract-breaking.mjs
   e2e:
     needs: validate
     runs-on: ubuntu-latest
