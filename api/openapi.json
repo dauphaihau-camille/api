@@ -1,0 +1,5365 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/v1/health": {
+      "get": {
+        "operationId": "getHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthCheckResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "One or more health checks failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthCheckResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Health",
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/v1/health/ready": {
+      "get": {
+        "operationId": "getReadiness",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthCheckResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "One or more readiness checks failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthCheckResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Readiness",
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/v1/metrics": {
+      "get": {
+        "operationId": "getMetrics",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Prometheus metrics payload.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get Prometheus metrics",
+        "tags": [
+          "Observability"
+        ]
+      }
+    },
+    "/v1/events/stream": {
+      "get": {
+        "operationId": "stream",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Server-Sent Events stream for the authenticated user.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "example": "event: connected\ndata: {\"userId\":\"user_123\",\"sessionId\":\"session_123\"}\n\nevent: heartbeat\ndata: {\"timestamp\":\"2026-06-28T06:00:00.000Z\"}\n"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Stream",
+        "tags": [
+          "Events"
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/ai/entitlement": {
+      "get": {
+        "operationId": "getEntitlement",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiResponseEntitlementResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get AI response entitlement status",
+        "tags": [
+          "AI Assistance"
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/ai/conversations": {
+      "get": {
+        "operationId": "listSessions",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Search conversation titles.",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedAiConversationSessionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List AI conversation sessions",
+        "tags": [
+          "AI Assistance"
+        ]
+      },
+      "post": {
+        "operationId": "createSession",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiConversationSessionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Create AI conversation session",
+        "tags": [
+          "AI Assistance"
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/ai/conversations/{sessionId}/turns": {
+      "get": {
+        "operationId": "listTurns",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor returned as meta.next_cursor from the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CursorPaginatedAiChatTurnResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List AI chat turns",
+        "tags": [
+          "AI Assistance"
+        ]
+      },
+      "post": {
+        "operationId": "createTurn",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAiChatTurnDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiChatTurnResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Create AI chat turn",
+        "tags": [
+          "AI Assistance"
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/ai/conversations/{sessionId}/turns/stream": {
+      "post": {
+        "operationId": "streamTurn",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAiChatTurnDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Stream AI chat turn",
+        "tags": [
+          "AI Assistance"
+        ]
+      }
+    },
+    "/v1/auth/register": {
+      "post": {
+        "operationId": "register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Register",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/oauth/google": {
+      "get": {
+        "operationId": "googleOAuth",
+        "parameters": [],
+        "responses": {
+          "302": {
+            "description": "Redirects to Google OAuth consent screen."
+          }
+        },
+        "summary": "Start Google OAuth",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/oauth/google/callback": {
+      "get": {
+        "operationId": "googleOAuthCallback",
+        "parameters": [],
+        "responses": {
+          "302": {
+            "description": "Sets auth cookies and redirects to the app."
+          }
+        },
+        "summary": "Handle Google callback",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/oauth/github": {
+      "get": {
+        "operationId": "githubOAuth",
+        "parameters": [],
+        "responses": {
+          "302": {
+            "description": "Redirects to GitHub OAuth consent screen."
+          }
+        },
+        "summary": "Start GitHub OAuth",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/oauth/github/callback": {
+      "get": {
+        "operationId": "githubOAuthCallback",
+        "parameters": [],
+        "responses": {
+          "302": {
+            "description": "Sets auth cookies and redirects to the app."
+          }
+        },
+        "summary": "Handle GitHub callback",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/login": {
+      "post": {
+        "operationId": "login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Login",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/email/start": {
+      "post": {
+        "operationId": "startEmailAuth",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartEmailAuthDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartEmailAuthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Send login code",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/email/verify": {
+      "post": {
+        "operationId": "verifyEmailAuth",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailAuthDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Verify login code",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/refresh": {
+      "post": {
+        "operationId": "refresh",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Refresh session",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/forgot-password": {
+      "post": {
+        "operationId": "forgotPassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Password reset request accepted."
+          }
+        },
+        "summary": "Forgot password",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/verify-token": {
+      "get": {
+        "operationId": "verifyToken",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "example": "reset_token_123",
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "reset_password"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token is valid."
+          }
+        },
+        "summary": "Verify token",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/reset-password": {
+      "post": {
+        "operationId": "resetPassword",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "example": "reset_token_123",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Reset password",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "operationId": "logout",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Logged out successfully."
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Logout",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/me": {
+      "get": {
+        "operationId": "me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Current user",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/users": {
+      "get": {
+        "operationId": "users",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "description": "Sort expression, for example: created_at:desc",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "created_at",
+                  "email",
+                  "display_name",
+                  "status"
+                ]
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedUserSummaryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List",
+        "tags": [
+          "Users"
+        ]
+      },
+      "post": {
+        "operationId": "createUser",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSummaryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Create",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/v1/users/{id}": {
+      "get": {
+        "operationId": "user",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSummaryResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User was not found."
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get by id",
+        "tags": [
+          "Users"
+        ]
+      },
+      "patch": {
+        "operationId": "updateUser",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSummaryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Update",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/v1/me/workspaces": {
+      "get": {
+        "operationId": "listMyWorkspaces",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkspaceResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List user workspaces",
+        "tags": [
+          "Workspace"
+        ]
+      }
+    },
+    "/v1/workspaces": {
+      "post": {
+        "operationId": "createWorkspace",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWorkspaceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Create workspace",
+        "tags": [
+          "Workspace"
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}": {
+      "get": {
+        "operationId": "getWorkspace",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get workspace detail",
+        "tags": [
+          "Workspace"
+        ]
+      },
+      "patch": {
+        "operationId": "updateWorkspace",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWorkspaceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Update workspace",
+        "tags": [
+          "Workspace"
+        ]
+      },
+      "delete": {
+        "operationId": "deleteWorkspace",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Delete workspace",
+        "tags": [
+          "Workspace"
+        ]
+      }
+    },
+    "/v1/me/workspaces/last-active": {
+      "get": {
+        "operationId": "getLastActiveWorkspace",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get last active workspace",
+        "tags": [
+          "Workspace User Preference"
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/preferences": {
+      "get": {
+        "operationId": "getWorkspacePreferences",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspacePreferenceResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get workspace user preferences",
+        "tags": [
+          "Workspace User Preference"
+        ]
+      },
+      "patch": {
+        "operationId": "updateWorkspacePreferences",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWorkspacePreferenceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspacePreferenceResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Update workspace user preferences",
+        "tags": [
+          "Workspace User Preference"
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/preferences/last-active": {
+      "patch": {
+        "operationId": "markWorkspaceAsLastActive",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Mark workspace as last active",
+        "tags": [
+          "Workspace User Preference"
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/members": {
+      "get": {
+        "operationId": "listWorkspaceMembers",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkspaceMemberResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List workspace members",
+        "tags": [
+          "Membership"
+        ]
+      },
+      "post": {
+        "operationId": "addWorkspaceMember",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddWorkspaceMemberDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceMemberResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Add workspace member",
+        "tags": [
+          "Membership"
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/members/search": {
+      "get": {
+        "operationId": "searchWorkspaceMembers",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 10,
+              "default": 5,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkspaceMemberResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Search workspace members",
+        "tags": [
+          "Membership"
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/members/{memberId}": {
+      "patch": {
+        "operationId": "updateWorkspaceMember",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWorkspaceMemberDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceMemberResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Update member role",
+        "tags": [
+          "Membership"
+        ]
+      },
+      "delete": {
+        "operationId": "removeWorkspaceMember",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceMemberResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Remove workspace member",
+        "tags": [
+          "Membership"
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/subscription": {
+      "get": {
+        "operationId": "getSummary",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionSummaryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get workspace subscription summary",
+        "tags": [
+          "Subscription"
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/subscription/checkout": {
+      "post": {
+        "operationId": "createCheckout",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCheckoutSessionRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSessionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Create Plus checkout session",
+        "tags": [
+          "Subscription"
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/subscription/cancel": {
+      "post": {
+        "operationId": "cancel",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionSummaryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Cancel Plus at period end",
+        "tags": [
+          "Subscription"
+        ]
+      }
+    },
+    "/v1/billing/webhooks/stripe": {
+      "post": {
+        "operationId": "handleStripeWebhook",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingWebhookResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Handle Stripe billing webhook",
+        "tags": [
+          "Subscription"
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/teamspaces": {
+      "get": {
+        "operationId": "listWorkspaceTeamspaces",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TeamspaceResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List workspace teamspaces",
+        "tags": [
+          "Teamspace"
+        ]
+      },
+      "post": {
+        "operationId": "createTeamspace",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTeamspaceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamspaceResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Create workspace teamspace",
+        "tags": [
+          "Teamspace"
+        ]
+      }
+    },
+    "/v1/teamspaces/{teamspaceId}": {
+      "patch": {
+        "operationId": "updateTeamspace",
+        "parameters": [
+          {
+            "name": "teamspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTeamspaceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamspaceResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Update teamspace",
+        "tags": [
+          "Teamspace"
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/documents/default": {
+      "get": {
+        "operationId": "getWorkspaceDefaultDocument",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "recent_document_id",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceDefaultDocumentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get default document",
+        "tags": [
+          "Document"
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/documents/archived": {
+      "get": {
+        "operationId": "listArchivedWorkspaceDocuments",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "parent_document_id",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArchivedDocumentListPageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List archived workspace documents",
+        "tags": [
+          "Document"
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/documents": {
+      "get": {
+        "operationId": "listWorkspaceDocuments",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "parent_document_id",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grouped root documents when parent_document_id is omitted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceDocumentNavigationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List workspace documents",
+        "tags": [
+          "Document"
+        ]
+      }
+    },
+    "/v1/documents": {
+      "post": {
+        "operationId": "createDocument",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Create document",
+        "tags": [
+          "Document"
+        ]
+      }
+    },
+    "/v1/documents/{documentId}/duplicate": {
+      "post": {
+        "operationId": "duplicateDocument",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Duplicate document subtree",
+        "tags": [
+          "Document"
+        ]
+      }
+    },
+    "/v1/documents/{documentId}": {
+      "get": {
+        "operationId": "getDocument",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get document detail",
+        "tags": [
+          "Document"
+        ]
+      },
+      "patch": {
+        "operationId": "updateDocument",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Update document",
+        "tags": [
+          "Document"
+        ]
+      },
+      "delete": {
+        "operationId": "permanentlyDeleteDocument",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Permanently delete document",
+        "tags": [
+          "Document"
+        ]
+      }
+    },
+    "/v1/documents/{documentId}/children": {
+      "get": {
+        "operationId": "listDocumentChildren",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentTreeChildResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List document children",
+        "tags": [
+          "Document"
+        ]
+      }
+    },
+    "/v1/documents/{documentId}/move": {
+      "post": {
+        "operationId": "moveDocument",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveDocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Move document",
+        "tags": [
+          "Document"
+        ]
+      }
+    },
+    "/v1/documents/{documentId}/commands/create-subdoc": {
+      "post": {
+        "operationId": "createSubdoc",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSubdocCommandDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateSubdocCommandResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Create subdocument command",
+        "tags": [
+          "Document"
+        ]
+      }
+    },
+    "/v1/documents/{documentId}/commands/archive-subdoc": {
+      "post": {
+        "operationId": "archiveSubdoc",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchiveSubdocCommandDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArchiveSubdocCommandResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Archive subdocument command",
+        "tags": [
+          "Document"
+        ]
+      }
+    },
+    "/v1/documents/{documentId}/archive": {
+      "post": {
+        "operationId": "archiveDocument",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentVersionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Archive document",
+        "tags": [
+          "Document"
+        ]
+      }
+    },
+    "/v1/documents/{documentId}/restore": {
+      "post": {
+        "operationId": "restoreDocument",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentVersionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Restore document",
+        "tags": [
+          "Document"
+        ]
+      }
+    },
+    "/v1/documents/{documentId}/collaborators": {
+      "get": {
+        "operationId": "listCollaborators",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentCollaboratorResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List document collaborators",
+        "tags": [
+          "Document"
+        ]
+      }
+    },
+    "/v1/documents/{documentId}/invitations": {
+      "get": {
+        "operationId": "listInvitations",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentInvitationResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List pending document invitations",
+        "tags": [
+          "Document"
+        ]
+      }
+    },
+    "/v1/documents/{documentId}/share": {
+      "post": {
+        "operationId": "shareDocument",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShareDocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentCollaboratorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Share document",
+        "tags": [
+          "Document"
+        ]
+      }
+    },
+    "/v1/documents/{documentId}/shares": {
+      "post": {
+        "operationId": "shareDocuments",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShareDocumentsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareDocumentsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Share document with multiple users",
+        "tags": [
+          "Document"
+        ]
+      }
+    },
+    "/v1/documents/{documentId}/access-settings": {
+      "get": {
+        "operationId": "getAccessSettings",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentAccessSettingsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get document access settings",
+        "tags": [
+          "Document"
+        ]
+      },
+      "patch": {
+        "operationId": "updateAccessSettings",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDocumentAccessSettingsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentAccessSettingsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Update document access settings",
+        "tags": [
+          "Document"
+        ]
+      }
+    },
+    "/v1/documents/{documentId}/collaborators/{userId}": {
+      "delete": {
+        "operationId": "revokeDocumentAccess",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Revoke document access",
+        "tags": [
+          "Document"
+        ]
+      }
+    },
+    "/v1/documents/{documentId}/invitations/{invitationId}": {
+      "patch": {
+        "operationId": "updateInvitation",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "invitationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDocumentInvitationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentInvitationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Update pending document invitation",
+        "tags": [
+          "Document"
+        ]
+      },
+      "delete": {
+        "operationId": "revokeInvitation",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "invitationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Revoke pending document invitation",
+        "tags": [
+          "Document"
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/favorites": {
+      "get": {
+        "operationId": "listWorkspaceFavorites",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FavoriteDocumentResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List favorite documents",
+        "tags": [
+          "Favorite"
+        ]
+      }
+    },
+    "/v1/documents/{documentId}/favorite": {
+      "get": {
+        "operationId": "getFavoriteStatus",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FavoriteStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get favorite status",
+        "tags": [
+          "Favorite"
+        ]
+      },
+      "post": {
+        "operationId": "favoriteDocument",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FavoriteStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Favorite a document",
+        "tags": [
+          "Favorite"
+        ]
+      },
+      "delete": {
+        "operationId": "unfavoriteDocument",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FavoriteStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Remove document favorite",
+        "tags": [
+          "Favorite"
+        ]
+      }
+    },
+    "/v1/published/{publishedDocumentId}": {
+      "get": {
+        "operationId": "getPublicDocument",
+        "parameters": [
+          {
+            "name": "publishedDocumentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicDocumentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get published document",
+        "tags": [
+          "Publish"
+        ]
+      }
+    },
+    "/v1/documents/{documentId}/publish": {
+      "get": {
+        "operationId": "getPublishStatus",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishedDocumentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get publish status",
+        "tags": [
+          "Publish"
+        ]
+      },
+      "post": {
+        "operationId": "publishDocument",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishedDocumentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Publish a document",
+        "tags": [
+          "Publish"
+        ]
+      },
+      "delete": {
+        "operationId": "unpublishDocument",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishedDocumentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Unpublish a document",
+        "tags": [
+          "Publish"
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/search/documents": {
+      "get": {
+        "operationId": "searchDocuments",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SearchDocumentResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Search workspace documents",
+        "tags": [
+          "Search"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Camille API",
+    "description": "REST API reference for the Camille backend.",
+    "version": "1.0.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "AI Assistance"
+    },
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "Document"
+    },
+    {
+      "name": "Events"
+    },
+    {
+      "name": "Favorite"
+    },
+    {
+      "name": "Health"
+    },
+    {
+      "name": "Membership"
+    },
+    {
+      "name": "Observability"
+    },
+    {
+      "name": "Publish"
+    },
+    {
+      "name": "Search"
+    },
+    {
+      "name": "Subscription"
+    },
+    {
+      "name": "Teamspace"
+    },
+    {
+      "name": "Users"
+    },
+    {
+      "name": "Workspace"
+    },
+    {
+      "name": "Workspace User Preference"
+    }
+  ],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "accessCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "accessToken",
+        "description": "Session access token cookie (accessToken)."
+      },
+      "refreshCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "refreshToken",
+        "description": "Session refresh token cookie (refreshToken)."
+      }
+    },
+    "schemas": {
+      "HealthComponentResponseDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "error"
+            ]
+          },
+          "details": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "HealthComponentsResponseDto": {
+        "type": "object",
+        "properties": {
+          "db": {
+            "$ref": "#/components/schemas/HealthComponentResponseDto"
+          },
+          "storage": {
+            "$ref": "#/components/schemas/HealthComponentResponseDto"
+          }
+        },
+        "required": [
+          "db",
+          "storage"
+        ]
+      },
+      "HealthCheckResponseDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "error"
+            ]
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "components": {
+            "$ref": "#/components/schemas/HealthComponentsResponseDto"
+          }
+        },
+        "required": [
+          "status",
+          "timestamp",
+          "components"
+        ]
+      },
+      "AiResponseEntitlementResponseDto": {
+        "type": "object",
+        "properties": {
+          "workspace_id": {
+            "type": "string"
+          },
+          "plan": {
+            "type": "string"
+          },
+          "allowance": {
+            "type": "number",
+            "nullable": true
+          },
+          "used_responses": {
+            "type": "number"
+          },
+          "reserved_responses": {
+            "type": "number"
+          },
+          "remaining_responses": {
+            "type": "number",
+            "nullable": true
+          },
+          "limit_reached": {
+            "type": "boolean"
+          },
+          "upgrade_available": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "plan",
+          "allowance",
+          "used_responses",
+          "reserved_responses",
+          "remaining_responses",
+          "limit_reached",
+          "upgrade_available"
+        ]
+      },
+      "AiConversationSessionResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "group": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "group",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "AiPaginationMetaResponseDto": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "number"
+          },
+          "limit": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
+          },
+          "total_pages": {
+            "type": "number"
+          },
+          "has_next_page": {
+            "type": "boolean"
+          },
+          "has_previous_page": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "page",
+          "limit",
+          "total",
+          "total_pages",
+          "has_next_page",
+          "has_previous_page"
+        ]
+      },
+      "PaginatedAiConversationSessionResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiConversationSessionResponseDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/AiPaginationMetaResponseDto"
+          }
+        },
+        "required": [
+          "items",
+          "meta"
+        ]
+      },
+      "AiDocumentAttachmentResponseDto": {
+        "type": "object",
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "document_id",
+          "title"
+        ]
+      },
+      "AiChatTurnResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "user_message": {
+            "type": "string"
+          },
+          "assistant_response": {
+            "type": "string"
+          },
+          "response_block_payload": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string"
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiDocumentAttachmentResponseDto"
+            }
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "session_id",
+          "user_message",
+          "assistant_response",
+          "response_block_payload",
+          "status",
+          "attachments",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "AiCursorPaginationMetaResponseDto": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "number"
+          },
+          "next_cursor": {
+            "type": "string"
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "limit",
+          "has_more"
+        ]
+      },
+      "CursorPaginatedAiChatTurnResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiChatTurnResponseDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/AiCursorPaginationMetaResponseDto"
+          }
+        },
+        "required": [
+          "items",
+          "meta"
+        ]
+      },
+      "CreateAiChatTurnDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "document_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "RegisterDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "example": "strong-password"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Jane Doe"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "UserProfileResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": "string"
+          },
+          "status": {
+            "type": "object"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "status",
+          "session_id",
+          "roles",
+          "permissions"
+        ]
+      },
+      "AuthResponseDto": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "refresh_token": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserProfileResponseDto"
+          }
+        },
+        "required": [
+          "access_token",
+          "refresh_token",
+          "user"
+        ]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "example": "strong-password"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "StartEmailAuthDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com"
+          },
+          "intent": {
+            "type": "string",
+            "enum": [
+              "login",
+              "signup"
+            ]
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Jane"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "StartEmailAuthResponseDto": {
+        "type": "object",
+        "properties": {
+          "challenge_id": {
+            "type": "string"
+          },
+          "expires_in_seconds": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "challenge_id",
+          "expires_in_seconds"
+        ]
+      },
+      "VerifyEmailAuthDto": {
+        "type": "object",
+        "properties": {
+          "challenge_id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 6,
+            "example": "123456"
+          },
+          "intent": {
+            "type": "string",
+            "enum": [
+              "login",
+              "signup"
+            ]
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Jane"
+          }
+        },
+        "required": [
+          "challenge_id",
+          "code"
+        ]
+      },
+      "RefreshTokenDto": {
+        "type": "object",
+        "properties": {
+          "refresh_token": {
+            "type": "string",
+            "minLength": 20,
+            "description": "Optional when the refresh token is provided via cookie.",
+            "example": "rt_1234567890abcdefghijklmn"
+          }
+        }
+      },
+      "ForgotPasswordDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com"
+          },
+          "redirect_to": {
+            "type": "string",
+            "example": "/w/acme"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "ResetPasswordDto": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "example": "new-strong-password"
+          }
+        },
+        "required": [
+          "password"
+        ]
+      },
+      "UserSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          },
+          "email": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": "string"
+          },
+          "status": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "email",
+          "status"
+        ]
+      },
+      "PaginationMetaResponseDto": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "number"
+          },
+          "limit": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
+          },
+          "total_pages": {
+            "type": "number"
+          },
+          "has_next_page": {
+            "type": "boolean"
+          },
+          "has_previous_page": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "page",
+          "limit",
+          "total",
+          "total_pages",
+          "has_next_page",
+          "has_previous_page"
+        ]
+      },
+      "PaginatedUserSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserSummaryResponseDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaResponseDto"
+          }
+        },
+        "required": [
+          "items",
+          "meta"
+        ]
+      },
+      "CreateUserDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "example": "strong-password"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Jane Doe"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "number",
+            "minimum": 1,
+            "example": 1
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Jane Doe"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "disabled"
+            ]
+          },
+          "avatar_file": {
+            "type": "string",
+            "format": "binary"
+          }
+        },
+        "required": [
+          "version"
+        ]
+      },
+      "WorkspaceResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "current_user_role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "member"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "name",
+          "slug",
+          "current_user_role",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "CreateWorkspaceDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Camille Product",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "slug": {
+            "type": "string",
+            "example": "camille-product",
+            "minLength": 3,
+            "maxLength": 32,
+            "description": "Custom workspace slug used in workspace URLs."
+          },
+          "description": {
+            "type": "string",
+            "example": "Shared docs and planning for the product team.",
+            "maxLength": 280
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "UpdateWorkspaceDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "number",
+            "minimum": 1,
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "example": "Camille Product",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "slug": {
+            "type": "string",
+            "example": "camille-product",
+            "minLength": 3,
+            "maxLength": 32,
+            "description": "Custom workspace slug used in workspace URLs."
+          },
+          "description": {
+            "type": "string",
+            "example": "Shared docs and planning for the product team.",
+            "maxLength": 280
+          }
+        },
+        "required": [
+          "version"
+        ]
+      },
+      "WorkspaceNavigationPreferenceResponseDto": {
+        "type": "object",
+        "properties": {
+          "expanded_document_ids_by_scope": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [
+          "expanded_document_ids_by_scope"
+        ]
+      },
+      "WorkspaceActivityPreferenceResponseDto": {
+        "type": "object",
+        "properties": {
+          "last_active_at": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "last_active_at"
+        ]
+      },
+      "WorkspacePreferenceResponseDto": {
+        "type": "object",
+        "properties": {
+          "workspace_id": {
+            "type": "string"
+          },
+          "navigation": {
+            "$ref": "#/components/schemas/WorkspaceNavigationPreferenceResponseDto"
+          },
+          "activity": {
+            "$ref": "#/components/schemas/WorkspaceActivityPreferenceResponseDto"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "navigation",
+          "activity"
+        ]
+      },
+      "WorkspaceNavigationPreferenceDto": {
+        "type": "object",
+        "properties": {
+          "expanded_document_ids_by_scope": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [
+          "expanded_document_ids_by_scope"
+        ]
+      },
+      "UpdateWorkspacePreferenceDto": {
+        "type": "object",
+        "properties": {
+          "navigation": {
+            "$ref": "#/components/schemas/WorkspaceNavigationPreferenceDto"
+          }
+        },
+        "required": [
+          "navigation"
+        ]
+      },
+      "WorkspaceMemberResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "member"
+            ]
+          },
+          "joined_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "user_id",
+          "email",
+          "role",
+          "joined_at"
+        ]
+      },
+      "AddWorkspaceMemberDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "member@example.com"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "member"
+            ],
+            "default": "member"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "UpdateWorkspaceMemberDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "number",
+            "minimum": 1,
+            "example": 1
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "member"
+            ],
+            "example": "admin"
+          }
+        },
+        "required": [
+          "version",
+          "role"
+        ]
+      },
+      "SubscriptionEntitlementsResponseDto": {
+        "type": "object",
+        "properties": {
+          "max_blocks": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "max_blocks"
+        ]
+      },
+      "SubscriptionSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "workspace_id": {
+            "type": "string"
+          },
+          "plan": {
+            "type": "string",
+            "enum": [
+              "free",
+              "plus"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "free",
+              "active",
+              "past_due",
+              "canceling"
+            ]
+          },
+          "seat_count": {
+            "type": "number"
+          },
+          "block_count": {
+            "type": "number"
+          },
+          "block_limit": {
+            "type": "number",
+            "nullable": true
+          },
+          "entitlements": {
+            "$ref": "#/components/schemas/SubscriptionEntitlementsResponseDto"
+          },
+          "current_period_start": {
+            "type": "string"
+          },
+          "current_period_end": {
+            "type": "string"
+          },
+          "cancel_at_period_end": {
+            "type": "boolean"
+          },
+          "provider_status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "plan",
+          "status",
+          "seat_count",
+          "block_count",
+          "block_limit",
+          "entitlements",
+          "cancel_at_period_end"
+        ]
+      },
+      "CreateCheckoutSessionRequestDto": {
+        "type": "object",
+        "properties": {
+          "return_url": {
+            "type": "string",
+            "description": "Browser URL to return to after checkout completes or is canceled."
+          }
+        }
+      },
+      "CheckoutSessionResponseDto": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string"
+          },
+          "checkout_url": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "checkout_url"
+        ]
+      },
+      "BillingWebhookResponseDto": {
+        "type": "object",
+        "properties": {
+          "event_id": {
+            "type": "string"
+          },
+          "event_type": {
+            "type": "string"
+          },
+          "handled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "event_id",
+          "event_type",
+          "handled"
+        ]
+      },
+      "TeamspaceResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          },
+          "workspace_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "access_mode": {
+            "type": "string",
+            "enum": [
+              "open",
+              "restricted"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "workspace_id",
+          "name",
+          "access_mode",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "CreateTeamspaceDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Product",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "description": {
+            "type": "string",
+            "example": "Shared product documents and specs.",
+            "maxLength": 280
+          },
+          "access_mode": {
+            "type": "string",
+            "enum": [
+              "open",
+              "restricted"
+            ],
+            "default": "open"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "UpdateTeamspaceDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "number",
+            "minimum": 1,
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "example": "Product",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "description": {
+            "type": "string",
+            "example": "Shared product documents and specs.",
+            "maxLength": 280
+          },
+          "access_mode": {
+            "type": "string",
+            "enum": [
+              "open",
+              "restricted"
+            ]
+          }
+        },
+        "required": [
+          "version"
+        ]
+      },
+      "WorkspaceDefaultDocumentResponseDto": {
+        "type": "object",
+        "properties": {
+          "document_id": {
+            "type": "string"
+          }
+        }
+      },
+      "ArchivedDocumentListItemResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "public_id": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "has_content": {
+            "type": "boolean"
+          },
+          "breadcrumb_path": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "archived_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "public_id",
+          "version",
+          "title",
+          "has_content",
+          "breadcrumb_path",
+          "archived_at"
+        ]
+      },
+      "ArchivedDocumentListPageResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArchivedDocumentListItemResponseDto"
+            }
+          },
+          "next_cursor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "DocumentNavigationNodeResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "public_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "access_scope": {
+            "type": "string"
+          },
+          "is_owned_by_current_user": {
+            "type": "boolean"
+          },
+          "teamspace_id": {
+            "type": "string"
+          },
+          "parent_document_id": {
+            "type": "string"
+          },
+          "sort_key": {
+            "type": "number"
+          },
+          "has_children": {
+            "type": "boolean"
+          },
+          "has_content": {
+            "type": "boolean"
+          },
+          "is_favorite": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "public_id",
+          "title",
+          "is_owned_by_current_user",
+          "sort_key",
+          "has_children",
+          "has_content",
+          "is_favorite"
+        ]
+      },
+      "DocumentNavigationPageResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentNavigationNodeResponseDto"
+            }
+          },
+          "next_cursor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "TeamspaceDocumentNavigationGroupResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "documents": {
+            "$ref": "#/components/schemas/DocumentNavigationPageResponseDto"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "documents"
+        ]
+      },
+      "WorkspaceDocumentNavigationResponseDto": {
+        "type": "object",
+        "properties": {
+          "private_documents": {
+            "$ref": "#/components/schemas/DocumentNavigationPageResponseDto"
+          },
+          "shared_documents": {
+            "$ref": "#/components/schemas/DocumentNavigationPageResponseDto"
+          },
+          "teamspaces": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TeamspaceDocumentNavigationGroupResponseDto"
+            }
+          }
+        },
+        "required": [
+          "private_documents",
+          "shared_documents",
+          "teamspaces"
+        ]
+      },
+      "CreateDocumentDto": {
+        "type": "object",
+        "properties": {
+          "workspace_id": {
+            "type": "string",
+            "example": "camille-product"
+          },
+          "teamspace_id": {
+            "type": "string",
+            "example": "95d9f7cb-7057-4c7a-bfde-c25ae7975f15"
+          },
+          "title": {
+            "type": "string",
+            "example": "Roadmap",
+            "maxLength": 180
+          },
+          "content_format": {
+            "type": "string",
+            "example": "blocknote_v1"
+          },
+          "content": {
+            "type": "array",
+            "items": {}
+          }
+        },
+        "required": [
+          "workspace_id"
+        ]
+      },
+      "DocumentOwnerUserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email"
+        ]
+      },
+      "DocumentBreadcrumbItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "public_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "public_id",
+          "title"
+        ]
+      },
+      "DocumentAccessResponseDto": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string"
+          },
+          "permission": {
+            "type": "string"
+          },
+          "can_view": {
+            "type": "boolean"
+          },
+          "can_edit": {
+            "type": "boolean"
+          },
+          "can_manage": {
+            "type": "boolean"
+          },
+          "workspace_member_permission": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope",
+          "permission",
+          "can_view",
+          "can_edit",
+          "can_manage"
+        ]
+      },
+      "DocumentCollaborationResponseDto": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "show_presence": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled",
+          "mode",
+          "show_presence"
+        ]
+      },
+      "DocumentResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "public_id": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          },
+          "workspace_id": {
+            "type": "string"
+          },
+          "owner_user_id": {
+            "type": "string"
+          },
+          "owner_user": {
+            "$ref": "#/components/schemas/DocumentOwnerUserResponseDto"
+          },
+          "teamspace_id": {
+            "type": "string"
+          },
+          "parent_document_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "content_format": {
+            "type": "string"
+          },
+          "content": {
+            "type": "array",
+            "items": {}
+          },
+          "sort_key": {
+            "type": "number"
+          },
+          "archived_at": {
+            "type": "string"
+          },
+          "archived_by_name": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "is_favorite": {
+            "type": "boolean"
+          },
+          "published_document_id": {
+            "type": "string"
+          },
+          "public_path": {
+            "type": "string"
+          },
+          "breadcrumb": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentBreadcrumbItemDto"
+            }
+          },
+          "access": {
+            "$ref": "#/components/schemas/DocumentAccessResponseDto"
+          },
+          "collaboration": {
+            "$ref": "#/components/schemas/DocumentCollaborationResponseDto"
+          }
+        },
+        "required": [
+          "id",
+          "public_id",
+          "version",
+          "workspace_id",
+          "owner_user_id",
+          "owner_user",
+          "title",
+          "content_format",
+          "content",
+          "sort_key",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "DocumentTreeChildResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "public_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "teamspace_id": {
+            "type": "string"
+          },
+          "parent_document_id": {
+            "type": "string"
+          },
+          "sort_key": {
+            "type": "number"
+          },
+          "has_children": {
+            "type": "boolean"
+          },
+          "has_content": {
+            "type": "boolean"
+          },
+          "is_favorite": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "public_id",
+          "title",
+          "sort_key",
+          "has_children",
+          "has_content",
+          "is_favorite"
+        ]
+      },
+      "UpdateDocumentDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "number",
+            "minimum": 1,
+            "example": 1
+          },
+          "title": {
+            "type": "string",
+            "example": "Roadmap",
+            "maxLength": 180
+          },
+          "content_format": {
+            "type": "string",
+            "example": "blocknote_v1"
+          },
+          "content": {
+            "type": "array",
+            "items": {}
+          }
+        },
+        "required": [
+          "version"
+        ]
+      },
+      "MoveDocumentDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "number",
+            "minimum": 1,
+            "example": 1
+          },
+          "teamspace_id": {
+            "type": "object",
+            "example": "95d9f7cb-7057-4c7a-bfde-c25ae7975f15",
+            "nullable": true
+          },
+          "parent_document_id": {
+            "type": "object",
+            "example": "66cf61ad-e395-4f91-8af9-15d309c347f2",
+            "nullable": true
+          },
+          "index": {
+            "type": "number",
+            "minimum": 0,
+            "example": 0
+          }
+        },
+        "required": [
+          "version"
+        ]
+      },
+      "CreateSubdocCommandDto": {
+        "type": "object",
+        "properties": {
+          "anchor_block_id": {
+            "type": "string",
+            "example": "2111b7ab-2f34-401b-8a6c-1f2c0665a0ed"
+          },
+          "slash_command_text": {
+            "type": "string",
+            "example": "/doc"
+          },
+          "version": {
+            "type": "number",
+            "example": 1
+          },
+          "content": {
+            "type": "array",
+            "items": {}
+          }
+        }
+      },
+      "CreateSubdocCommandResponseDto": {
+        "type": "object",
+        "properties": {
+          "parent_document": {
+            "$ref": "#/components/schemas/DocumentResponseDto"
+          },
+          "child_document": {
+            "$ref": "#/components/schemas/DocumentResponseDto"
+          }
+        },
+        "required": [
+          "parent_document",
+          "child_document"
+        ]
+      },
+      "ArchiveSubdocCommandDto": {
+        "type": "object",
+        "properties": {
+          "subdocument_id": {
+            "type": "string",
+            "example": "2111b7ab-2f34-401b-8a6c-1f2c0665a0ed"
+          },
+          "version": {
+            "type": "number",
+            "example": 1
+          },
+          "content": {
+            "type": "array",
+            "items": {}
+          }
+        },
+        "required": [
+          "subdocument_id",
+          "version"
+        ]
+      },
+      "ArchiveSubdocCommandResponseDto": {
+        "type": "object",
+        "properties": {
+          "parent_document": {
+            "$ref": "#/components/schemas/DocumentResponseDto"
+          },
+          "archived_child_document": {
+            "$ref": "#/components/schemas/DocumentResponseDto"
+          }
+        },
+        "required": [
+          "parent_document",
+          "archived_child_document"
+        ]
+      },
+      "DocumentVersionDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "number",
+            "minimum": 1,
+            "example": 1
+          }
+        },
+        "required": [
+          "version"
+        ]
+      },
+      "DocumentCollaboratorUserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email"
+        ]
+      },
+      "DocumentCollaboratorResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/DocumentCollaboratorUserResponseDto"
+          },
+          "permission": {
+            "type": "string",
+            "enum": [
+              "view",
+              "comment",
+              "edit",
+              "manage"
+            ]
+          },
+          "granted_by_user_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "access_source": {
+            "type": "string",
+            "enum": [
+              "direct",
+              "inherited"
+            ]
+          },
+          "inherited_from_document_id": {
+            "type": "string"
+          },
+          "inherited_from_document_title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "document_id",
+          "user",
+          "permission",
+          "granted_by_user_id",
+          "created_at",
+          "updated_at",
+          "access_source"
+        ]
+      },
+      "DocumentInvitationResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "permission": {
+            "type": "string",
+            "enum": [
+              "view",
+              "comment",
+              "edit",
+              "manage"
+            ]
+          },
+          "invited_by_user_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "document_id",
+          "email",
+          "permission",
+          "invited_by_user_id",
+          "created_at",
+          "updated_at",
+          "status"
+        ]
+      },
+      "ShareDocumentDto": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "permission": {
+            "type": "string",
+            "enum": [
+              "view",
+              "comment",
+              "edit",
+              "manage"
+            ]
+          }
+        },
+        "required": [
+          "permission"
+        ]
+      },
+      "ShareDocumentsDto": {
+        "type": "object",
+        "properties": {
+          "grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShareDocumentDto"
+            }
+          }
+        },
+        "required": [
+          "grants"
+        ]
+      },
+      "ShareDocumentFailureResponseDto": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "user_not_found"
+            ]
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "ShareDocumentsResponseDto": {
+        "type": "object",
+        "properties": {
+          "collaborators": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentCollaboratorResponseDto"
+            }
+          },
+          "invitations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentInvitationResponseDto"
+            }
+          },
+          "failed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShareDocumentFailureResponseDto"
+            }
+          }
+        },
+        "required": [
+          "collaborators",
+          "invitations",
+          "failed"
+        ]
+      },
+      "DocumentAccessSettingsResponseDto": {
+        "type": "object",
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "workspace_member_permission": {
+            "type": "string"
+          },
+          "updated_by_user_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "document_id",
+          "updated_by_user_id",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "UpdateDocumentAccessSettingsDto": {
+        "type": "object",
+        "properties": {
+          "workspace_member_permission": {
+            "type": "string",
+            "enum": [
+              "view",
+              "comment",
+              "edit",
+              "manage"
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "UpdateDocumentInvitationDto": {
+        "type": "object",
+        "properties": {
+          "permission": {
+            "type": "string",
+            "enum": [
+              "view",
+              "comment",
+              "edit",
+              "manage"
+            ]
+          }
+        },
+        "required": [
+          "permission"
+        ]
+      },
+      "FavoriteDocumentAccessResponseDto": {
+        "type": "object",
+        "properties": {
+          "permission": {
+            "type": "string",
+            "enum": [
+              "view",
+              "edit",
+              "manage"
+            ]
+          },
+          "can_view": {
+            "type": "boolean"
+          },
+          "can_edit": {
+            "type": "boolean"
+          },
+          "can_manage": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "permission",
+          "can_view",
+          "can_edit",
+          "can_manage"
+        ]
+      },
+      "FavoriteDocumentResponseDto": {
+        "type": "object",
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "public_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          },
+          "teamspace_id": {
+            "type": "string"
+          },
+          "parent_document_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "sort_key": {
+            "type": "number"
+          },
+          "has_children": {
+            "type": "boolean"
+          },
+          "has_content": {
+            "type": "boolean"
+          },
+          "favorited_at": {
+            "type": "string"
+          },
+          "access": {
+            "$ref": "#/components/schemas/FavoriteDocumentAccessResponseDto"
+          }
+        },
+        "required": [
+          "document_id",
+          "public_id",
+          "workspace_id",
+          "title",
+          "sort_key",
+          "has_children",
+          "has_content",
+          "favorited_at",
+          "access"
+        ]
+      },
+      "FavoriteStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "is_favorite": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "document_id",
+          "is_favorite"
+        ]
+      },
+      "PublicDocumentResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "published_document_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "content_format": {
+            "type": "string"
+          },
+          "content": {
+            "type": "array",
+            "items": {}
+          },
+          "breadcrumb": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "published_document_id": {
+                  "type": "string"
+                },
+                "public_path": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "published_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "published_document_id",
+          "title",
+          "content_format",
+          "content",
+          "breadcrumb",
+          "published_at",
+          "updated_at"
+        ]
+      },
+      "PublishedDocumentResponseDto": {
+        "type": "object",
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "published_document_id": {
+            "type": "string"
+          },
+          "public_path": {
+            "type": "string"
+          },
+          "published_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "document_id"
+        ]
+      },
+      "SearchDocumentResponseDto": {
+        "type": "object",
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "public_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          },
+          "teamspace_id": {
+            "type": "string"
+          },
+          "parent_document_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "has_content": {
+            "type": "boolean"
+          },
+          "breadcrumb_path": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "updated_by_name": {
+            "type": "string"
+          },
+          "matched_text": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "visited_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "document_id",
+          "public_id",
+          "workspace_id",
+          "title",
+          "has_content",
+          "breadcrumb_path",
+          "updated_at"
+        ]
+      }
+    }
+  }
+}

@@ -95,6 +95,32 @@ pnpm run db:seed:huge
 pnpm run db:seed:realistic
 ```
 
+## API Contract
+
+`api/openapi.json` is committed and generated from the compiled build (`dist/`)
+in Nest preview mode; generation needs no database, Redis, MinIO, or Mongo.
+
+```bash
+pnpm spec:generate
+pnpm spec:generate -- --check
+pnpm spec:package
+pnpm spec:package -- --check
+pnpm contract:check
+```
+
+- Run the generator after any DTO or controller change. The committed document
+  is never edited by hand, and the spec is emitted verbatim, so wire casing
+  follows the DTO declarations.
+- `@dauphaihau-camille/api-spec` is the published contract.
+  `pnpm spec:package` copies `openapi.json` to
+  `packages/api-spec/openapi.json` byte for byte; `-- --check` reports a stale
+  copy.
+- Version bumps are manual: ERR-level breaking change -> major, WARN or additive
+  structural change -> minor, documentation-only -> patch.
+- CI runs `pnpm spec:generate -- --check` in the `validate` job and a `contract`
+  job on pull requests, and publishes the package from `production` after the
+  same gate passes.
+
 ## Further Reading
 
 - [test/README.md](/Volumes/Local/dev/pj-personal/apps/camille/camille-v2/apps/api/api/test/README.md)
