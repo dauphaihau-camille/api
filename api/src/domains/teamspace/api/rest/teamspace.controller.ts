@@ -30,10 +30,13 @@ import { CreateTeamspaceDto } from './dto/create-teamspace.dto';
 import { TeamspaceResponseDto } from './dto/teamspace-response.dto';
 import { UpdateTeamspaceDto } from './dto/update-teamspace.dto';
 import {
-  conflictErrorExample,
-  forbiddenErrorExample,
   internalServerErrorExample,
-  notFoundErrorExample,
+  teamspaceNameTooShortErrorExample,
+  teamspaceNotFoundErrorExample,
+  teamspacePermissionDeniedErrorExample,
+  teamspaceVersionConflictErrorExample,
+  teamspaceWorkspaceNotFoundErrorExample,
+  tooManyRequestsErrorExample,
   unauthorizedErrorExample,
   validationErrorExample,
 } from '~/platform/http/api-error-examples';
@@ -42,12 +45,7 @@ import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator
 @Controller()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @ApiErrorResponses({
-  400: [validationErrorExample],
-  401: [unauthorizedErrorExample],
-  403: [forbiddenErrorExample],
-  404: [notFoundErrorExample],
-  409: [conflictErrorExample],
-  500: [internalServerErrorExample],
+  429: [tooManyRequestsErrorExample],
 })
 @ApiCookieAuth('access_token')
 @ApiTags('Teamspace')
@@ -59,6 +57,12 @@ export class TeamspaceController {
   ) {}
 
   @Get('workspaces/:workspaceId/teamspaces')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [teamspacePermissionDeniedErrorExample],
+    404: [teamspaceWorkspaceNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'List workspace teamspaces',
@@ -78,6 +82,13 @@ export class TeamspaceController {
   }
 
   @Post('workspaces/:workspaceId/teamspaces')
+  @ApiErrorResponses({
+    400: [validationErrorExample, teamspaceNameTooShortErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [teamspacePermissionDeniedErrorExample],
+    404: [teamspaceWorkspaceNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Create workspace teamspace',
@@ -101,6 +112,14 @@ export class TeamspaceController {
   }
 
   @Patch('teamspaces/:teamspaceId')
+  @ApiErrorResponses({
+    400: [validationErrorExample, teamspaceNameTooShortErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [teamspacePermissionDeniedErrorExample],
+    404: [teamspaceNotFoundErrorExample, teamspaceWorkspaceNotFoundErrorExample],
+    409: [teamspaceVersionConflictErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Update teamspace',

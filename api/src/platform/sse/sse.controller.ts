@@ -14,12 +14,21 @@ import {
 } from '@nestjs/swagger';
 import { Observable } from 'rxjs';
 import { CurrentUser } from '~/platform/decorators/current-user.decorator';
+import {
+  tooManyRequestsErrorExample,
+  unauthorizedErrorExample,
+} from '~/platform/http/api-error-examples';
+import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
 import { JwtAuthGuard } from '../../domains/auth/api/guard/jwt-auth.guard';
 import type { AuthenticatedUser } from '../../domains/auth/app/auth.types';
 import { SseService } from './sse.service';
 
 @Controller('events')
 @UseGuards(JwtAuthGuard)
+@ApiErrorResponses({
+  401: [unauthorizedErrorExample],
+  429: [tooManyRequestsErrorExample],
+})
 @ApiTags('Events')
 @ApiCookieAuth('access_token')
 export class SseController {

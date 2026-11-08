@@ -26,7 +26,8 @@ import {
 import {
   forbiddenErrorExample,
   internalServerErrorExample,
-  notFoundErrorExample,
+  searchWorkspaceNotFoundErrorExample,
+  tooManyRequestsErrorExample,
   unauthorizedErrorExample,
 } from '~/platform/http/api-error-examples';
 import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
@@ -34,10 +35,7 @@ import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator
 @Controller()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @ApiErrorResponses({
-  401: [unauthorizedErrorExample],
-  403: [forbiddenErrorExample],
-  404: [notFoundErrorExample],
-  500: [internalServerErrorExample],
+  429: [tooManyRequestsErrorExample],
 })
 @ApiCookieAuth('access_token')
 @ApiTags('Search')
@@ -45,6 +43,12 @@ export class SearchController {
   constructor(private readonly searchWorkspaceDocumentsUseCase: SearchWorkspaceDocumentsUseCase) {}
 
   @Get('workspaces/:workspaceId/search/documents')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    404: [searchWorkspaceNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Search workspace documents',

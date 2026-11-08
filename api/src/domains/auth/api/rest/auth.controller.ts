@@ -65,10 +65,16 @@ import { VerifyEmailAuthDto } from './dto/verify-email-auth.dto';
 import { VerifyTokenDto } from './dto/verify-token.dto';
 import { IdempotencyKeyInterceptor } from '../../../../platform/interceptors/idempotency-key.interceptor';
 import {
-  conflictErrorExample,
-  forbiddenErrorExample,
+  emailAlreadyRegisteredErrorExample,
+  emailAuthAccountNotFoundErrorExample,
+  inactiveUserErrorExample,
   internalServerErrorExample,
-  notFoundErrorExample,
+  invalidCredentialsErrorExample,
+  invalidEmailLoginCodeErrorExample,
+  invalidRefreshTokenErrorExample,
+  refreshSessionNotFoundErrorExample,
+  sessionNotActiveErrorExample,
+  tooManyRequestsErrorExample,
   unauthorizedErrorExample,
   validationErrorExample,
 } from '~/platform/http/api-error-examples';
@@ -110,12 +116,7 @@ const authRouteRateLimits = {
 @Controller('auth')
 @UseFilters(AuthHttpExceptionFilter)
 @ApiErrorResponses({
-  400: [validationErrorExample],
-  401: [unauthorizedErrorExample],
-  403: [forbiddenErrorExample],
-  404: [notFoundErrorExample],
-  409: [conflictErrorExample],
-  500: [internalServerErrorExample],
+  429: [tooManyRequestsErrorExample],
 })
 @ApiTags('Auth')
 export class AuthController {
@@ -135,6 +136,11 @@ export class AuthController {
   ) {}
 
   @Post('register')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    409: [emailAlreadyRegisteredErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Throttle({
     default: authRouteRateLimits.register,
   })
@@ -169,6 +175,9 @@ export class AuthController {
 
   @Get('oauth/google')
   @UseGuards(GoogleOAuthGuard)
+  @ApiErrorResponses({
+    500: [internalServerErrorExample],
+  })
   @ApiOperation({
     summary: 'Start Google OAuth',
   })
@@ -179,6 +188,11 @@ export class AuthController {
 
   @Get('oauth/google/callback')
   @UseGuards(GoogleOAuthGuard)
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [inactiveUserErrorExample],
+    500: [internalServerErrorExample],
+  })
   @ApiOperation({
     summary: 'Handle Google callback',
   })
@@ -194,6 +208,9 @@ export class AuthController {
 
   @Get('oauth/github')
   @UseGuards(GithubOAuthGuard)
+  @ApiErrorResponses({
+    500: [internalServerErrorExample],
+  })
   @ApiOperation({
     summary: 'Start GitHub OAuth',
   })
@@ -204,6 +221,11 @@ export class AuthController {
 
   @Get('oauth/github/callback')
   @UseGuards(GithubOAuthGuard)
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [inactiveUserErrorExample],
+    500: [internalServerErrorExample],
+  })
   @ApiOperation({
     summary: 'Handle GitHub callback',
   })
@@ -218,6 +240,12 @@ export class AuthController {
   }
 
   @Post('login')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [invalidCredentialsErrorExample],
+    403: [inactiveUserErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Throttle({
     default: authRouteRateLimits.login,
   })
@@ -244,6 +272,10 @@ export class AuthController {
   }
 
   @Post('email/start')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Throttle({
     default: authRouteRateLimits.emailStart,
   })
@@ -267,6 +299,14 @@ export class AuthController {
   }
 
   @Post('email/verify')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [invalidEmailLoginCodeErrorExample],
+    403: [inactiveUserErrorExample],
+    404: [emailAuthAccountNotFoundErrorExample],
+    409: [emailAlreadyRegisteredErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Throttle({
     default: authRouteRateLimits.emailVerify,
   })
@@ -298,6 +338,16 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [
+      invalidRefreshTokenErrorExample,
+      refreshSessionNotFoundErrorExample,
+      sessionNotActiveErrorExample,
+    ],
+    403: [inactiveUserErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Throttle({
     default: authRouteRateLimits.refresh,
   })
@@ -327,6 +377,10 @@ export class AuthController {
   }
 
   @Post('forgot-password')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Throttle({
     default: authRouteRateLimits.passwordReset,
   })
@@ -346,6 +400,11 @@ export class AuthController {
   }
 
   @Get('verify-token')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [unauthorizedErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @HttpCode(200)
   @ApiOperation({
@@ -372,6 +431,11 @@ export class AuthController {
   }
 
   @Post('reset-password')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [unauthorizedErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Throttle({
     default: authRouteRateLimits.passwordReset,
   })
@@ -407,6 +471,10 @@ export class AuthController {
   }
 
   @Post('logout')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @HttpCode(204)
   @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -426,6 +494,10 @@ export class AuthController {
   }
 
   @Get('me')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiCookieAuth('access_token')

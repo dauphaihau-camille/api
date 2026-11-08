@@ -39,6 +39,17 @@ pnpm spec:generate -- --check
   controller can actually produce: always `500`, plus `401`/`403` when a guard
   protects the route, `400` when a handler consumes a DTO, and `404`/`409` only
   when an error mapper proves them.
+- Prefer **method-level** declarations so each route documents the domain codes
+  its mapper actually emits (`DOCUMENT_NOT_FOUND`, `INVALID_CREDENTIALS`,
+  `WORKSPACE_BLOCK_LIMIT_REACHED`, ...). Use the shared domain example that
+  matches the mapper's message instead of the generic status example.
+  Keep a class-level declaration only for statuses shared by every route in the
+  controller: `429` with `tooManyRequestsErrorExample`, because the global
+  `ThrottlerGuard` protects all domain controllers.
+- Adding a method-level `@ApiErrorResponses` replaces Nest's implicit success
+  response for that handler. If the route has no explicit `@ApiOkResponse` /
+  `@ApiCreatedResponse` / `@ApiNoContentResponse`, add one so the success status
+  does not disappear from the contract.
 - `code` is always `UPPER_SNAKE_CASE` and resolved by
   `src/platform/http/api-error-code.ts` in this order:
   1. a string `code` already present on the HTTP exception payload, when it is

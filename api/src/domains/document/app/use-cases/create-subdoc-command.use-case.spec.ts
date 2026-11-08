@@ -47,6 +47,7 @@ describe('CreateSubdocCommandUseCase', () => {
 
   function createCommandRepository() {
     return {
+      findDocument: jest.fn(),
       withTransaction: jest.fn(),
     } as unknown as jest.Mocked<DocumentCommandRepository>;
   }
@@ -166,6 +167,15 @@ describe('CreateSubdocCommandUseCase', () => {
         },
         subdocReferenceRepository: { id: 'subdoc-repo' },
       } as never));
+    const hydratedOwner = {
+      id: currentUser.userId,
+      email: currentUser.email,
+      displayName: 'Subdoc Owner',
+    };
+    commandRepository.findDocument.mockImplementation(async (documentId) =>
+      (documentId === childDocument.id
+        ? { ...childDocument, ownerUser: hydratedOwner }
+        : { ...parentDocument, ownerUser: hydratedOwner }) as never);
 
     const useCase = new CreateSubdocCommandUseCase(
       auditService as never,
@@ -216,6 +226,10 @@ describe('CreateSubdocCommandUseCase', () => {
     }));
     expect(result.parentDocument.id).toBe('parent-1');
     expect(result.childDocument.id).toBe('child-1');
+    expect(commandRepository.findDocument).toHaveBeenNthCalledWith(1, 'child-1');
+    expect(commandRepository.findDocument).toHaveBeenNthCalledWith(2, 'parent-1');
+    expect(result.childDocument.ownerUser).toEqual(hydratedOwner);
+    expect(result.parentDocument.ownerUser).toEqual(hydratedOwner);
   });
 
   it('does not create the child document when subdoc placement would exceed the block limit', async () => {

@@ -45,9 +45,12 @@ import {
 import { ListAiConversationSessionsQueryDto } from './dto/list-ai-conversation-sessions.query.dto';
 import { ListAiChatTurnsQueryDto } from './dto/list-ai-chat-turns.query.dto';
 import {
+  aiConversationSessionNotFoundErrorExample,
+  aiResponseLimitReachedErrorExample,
+  aiWorkspaceNotFoundErrorExample,
   forbiddenErrorExample,
   internalServerErrorExample,
-  notFoundErrorExample,
+  tooManyRequestsErrorExample,
   unauthorizedErrorExample,
   validationErrorExample,
 } from '~/platform/http/api-error-examples';
@@ -56,11 +59,7 @@ import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator
 @Controller('workspaces/:workspaceId/ai')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @ApiErrorResponses({
-  400: [validationErrorExample],
-  401: [unauthorizedErrorExample],
-  403: [forbiddenErrorExample],
-  404: [notFoundErrorExample],
-  500: [internalServerErrorExample],
+  429: [tooManyRequestsErrorExample],
 })
 @ApiCookieAuth('access_token')
 @ApiTags('AI Assistance')
@@ -74,6 +73,12 @@ export class AiAssistanceController {
   ) {}
 
   @Get('entitlement')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    404: [aiWorkspaceNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({ summary: 'Get AI response entitlement status' })
   @ApiOkResponse({ type: AiResponseEntitlementResponseDto })
@@ -88,6 +93,13 @@ export class AiAssistanceController {
   }
 
   @Get('conversations')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    404: [aiWorkspaceNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({ summary: 'List AI conversation sessions' })
   @ApiQuery({ name: 'page', required: false, type: Number })
@@ -111,6 +123,12 @@ export class AiAssistanceController {
   }
 
   @Post('conversations')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    404: [aiWorkspaceNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({ summary: 'Create AI conversation session' })
   @ApiCreatedResponse({ type: AiConversationSessionResponseDto })
@@ -125,6 +143,13 @@ export class AiAssistanceController {
   }
 
   @Get('conversations/:sessionId/turns')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    404: [aiWorkspaceNotFoundErrorExample, aiConversationSessionNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({ summary: 'List AI chat turns' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -148,6 +173,13 @@ export class AiAssistanceController {
   }
 
   @Post('conversations/:sessionId/turns')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [aiResponseLimitReachedErrorExample, forbiddenErrorExample],
+    404: [aiWorkspaceNotFoundErrorExample, aiConversationSessionNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @HttpCode(200)
   @Header('Cache-Control', 'no-store')
   @ApiOperation({ summary: 'Create AI chat turn' })
@@ -170,9 +202,26 @@ export class AiAssistanceController {
   }
 
   @Post('conversations/:sessionId/turns/stream')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [aiResponseLimitReachedErrorExample, forbiddenErrorExample],
+    404: [aiWorkspaceNotFoundErrorExample, aiConversationSessionNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @HttpCode(200)
   @Header('Cache-Control', 'no-store')
   @ApiOperation({ summary: 'Stream AI chat turn' })
+  @ApiOkResponse({
+    description: 'NDJSON stream of AI chat turn events.',
+    content: {
+      'application/x-ndjson': {
+        schema: {
+          type: 'string',
+        },
+      },
+    },
+  })
   async streamTurn(
     @Param('workspaceId') workspaceId: string,
     @Param('sessionId') sessionId: string,

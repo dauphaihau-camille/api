@@ -16,7 +16,6 @@ import {
   ApiConsumes,
   ApiCookieAuth,
   ApiCreatedResponse,
-  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -54,11 +53,14 @@ import {
   UserSummaryResponseDto,
 } from './dto/user-response.dto';
 import {
-  conflictErrorExample,
-  forbiddenErrorExample,
+  actorNotAllowedToCreateUsersErrorExample,
+  actorNotAllowedToUpdateUsersErrorExample,
   internalServerErrorExample,
-  notFoundErrorExample,
+  tooManyRequestsErrorExample,
   unauthorizedErrorExample,
+  userEmailAlreadyRegisteredErrorExample,
+  userNotFoundErrorExample,
+  userVersionConflictErrorExample,
   validationErrorExample,
 } from '~/platform/http/api-error-examples';
 import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
@@ -66,12 +68,7 @@ import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator
 @Controller('users')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @ApiErrorResponses({
-  400: [validationErrorExample],
-  401: [unauthorizedErrorExample],
-  403: [forbiddenErrorExample],
-  404: [notFoundErrorExample],
-  409: [conflictErrorExample],
-  500: [internalServerErrorExample],
+  429: [tooManyRequestsErrorExample],
 })
 @ApiTags('Users')
 @ApiCookieAuth('access_token')
@@ -84,6 +81,11 @@ export class UserController {
   ) {}
 
   @Get()
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [unauthorizedErrorExample],
+    500: [internalServerErrorExample],
+  })
   @RequirePermissions('users.read')
   @Header('Cache-Control', 'private, no-store')
   @ApiOperation({
@@ -129,6 +131,11 @@ export class UserController {
   }
 
   @Get(':id')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    404: [userNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @RequirePermissions('users.read')
   @Header('Cache-Control', 'private, no-cache')
   @ApiOperation({
@@ -141,9 +148,6 @@ export class UserController {
   @ApiOkResponse({
     type: UserSummaryResponseDto,
   })
-  @ApiNotFoundResponse({
-    description: 'User was not found.',
-  })
   async user(@Param('id') id: string): Promise<UserSummaryResponseDto> {
     const user = await this.getUserByIdUseCase.execute(id);
 
@@ -155,6 +159,13 @@ export class UserController {
   }
 
   @Post()
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [actorNotAllowedToCreateUsersErrorExample],
+    409: [userEmailAlreadyRegisteredErrorExample],
+    500: [internalServerErrorExample],
+  })
   @RequirePermissions('users.manage')
   @ApiOperation({
     summary: 'Create',
@@ -177,6 +188,14 @@ export class UserController {
   }
 
   @Patch(':id')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [actorNotAllowedToUpdateUsersErrorExample],
+    404: [userNotFoundErrorExample],
+    409: [userVersionConflictErrorExample],
+    500: [internalServerErrorExample],
+  })
   @RequirePermissions('users.manage')
   @Header('Cache-Control', 'private, no-store')
   @UseInterceptors(FileInterceptor('avatar_file'))

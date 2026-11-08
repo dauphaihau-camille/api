@@ -26,24 +26,22 @@ import { ArchiveSubdocCommandDto } from './dto/archive-subdoc-command.dto';
 import { CreateSubdocCommandResponseDto } from './dto/create-subdoc-command-response.dto';
 import { CreateSubdocCommandDto } from './dto/create-subdoc-command.dto';
 import {
-  conflictErrorExample,
-  forbiddenErrorExample,
+  documentNotFoundErrorExample,
+  documentPermissionDeniedErrorExample,
+  documentVersionConflictErrorExample,
   internalServerErrorExample,
-  notFoundErrorExample,
+  parentDocumentWorkspaceMismatchErrorExample,
+  tooManyRequestsErrorExample,
   unauthorizedErrorExample,
   validationErrorExample,
+  workspaceBlockLimitReachedErrorExample,
 } from '~/platform/http/api-error-examples';
 import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
 
 @Controller()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @ApiErrorResponses({
-  400: [validationErrorExample],
-  401: [unauthorizedErrorExample],
-  403: [forbiddenErrorExample],
-  404: [notFoundErrorExample],
-  409: [conflictErrorExample],
-  500: [internalServerErrorExample],
+  429: [tooManyRequestsErrorExample],
 })
 @ApiCookieAuth('access_token')
 @ApiTags('Document')
@@ -54,6 +52,14 @@ export class DocumentCommandController {
   ) {}
 
   @Post('documents/:documentId/commands/create-subdoc')
+  @ApiErrorResponses({
+    400: [validationErrorExample, parentDocumentWorkspaceMismatchErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [workspaceBlockLimitReachedErrorExample, documentPermissionDeniedErrorExample],
+    404: [documentNotFoundErrorExample],
+    409: [documentVersionConflictErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Create subdocument command',
@@ -78,6 +84,14 @@ export class DocumentCommandController {
   }
 
   @Post('documents/:documentId/commands/archive-subdoc')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentNotFoundErrorExample],
+    409: [documentVersionConflictErrorExample],
+    500: [internalServerErrorExample],
+  })
   @HttpCode(200)
   @Header('Cache-Control', 'no-store')
   @ApiOperation({

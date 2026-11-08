@@ -33,24 +33,28 @@ import { DocumentResponseDto } from './dto/document-response.dto';
 import { MoveDocumentDto } from './dto/move-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import {
-  conflictErrorExample,
-  forbiddenErrorExample,
+  archivedDocumentDuplicationErrorExample,
+  documentContentManagedByCollaborationErrorExample,
+  documentDescendantMoveErrorExample,
+  documentNotFoundErrorExample,
+  documentPermissionDeniedErrorExample,
+  documentTeamspaceNotFoundErrorExample,
+  documentVersionConflictErrorExample,
+  documentWorkspaceNotFoundErrorExample,
   internalServerErrorExample,
-  notFoundErrorExample,
+  invalidDocumentCursorErrorExample,
+  parentDocumentWorkspaceMismatchErrorExample,
+  tooManyRequestsErrorExample,
   unauthorizedErrorExample,
   validationErrorExample,
+  workspaceBlockLimitReachedErrorExample,
 } from '~/platform/http/api-error-examples';
 import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
 
 @Controller()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @ApiErrorResponses({
-  400: [validationErrorExample],
-  401: [unauthorizedErrorExample],
-  403: [forbiddenErrorExample],
-  404: [notFoundErrorExample],
-  409: [conflictErrorExample],
-  500: [internalServerErrorExample],
+  429: [tooManyRequestsErrorExample],
 })
 @ApiCookieAuth('access_token')
 @ApiTags('Document')
@@ -65,6 +69,13 @@ export class DocumentController {
   ) {}
 
   @Post('documents')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [workspaceBlockLimitReachedErrorExample, documentPermissionDeniedErrorExample],
+    404: [documentWorkspaceNotFoundErrorExample, documentTeamspaceNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Create document',
@@ -89,6 +100,13 @@ export class DocumentController {
   }
 
   @Post('documents/:documentId/duplicate')
+  @ApiErrorResponses({
+    400: [archivedDocumentDuplicationErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Duplicate document subtree',
@@ -107,6 +125,12 @@ export class DocumentController {
   }
 
   @Get('documents/:documentId')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Get document detail',
@@ -125,6 +149,13 @@ export class DocumentController {
   }
 
   @Get('documents/:documentId/children')
+  @ApiErrorResponses({
+    400: [invalidDocumentCursorErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'List document children',
@@ -144,6 +175,14 @@ export class DocumentController {
   }
 
   @Patch('documents/:documentId')
+  @ApiErrorResponses({
+    400: [documentContentManagedByCollaborationErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentNotFoundErrorExample],
+    409: [documentVersionConflictErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Update document',
@@ -168,6 +207,14 @@ export class DocumentController {
   }
 
   @Post('documents/:documentId/move')
+  @ApiErrorResponses({
+    400: [parentDocumentWorkspaceMismatchErrorExample, documentDescendantMoveErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentNotFoundErrorExample, documentTeamspaceNotFoundErrorExample],
+    409: [documentVersionConflictErrorExample],
+    500: [internalServerErrorExample],
+  })
   @HttpCode(200)
   @Header('Cache-Control', 'no-store')
   @ApiOperation({

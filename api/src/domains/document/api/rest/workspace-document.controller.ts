@@ -29,24 +29,20 @@ import {
 import { ListWorkspaceDocumentsQueryDto } from './dto/list-workspace-documents-query.dto';
 import { WorkspaceDefaultDocumentResponseDto } from './dto/workspace-default-document-response.dto';
 import {
-  conflictErrorExample,
-  forbiddenErrorExample,
+  documentNotFoundErrorExample,
+  documentPermissionDeniedErrorExample,
+  documentWorkspaceNotFoundErrorExample,
   internalServerErrorExample,
-  notFoundErrorExample,
+  invalidDocumentCursorErrorExample,
+  tooManyRequestsErrorExample,
   unauthorizedErrorExample,
-  validationErrorExample,
 } from '~/platform/http/api-error-examples';
 import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
 
 @Controller()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @ApiErrorResponses({
-  400: [validationErrorExample],
-  401: [unauthorizedErrorExample],
-  403: [forbiddenErrorExample],
-  404: [notFoundErrorExample],
-  409: [conflictErrorExample],
-  500: [internalServerErrorExample],
+  429: [tooManyRequestsErrorExample],
 })
 @ApiCookieAuth('access_token')
 @ApiTags('Document')
@@ -58,6 +54,12 @@ export class WorkspaceDocumentController {
   ) {}
 
   @Get('workspaces/:workspaceId/documents/default')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentWorkspaceNotFoundErrorExample, documentNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Get default document',
@@ -82,6 +84,13 @@ export class WorkspaceDocumentController {
   }
 
   @Get('workspaces/:workspaceId/documents/archived')
+  @ApiErrorResponses({
+    400: [invalidDocumentCursorErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentWorkspaceNotFoundErrorExample, documentNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'List archived workspace documents',
@@ -120,6 +129,13 @@ export class WorkspaceDocumentController {
   }
 
   @Get('workspaces/:workspaceId/documents')
+  @ApiErrorResponses({
+    400: [invalidDocumentCursorErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentWorkspaceNotFoundErrorExample, documentNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'List workspace documents',

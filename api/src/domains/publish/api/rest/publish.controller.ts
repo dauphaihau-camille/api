@@ -34,15 +34,17 @@ import {
 import {
   forbiddenErrorExample,
   internalServerErrorExample,
-  notFoundErrorExample,
+  publishedDocumentNotFoundErrorExample,
+  publishDocumentNotFoundErrorExample,
+  publishPermissionDeniedErrorExample,
+  tooManyRequestsErrorExample,
   unauthorizedErrorExample,
 } from '~/platform/http/api-error-examples';
 import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
 
 @Controller()
 @ApiErrorResponses({
-  404: [notFoundErrorExample],
-  500: [internalServerErrorExample],
+  429: [tooManyRequestsErrorExample],
 })
 @ApiTags('Publish')
 export class PublishController {
@@ -54,6 +56,11 @@ export class PublishController {
   ) {}
 
   @Get('published/:publishedDocumentId')
+  @ApiErrorResponses({
+    403: [forbiddenErrorExample],
+    404: [publishedDocumentNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Get published document',
@@ -74,7 +81,9 @@ export class PublishController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiErrorResponses({
     401: [unauthorizedErrorExample],
-    403: [forbiddenErrorExample],
+    403: [publishPermissionDeniedErrorExample],
+    404: [publishDocumentNotFoundErrorExample],
+    500: [internalServerErrorExample],
   })
   @ApiCookieAuth('access_token')
   @Header('Cache-Control', 'no-store')
@@ -98,7 +107,9 @@ export class PublishController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiErrorResponses({
     401: [unauthorizedErrorExample],
-    403: [forbiddenErrorExample],
+    403: [publishPermissionDeniedErrorExample],
+    404: [publishDocumentNotFoundErrorExample],
+    500: [internalServerErrorExample],
   })
   @ApiCookieAuth('access_token')
   @Header('Cache-Control', 'no-store')
@@ -122,7 +133,9 @@ export class PublishController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiErrorResponses({
     401: [unauthorizedErrorExample],
-    403: [forbiddenErrorExample],
+    403: [publishPermissionDeniedErrorExample],
+    404: [publishDocumentNotFoundErrorExample],
+    500: [internalServerErrorExample],
   })
   @ApiCookieAuth('access_token')
   @HttpCode(200)
