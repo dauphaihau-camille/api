@@ -32,6 +32,8 @@ import {
 import {
   favoriteDocumentNotFoundErrorExample,
   favoriteWorkspaceNotFoundErrorExample,
+} from './favorite-error-examples';
+import {
   forbiddenErrorExample,
   internalServerErrorExample,
   tooManyRequestsErrorExample,

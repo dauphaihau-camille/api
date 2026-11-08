@@ -68,12 +68,14 @@ import {
   emailAlreadyRegisteredErrorExample,
   emailAuthAccountNotFoundErrorExample,
   inactiveUserErrorExample,
-  internalServerErrorExample,
   invalidCredentialsErrorExample,
   invalidEmailLoginCodeErrorExample,
   invalidRefreshTokenErrorExample,
   refreshSessionNotFoundErrorExample,
   sessionNotActiveErrorExample,
+} from './auth-error-examples';
+import {
+  internalServerErrorExample,
   tooManyRequestsErrorExample,
   unauthorizedErrorExample,
   validationErrorExample,

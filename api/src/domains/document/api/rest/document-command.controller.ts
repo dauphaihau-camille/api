@@ -29,12 +29,14 @@ import {
   documentNotFoundErrorExample,
   documentPermissionDeniedErrorExample,
   documentVersionConflictErrorExample,
-  internalServerErrorExample,
   parentDocumentWorkspaceMismatchErrorExample,
+  workspaceBlockLimitReachedErrorExample,
+} from './document-error-examples';
+import {
+  internalServerErrorExample,
   tooManyRequestsErrorExample,
   unauthorizedErrorExample,
   validationErrorExample,
-  workspaceBlockLimitReachedErrorExample,
 } from '~/platform/http/api-error-examples';
 import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
 

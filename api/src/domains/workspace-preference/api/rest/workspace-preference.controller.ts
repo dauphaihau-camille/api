@@ -28,13 +28,13 @@ import {
   isWorkspacePreferenceAppError,
   mapWorkspacePreferenceAppErrorToHttpException,
 } from './workspace-preference-http-error-mapper';
+import { workspacePreferenceWorkspaceNotFoundErrorExample } from './workspace-preference-error-examples';
 import {
   forbiddenErrorExample,
   internalServerErrorExample,
   tooManyRequestsErrorExample,
   unauthorizedErrorExample,
   validationErrorExample,
-  workspacePreferenceWorkspaceNotFoundErrorExample,
 } from '~/platform/http/api-error-examples';
 import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
 

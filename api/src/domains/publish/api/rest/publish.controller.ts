@@ -32,11 +32,13 @@ import {
   mapPublishAppErrorToHttpException,
 } from './publish-http-error-mapper';
 import {
-  forbiddenErrorExample,
-  internalServerErrorExample,
   publishedDocumentNotFoundErrorExample,
   publishDocumentNotFoundErrorExample,
   publishPermissionDeniedErrorExample,
+} from './publish-error-examples';
+import {
+  forbiddenErrorExample,
+  internalServerErrorExample,
   tooManyRequestsErrorExample,
   unauthorizedErrorExample,
 } from '~/platform/http/api-error-examples';

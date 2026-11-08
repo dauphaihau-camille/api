@@ -35,10 +35,6 @@ import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { WorkspaceResponseDto } from './dto/workspace-response.dto';
 import {
-  internalServerErrorExample,
-  tooManyRequestsErrorExample,
-  unauthorizedErrorExample,
-  validationErrorExample,
   workspaceDeletePermissionDeniedErrorExample,
   workspaceNotFoundErrorExample,
   workspacePermissionDeniedErrorExample,
@@ -47,6 +43,12 @@ import {
   workspaceSlugLengthErrorExample,
   workspaceSlugReservedErrorExample,
   workspaceVersionConflictErrorExample,
+} from './workspace-error-examples';
+import {
+  internalServerErrorExample,
+  tooManyRequestsErrorExample,
+  unauthorizedErrorExample,
+  validationErrorExample,
 } from '~/platform/http/api-error-examples';
 import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
 

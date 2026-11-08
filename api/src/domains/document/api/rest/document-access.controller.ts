@@ -45,6 +45,8 @@ import {
   documentNotFoundErrorExample,
   documentPermissionDeniedErrorExample,
   documentShareRecipientRequiredErrorExample,
+} from './document-error-examples';
+import {
   internalServerErrorExample,
   tooManyRequestsErrorExample,
   unauthorizedErrorExample,
