@@ -67,17 +67,19 @@ import { IdempotencyKeyInterceptor } from '../../../../platform/interceptors/ide
 import {
   emailAlreadyRegisteredErrorExample,
   emailAuthAccountNotFoundErrorExample,
+  githubOAuthProviderDisabledErrorExample,
+  googleOAuthProviderDisabledErrorExample,
   inactiveUserErrorExample,
   invalidCredentialsErrorExample,
   invalidEmailLoginCodeErrorExample,
   invalidRefreshTokenErrorExample,
   refreshSessionNotFoundErrorExample,
   sessionNotActiveErrorExample,
+  unauthorizedErrorExample,
 } from './auth-error-examples';
 import {
   internalServerErrorExample,
   tooManyRequestsErrorExample,
-  unauthorizedErrorExample,
   validationErrorExample,
 } from '~/platform/http/api-error-examples';
 import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
@@ -178,6 +180,7 @@ export class AuthController {
   @Get('oauth/google')
   @UseGuards(GoogleOAuthGuard)
   @ApiErrorResponses({
+    404: [googleOAuthProviderDisabledErrorExample],
     500: [internalServerErrorExample],
   })
   @ApiOperation({
@@ -211,6 +214,7 @@ export class AuthController {
   @Get('oauth/github')
   @UseGuards(GithubOAuthGuard)
   @ApiErrorResponses({
+    404: [githubOAuthProviderDisabledErrorExample],
     500: [internalServerErrorExample],
   })
   @ApiOperation({

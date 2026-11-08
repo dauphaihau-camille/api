@@ -42,12 +42,11 @@ import {
   membershipUserNotFoundErrorExample,
   membershipVersionConflictErrorExample,
   membershipWorkspaceNotFoundErrorExample,
-} from './membership-error-examples';
+} from './membership-error-responses';
+import { forbiddenErrorExample, unauthorizedErrorExample } from '~/domains/auth/api/rest/auth-error-examples';
 import {
-  forbiddenErrorExample,
   internalServerErrorExample,
   tooManyRequestsErrorExample,
-  unauthorizedErrorExample,
   validationErrorExample,
 } from '~/platform/http/api-error-examples';
 import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';

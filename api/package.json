@@ -47,6 +47,7 @@
     "test:perf": "node ./test/performance/run-k6.mjs",
     "spec:generate": "pnpm build && ts-node -r tsconfig-paths/register ./scripts/generate-openapi.ts",
     "spec:package": "ts-node ./scripts/sync-api-spec-package.ts",
+    "spec:lint": "redocly lint openapi.json",
     "contract:check": "node ./scripts/check-contract-breaking.mjs"
   },
   "lint-staged": {
@@ -124,6 +125,7 @@
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
+    "@redocly/cli": "^2.76.0",
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",

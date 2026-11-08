@@ -7,13 +7,16 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
+import { Client } from 'pg';
 import { Logger, PinoLogger } from 'nestjs-pino';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import { setupApiDocs } from '../../src/platform/docs/setup-api-docs';
 import { setupBullBoard } from '../../src/platform/docs/setup-bull-board';
 import { GlobalExceptionFilter } from '../../src/platform/filters/global-exception.filter';
+import { validationExceptionFactory } from '../../src/platform/http/validation-exception.factory';
 import { RequestLoggingInterceptor } from '../../src/platform/interceptors/request-logging.interceptor';
 import { parseCorsAllowedOrigins } from '../../src/platform/config/cors.config';
 import { ObservabilityService } from '../../src/platform/observability/observability.service';
@@ -99,6 +102,7 @@ describe('Auth flow (e2e)', () => {
         whitelist: true,
         transform: true,
         forbidNonWhitelisted: true,
+        exceptionFactory: validationExceptionFactory,
       }),
     );
     app.useGlobalFilters(
@@ -150,6 +154,44 @@ describe('Auth flow (e2e)', () => {
       await dropTestDatabase(testDb);
     }
   });
+
+  async function grantPermissionToRole(
+    roleKey: string,
+    permissionKey: string,
+  ): Promise<void> {
+    const client = new Client({
+      ...testDb.rootConfig,
+      database: testDb.dbName,
+    });
+
+    await client.connect();
+
+    try {
+      await client.query(
+        `
+          INSERT INTO permissions (id, created_at, updated_at, key, name)
+          VALUES ($1, now(), now(), $2, $3)
+          ON CONFLICT (key) DO NOTHING
+        `,
+        [randomUUID(), permissionKey, permissionKey],
+      );
+      await client.query(
+        `
+          INSERT INTO role_permissions (
+            id, created_at, updated_at, granted_at, role_id, permission_id
+          )
+          SELECT $1, now(), now(), now(), roles.id, permissions.id
+          FROM roles, permissions
+          WHERE roles.key = $2 AND permissions.key = $3
+          ON CONFLICT (role_id, permission_id) DO NOTHING
+        `,
+        [randomUUID(), roleKey, permissionKey],
+      );
+    }
+    finally {
+      await client.end();
+    }
+  }
 
   it('registers, authenticates, refreshes, and revokes a session', async () => {
     const email = `member-${Date.now()}@example.com`;
@@ -275,6 +317,82 @@ describe('Auth flow (e2e)', () => {
       .expect(401);
   });
 
+  it('returns the documented USER_NOT_FOUND code for a missing user', async () => {
+    const email = `missing-user-${Date.now()}@example.com`;
+
+    await request(app.getHttpServer())
+      .post('/v1/auth/register')
+      .send({
+        email,
+        password: 'password123',
+        display_name: 'Missing User Probe',
+      })
+      .expect(201);
+
+    await grantPermissionToRole('member', 'users.read');
+
+    const loginResponse = await request(app.getHttpServer())
+      .post('/v1/auth/login')
+      .send({
+        email,
+        password: 'password123',
+      })
+      .expect(200);
+
+    const missingUserId = randomUUID();
+    const response = await request(app.getHttpServer())
+      .get(`/v1/users/${missingUserId}`)
+      .set('Authorization', `Bearer ${(loginResponse.body as AuthHttpResponse).access_token}`)
+      .expect(404);
+
+    expect(response.body).toMatchObject({
+      status_code: 404,
+      code: 'USER_NOT_FOUND',
+      message: 'User was not found',
+      request_id: expect.any(String),
+    });
+    expect(response.body).not.toHaveProperty('error');
+    expect(response.body).not.toHaveProperty('timestamp');
+    expect(response.body).not.toHaveProperty('path');
+    expect(response.headers['x-request-id']).toBe(response.body.request_id);
+    expectMatchesContract({
+      method: 'get',
+      path: `/v1/users/${missingUserId}`,
+      status: 404,
+      body: response.body,
+    });
+  });
+
+  it('returns the VALIDATION_FAILED envelope for an invalid body', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/v1/auth/register')
+      .send({
+        email: 'not-an-email',
+        password: 'password123',
+        display_name: 'Invalid Email Probe',
+      })
+      .expect(400);
+
+    expect(response.body).toMatchObject({
+      status_code: 400,
+      code: 'VALIDATION_FAILED',
+      message: 'Validation failed',
+      request_id: expect.any(String),
+      details: {
+        fields: [
+          { field: 'email', messages: expect.arrayContaining(['email must be an email']) },
+        ],
+      },
+    });
+    expect(response.headers['x-request-id']).toBe(response.body.request_id);
+    expectMatchesContract({
+      method: 'post',
+      path: '/v1/auth/register',
+      status: 400,
+      body: response.body,
+    });
+  });
+
   it('exposes a health endpoint without a global API prefix', async () => {
     const response = await request(app.getHttpServer())
       .get('/health')
@@ -316,8 +434,7 @@ describe('Auth flow (e2e)', () => {
       .expect(429);
 
     expect(blockedRegisterResponse.body).toMatchObject({
-      statusCode: 429,
-      error: 'ThrottlerException',
+      status_code: 429,
       message: 'Too many requests.',
     });
 
@@ -344,8 +461,7 @@ describe('Auth flow (e2e)', () => {
       .expect(429);
 
     expect(blockedLoginResponse.body).toMatchObject({
-      statusCode: 429,
-      error: 'ThrottlerException',
+      status_code: 429,
       message: 'Too many requests.',
     });
 
@@ -370,8 +486,7 @@ describe('Auth flow (e2e)', () => {
       .expect(429);
 
     expect(blockedRefreshResponse.body).toMatchObject({
-      statusCode: 429,
-      error: 'ThrottlerException',
+      status_code: 429,
       message: 'Too many requests.',
     });
   });

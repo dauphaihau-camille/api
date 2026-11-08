@@ -1,0 +1,21 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "automerge": false,
+  "packageRules": [
+    {
+      "description": "Group OpenAPI contract tooling so spec, validator, and codegen bumps land together",
+      "groupName": "openapi tooling",
+      "labels": [
+        "deps"
+      ],
+      "matchPackageNames": [
+        "openapi-response-validator",
+        "@redocly/cli",
+        "@nestjs/swagger"
+      ]
+    }
+  ]
+}

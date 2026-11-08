@@ -32,7 +32,7 @@ export const HTTP_ERROR_CODE_FALLBACKS: Readonly<Record<number, string>> = {
   [HttpStatus.METHOD_NOT_ALLOWED]: 'METHOD_NOT_ALLOWED',
   [HttpStatus.CONFLICT]: 'CONFLICT',
   [HttpStatus.UNPROCESSABLE_ENTITY]: 'UNPROCESSABLE_ENTITY',
-  [HttpStatus.TOO_MANY_REQUESTS]: 'TOO_MANY_REQUESTS',
+  [HttpStatus.TOO_MANY_REQUESTS]: 'RATE_LIMIT_EXCEEDED',
   [HttpStatus.NOT_IMPLEMENTED]: 'NOT_IMPLEMENTED',
   [HttpStatus.INTERNAL_SERVER_ERROR]: 'INTERNAL_SERVER_ERROR',
   [HttpStatus.SERVICE_UNAVAILABLE]: 'SERVICE_UNAVAILABLE',
@@ -92,16 +92,28 @@ export function deriveErrorCode(error: unknown): string | undefined {
  * Builds an HTTP exception payload that preserves the domain error's code.
  *
  * Used by every `*-http-error-mapper.ts` so that mapping a domain error keeps
- * its stable code instead of degrading to the status fallback.
+ * its stable code instead of degrading to the status fallback. Structured
+ * mapper context goes in `details`; the filter never promotes payload extras
+ * to the envelope's top level.
  */
 export function toHttpErrorPayload(
   error: { message: string },
-): { message: string; code?: string } {
+  details?: Record<string, unknown>,
+): { message: string; code?: string; details?: Record<string, unknown> } {
   const code = deriveErrorCode(error);
+  const payload: { message: string; code?: string; details?: Record<string, unknown> } = {
+    message: error.message,
+  };
 
-  return code === undefined
-    ? { message: error.message }
-    : { code, message: error.message };
+  if (code !== undefined) {
+    payload.code = code;
+  }
+
+  if (details && Object.keys(details).length > 0) {
+    payload.details = details;
+  }
+
+  return payload;
 }
 
 /**

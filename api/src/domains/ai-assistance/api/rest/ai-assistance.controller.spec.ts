@@ -117,8 +117,10 @@ describe('AiAssistanceController', () => {
     expect(exception.getResponse()).toEqual({
       code: 'AI_RESPONSE_LIMIT_REACHED',
       message: 'Workspace AI trial responses are exhausted',
-      remaining_responses: 0,
-      upgrade_available: false,
+      details: {
+        remaining_responses: 0,
+        upgrade_available: false,
+      },
     });
   });
 

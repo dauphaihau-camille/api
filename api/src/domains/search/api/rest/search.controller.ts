@@ -23,12 +23,11 @@ import {
   isSearchAppError,
   mapSearchAppErrorToHttpException,
 } from './search-http-error-mapper';
-import { searchWorkspaceNotFoundErrorExample } from './search-error-examples';
+import { searchWorkspaceNotFoundErrorExample } from './search-error-responses';
+import { forbiddenErrorExample, unauthorizedErrorExample } from '~/domains/auth/api/rest/auth-error-examples';
 import {
-  forbiddenErrorExample,
   internalServerErrorExample,
   tooManyRequestsErrorExample,
-  unauthorizedErrorExample,
 } from '~/platform/http/api-error-examples';
 import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
 

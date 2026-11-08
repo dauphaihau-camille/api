@@ -47,6 +47,9 @@ jobs:
       - name: Verify OpenAPI spec is current
         run: pnpm spec:generate -- --check
 
+      - name: Lint OpenAPI spec
+        run: pnpm spec:lint
+
   contract:
     name: Contract gate (breaking changes and version bump)
     runs-on: ubuntu-latest

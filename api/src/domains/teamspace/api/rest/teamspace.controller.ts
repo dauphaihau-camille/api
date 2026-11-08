@@ -35,11 +35,11 @@ import {
   teamspacePermissionDeniedErrorExample,
   teamspaceVersionConflictErrorExample,
   teamspaceWorkspaceNotFoundErrorExample,
-} from './teamspace-error-examples';
+} from './teamspace-error-responses';
+import { unauthorizedErrorExample } from '~/domains/auth/api/rest/auth-error-examples';
 import {
   internalServerErrorExample,
   tooManyRequestsErrorExample,
-  unauthorizedErrorExample,
   validationErrorExample,
 } from '~/platform/http/api-error-examples';
 import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';

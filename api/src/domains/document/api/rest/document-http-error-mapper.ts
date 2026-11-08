@@ -41,13 +41,14 @@ export function mapDocumentAppErrorToHttpException(
   error: DocumentAppError | WorkspaceBlockLimitReachedAppError,
 ): HttpException {
   if (isWorkspaceBlockLimitReachedAppError(error)) {
-    return new ForbiddenException({
-      ...toHttpErrorPayload(error),
-      plan: error.metadata.plan,
-      block_count: error.metadata.blockCount,
-      block_limit: error.metadata.blockLimit,
-      upgrade_available: error.metadata.upgradeAvailable,
-    });
+    return new ForbiddenException(
+      toHttpErrorPayload(error, {
+        plan: error.metadata.plan,
+        block_count: error.metadata.blockCount,
+        block_limit: error.metadata.blockLimit,
+        upgrade_available: error.metadata.upgradeAvailable,
+      }),
+    );
   }
 
   if (

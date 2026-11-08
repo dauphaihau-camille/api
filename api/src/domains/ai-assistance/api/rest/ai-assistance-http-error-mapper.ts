@@ -29,11 +29,12 @@ export function mapAiAssistanceAppErrorToHttpException(
   }
 
   if (error instanceof AiResponseEntitlementDeniedError) {
-    return new ForbiddenException({
-      ...toHttpErrorPayload(error),
-      remaining_responses: error.remainingResponses,
-      upgrade_available: error.upgradeAvailable,
-    });
+    return new ForbiddenException(
+      toHttpErrorPayload(error, {
+        remaining_responses: error.remainingResponses,
+        upgrade_available: error.upgradeAvailable,
+      }),
+    );
   }
 
   if (
