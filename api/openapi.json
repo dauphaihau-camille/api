@@ -11862,48 +11862,64 @@
   "info": {
     "title": "Camille API",
     "description": "REST API reference for the Camille backend.",
-    "version": "4.0.0",
-    "contact": {}
+    "version": "4.1.0",
+    "contact": {},
+    "license": {
+      "name": "UNLICENSED"
+    }
   },
   "tags": [
     {
-      "name": "AI Assistance"
+      "name": "AI Assistance",
+      "description": "Workspace AI writing assistance: response entitlements, conversation sessions, chat turns, and streamed turns."
     },
     {
-      "name": "Auth"
+      "name": "Auth",
+      "description": "Authentication and session lifecycle: registration, login, OAuth providers, email verification, password reset, refresh, and logout."
     },
     {
-      "name": "Document"
+      "name": "Document",
+      "description": "Document tree and sharing: create, read, update, move, duplicate, archive, restore, delete, collaborators, and invitations."
     },
     {
-      "name": "Events"
+      "name": "Events",
+      "description": "Server-Sent Events streams for realtime workspace and document activity."
     },
     {
-      "name": "Favorite"
+      "name": "Favorite",
+      "description": "Per-user favorite documents."
     },
     {
-      "name": "Membership"
+      "name": "Membership",
+      "description": "Workspace membership: listing, searching, inviting, updating, and removing members."
     },
     {
-      "name": "Publish"
+      "name": "Publish",
+      "description": "Publishing documents to public URLs and reading published documents."
     },
     {
-      "name": "Search"
+      "name": "Search",
+      "description": "Search across the documents of a workspace."
     },
     {
-      "name": "Subscription"
+      "name": "Subscription",
+      "description": "Billing plans, checkout, cancellation, and Stripe webhooks for a workspace."
     },
     {
-      "name": "Teamspace"
+      "name": "Teamspace",
+      "description": "Teamspaces: listing, creating, and updating the containers that group workspace documents."
     },
     {
-      "name": "Users"
+      "name": "Users",
+      "description": "User administration: listing, reading, creating, and updating user accounts."
     },
     {
-      "name": "Workspace"
+      "name": "Workspace",
+      "description": "Workspace lifecycle: listing, creating, reading, updating, and deleting workspaces."
     },
     {
-      "name": "Workspace User Preference"
+      "name": "Workspace User Preference",
+      "description": "Per-user, per-workspace preferences such as last active workspace and workspace settings."
     }
   ],
   "servers": [],

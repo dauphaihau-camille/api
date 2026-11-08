@@ -395,6 +395,55 @@ function commandExists(command) {
   return true;
 }
 
+/**
+ * GitHub release assets occasionally answer with a 5xx (the gate has seen a
+ * 504) or drop the connection. Retry transient failures so an infrastructure
+ * hiccup cannot block a contract change; 4xx responses still fail immediately
+ * because retrying them cannot succeed.
+ */
+async function fetchPinnedAsset(url) {
+  const attempts = 3;
+  let lastDetail = '';
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        redirect: 'follow',
+        signal: AbortSignal.timeout(120_000),
+      });
+
+      if (response.ok) {
+        return response;
+      }
+
+      lastDetail = `HTTP ${response.status}`;
+
+      if (response.status !== 429 && response.status < 500) {
+        throw new FatalError(
+          `Could not download oasdiff ${OASDIFF_PINNED_VERSION} from ` +
+          `${url} (HTTP ${response.status}).`,
+        );
+      }
+    }
+    catch (error) {
+      if (error instanceof FatalError) {
+        throw error;
+      }
+
+      lastDetail = error.message;
+    }
+
+    if (attempt < attempts) {
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+    }
+  }
+
+  throw new FatalError(
+    `Could not download oasdiff ${OASDIFF_PINNED_VERSION} from ${url} after ` +
+    `${attempts} attempts (${lastDetail}).`,
+  );
+}
+
 async function downloadPinnedOasdiff() {
   if (process.platform !== 'linux' || process.arch !== 'x64') {
     throw new FatalError(
@@ -406,27 +455,7 @@ async function downloadPinnedOasdiff() {
   }
 
   const directory = makeTempDir('oasdiff-');
-  let response;
-
-  try {
-    response = await fetch(OASDIFF_PINNED_URL, {
-      redirect: 'follow',
-      signal: AbortSignal.timeout(120_000),
-    });
-  }
-  catch (error) {
-    throw new FatalError(
-      `Could not download oasdiff ${OASDIFF_PINNED_VERSION} from ` +
-      `${OASDIFF_PINNED_URL}: ${error.message}`,
-    );
-  }
-
-  if (!response.ok) {
-    throw new FatalError(
-      `Could not download oasdiff ${OASDIFF_PINNED_VERSION} from ` +
-      `${OASDIFF_PINNED_URL} (HTTP ${response.status}).`,
-    );
-  }
+  const response = await fetchPinnedAsset(OASDIFF_PINNED_URL);
 
   const archive = path.join(directory, OASDIFF_PINNED_ARCHIVE);
   const buffer = Buffer.from(await response.arrayBuffer());

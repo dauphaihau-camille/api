@@ -10,6 +10,31 @@ import { API_GLOBAL_PREFIX } from '../http/api-global-prefix';
 const DOCS_PATH = '/docs';
 const OPENAPI_JSON_PATH = `${DOCS_PATH}/openapi.json`;
 const BUSINESS_PATH_PREFIX = `/${API_GLOBAL_PREFIX}/`;
+
+/**
+ * Tag descriptions for the published contract.
+ *
+ * Tags mirror the domain that owns the controller, so the description names the
+ * capability a consumer gets from that group of operations. Every tag the
+ * scanner discovers must be described here; `tag-description` is part of the
+ * `pnpm spec:lint` gate.
+ */
+const TAG_DESCRIPTIONS: Record<string, string> = {
+  'AI Assistance': 'Workspace AI writing assistance: response entitlements, conversation sessions, chat turns, and streamed turns.',
+  Auth: 'Authentication and session lifecycle: registration, login, OAuth providers, email verification, password reset, refresh, and logout.',
+  Document: 'Document tree and sharing: create, read, update, move, duplicate, archive, restore, delete, collaborators, and invitations.',
+  Events: 'Server-Sent Events streams for realtime workspace and document activity.',
+  Favorite: 'Per-user favorite documents.',
+  Membership: 'Workspace membership: listing, searching, inviting, updating, and removing members.',
+  Publish: 'Publishing documents to public URLs and reading published documents.',
+  Search: 'Search across the documents of a workspace.',
+  Subscription: 'Billing plans, checkout, cancellation, and Stripe webhooks for a workspace.',
+  Teamspace: 'Teamspaces: listing, creating, and updating the containers that group workspace documents.',
+  Users: 'User administration: listing, reading, creating, and updating user accounts.',
+  Workspace: 'Workspace lifecycle: listing, creating, reading, updating, and deleting workspaces.',
+  'Workspace User Preference': 'Per-user, per-workspace preferences such as last active workspace and workspace settings.',
+};
+
 type DocumentTag = { name: string; description?: string };
 type TaggedOperation = { tags?: string[] };
 
@@ -61,7 +86,12 @@ function sortDocumentTags(document: OpenAPIObject): void {
 
   document.tags = [...discoveredTagNames]
     .sort((left, right) => left.localeCompare(right))
-    .map((name) => existingTags.get(name) ?? { name });
+    .map((name) => {
+      const existing = existingTags.get(name);
+      const description = TAG_DESCRIPTIONS[name] ?? existing?.description;
+
+      return description === undefined ? { name } : { name, description };
+    });
 }
 
 function restrictToGlobalPrefix(document: OpenAPIObject): void {
@@ -182,6 +212,12 @@ export function createApiDocument(app: INestApplication): OpenAPIObject {
       extraModels: [ApiErrorResponseDto],
     },
   );
+
+  // `packages/api-spec/package.json` declares the contract `UNLICENSED`, and
+  // the document must not claim a license it is not published under.
+  // `DocumentBuilder.setLicense` requires a URL, so the field is set directly
+  // to keep `info.license` free of an empty link.
+  document.info = { ...document.info, license: { name: 'UNLICENSED' } };
 
   restrictToGlobalPrefix(document);
   sortDocumentTags(document);
