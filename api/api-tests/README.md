@@ -1,5 +1,11 @@
 # Hurl API tests
 
+> **Manual-only.** This suite is not part of CI and does not gate merges. The
+> CI contract gate is the e2e suite, which validates real responses against
+> `api/openapi.json` (`api/test/support/openapi-contract.ts`). Use Hurl for
+> exploratory or flow checks against a running, seeded API; it may lag behind
+> the contract and is not maintained as a release gate.
+
 This directory contains HTTP-level smoke tests for the API using [Hurl](https://hurl.dev/).
 
 ## Prerequisites

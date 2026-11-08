@@ -34,6 +34,16 @@ Short rule:
 - Endpoint contract changes require API or integration coverage that proves the external behavior.
 - When changing mapping or contracts, verify both external shape and internal conversion.
 
+## Runtime Contract
+
+- The e2e suite is the CI contract gate: it boots the real app and validates
+  response bodies against the committed `openapi.json` via
+  `test/support/openapi-contract.ts`. A red assertion means the DTO decorators
+  and the runtime response disagree.
+- `api-tests/` (Hurl) is manual-only. It is not part of CI, is not a release
+  gate, and may lag the contract. Use it for exploratory flows against a
+  running, seeded API; add durable contract coverage to the e2e suite instead.
+
 ## Avoid
 
 - Do not use API tests to cover logic that belongs in domain or app tests.

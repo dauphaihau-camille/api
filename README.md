@@ -160,6 +160,8 @@ cd api && pnpm test:int
 cd api && pnpm test:hurl
 ```
 
+`test:hurl` is manual-only; CI runs the e2e contract validation instead.
+
 ## Additional Docs
 
 - [`api/README.md`](api/README.md)
