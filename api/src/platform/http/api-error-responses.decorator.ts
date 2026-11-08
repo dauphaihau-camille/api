@@ -6,8 +6,6 @@ import { ApiErrorResponseDto } from '~/platform/http/api-error-response.dto';
 export interface ApiErrorExample {
   /** Stable machine-readable code emitted in the `code` field. */
   code: string;
-  /** Value emitted in the `error` field; also the name of the example. */
-  error: string;
   /** Value emitted in the `message` field. */
   message: string | string[];
 }
@@ -30,7 +28,7 @@ function describeExample(example: ApiErrorExample | undefined): string {
  * (applies to every method) or on a single route handler.
  *
  * Each numeric key is an HTTP status; every example becomes a named media
- * example keyed by its `error` value, using the shared error envelope
+ * example keyed by its `code`, using the shared error envelope
  * (`ApiErrorResponseDto`). The envelope `statusCode` is derived from the
  * numeric key so authors never restate it.
  */
@@ -51,14 +49,13 @@ export function ApiErrorResponses(
             schema: { $ref: getSchemaPath(ApiErrorResponseDto) },
             examples: Object.fromEntries(
               examples.map((example) => [
-                example.error,
+                example.code,
                 {
-                  summary: example.error,
+                  summary: example.code,
                   value: {
                     statusCode: status,
                     timestamp: EXAMPLE_TIMESTAMP,
                     path: EXAMPLE_PATH,
-                    error: example.error,
                     code: example.code,
                     message: example.message,
                   },

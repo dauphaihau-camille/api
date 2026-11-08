@@ -23,7 +23,6 @@ describe('buildErrorResponse', () => {
       statusCode: 403,
       timestamp: expect.any(String),
       path: '/v1/documents/document-1/commands/create-subdoc',
-      error: 'ForbiddenException',
       message: 'Workspace block limit reached.',
       code: 'WORKSPACE_BLOCK_LIMIT_REACHED',
       plan: 'free',

@@ -29,13 +29,14 @@ pnpm spec:generate -- --check
   `src/platform/http/api-global-prefix.ts`.
 - The spec is emitted verbatim, so wire casing follows the DTO declarations.
 - Failure responses use the fixed envelope emitted by
-  `GlobalExceptionFilter`: `{ statusCode, timestamp, path, error, code, message }`,
+  `GlobalExceptionFilter`: `{ statusCode, timestamp, path, code, message }`,
   where `message` is a string or a list of field errors and `code` is the
   stable machine-readable code. Document them with
   `@ApiErrorResponses({ [status]: ApiErrorExample[] })` from
   `src/platform/http/api-error-responses.decorator.ts`, reusing the examples in
   `src/platform/http/api-error-examples.ts` (every `ApiErrorExample` requires a
-  `code`). Platform owns only cross-cutting examples there; domain-specific
+  `code`, which also names the documented example). Platform owns only
+  cross-cutting examples there; domain-specific
   examples live next to the controllers that use them, in
   `src/domains/<domain>/api/rest/<domain>-error-examples.ts`. Declare only
   statuses the controller can actually produce: always `500`, plus `401`/`403`

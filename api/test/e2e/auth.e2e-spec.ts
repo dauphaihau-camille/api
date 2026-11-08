@@ -7,7 +7,9 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
+import { Client } from 'pg';
 import { Logger, PinoLogger } from 'nestjs-pino';
 import request from 'supertest';
 import type { App } from 'supertest/types';
@@ -151,6 +153,44 @@ describe('Auth flow (e2e)', () => {
     }
   });
 
+  async function grantPermissionToRole(
+    roleKey: string,
+    permissionKey: string,
+  ): Promise<void> {
+    const client = new Client({
+      ...testDb.rootConfig,
+      database: testDb.dbName,
+    });
+
+    await client.connect();
+
+    try {
+      await client.query(
+        `
+          INSERT INTO permissions (id, created_at, updated_at, key, name)
+          VALUES ($1, now(), now(), $2, $3)
+          ON CONFLICT (key) DO NOTHING
+        `,
+        [randomUUID(), permissionKey, permissionKey],
+      );
+      await client.query(
+        `
+          INSERT INTO role_permissions (
+            id, created_at, updated_at, granted_at, role_id, permission_id
+          )
+          SELECT $1, now(), now(), now(), roles.id, permissions.id
+          FROM roles, permissions
+          WHERE roles.key = $2 AND permissions.key = $3
+          ON CONFLICT (role_id, permission_id) DO NOTHING
+        `,
+        [randomUUID(), roleKey, permissionKey],
+      );
+    }
+    finally {
+      await client.end();
+    }
+  }
+
   it('registers, authenticates, refreshes, and revokes a session', async () => {
     const email = `member-${Date.now()}@example.com`;
 
@@ -275,6 +315,48 @@ describe('Auth flow (e2e)', () => {
       .expect(401);
   });
 
+  it('returns the documented USER_NOT_FOUND code for a missing user', async () => {
+    const email = `missing-user-${Date.now()}@example.com`;
+
+    await request(app.getHttpServer())
+      .post('/v1/auth/register')
+      .send({
+        email,
+        password: 'password123',
+        display_name: 'Missing User Probe',
+      })
+      .expect(201);
+
+    await grantPermissionToRole('member', 'users.read');
+
+    const loginResponse = await request(app.getHttpServer())
+      .post('/v1/auth/login')
+      .send({
+        email,
+        password: 'password123',
+      })
+      .expect(200);
+
+    const missingUserId = randomUUID();
+    const response = await request(app.getHttpServer())
+      .get(`/v1/users/${missingUserId}`)
+      .set('Authorization', `Bearer ${(loginResponse.body as AuthHttpResponse).access_token}`)
+      .expect(404);
+
+    expect(response.body).toMatchObject({
+      statusCode: 404,
+      code: 'USER_NOT_FOUND',
+      message: 'User was not found',
+    });
+    expect(response.body).not.toHaveProperty('error');
+    expectMatchesContract({
+      method: 'get',
+      path: `/v1/users/${missingUserId}`,
+      status: 404,
+      body: response.body,
+    });
+  });
+
   it('exposes a health endpoint without a global API prefix', async () => {
     const response = await request(app.getHttpServer())
       .get('/health')
@@ -317,7 +399,6 @@ describe('Auth flow (e2e)', () => {
 
     expect(blockedRegisterResponse.body).toMatchObject({
       statusCode: 429,
-      error: 'ThrottlerException',
       message: 'Too many requests.',
     });
 
@@ -345,7 +426,6 @@ describe('Auth flow (e2e)', () => {
 
     expect(blockedLoginResponse.body).toMatchObject({
       statusCode: 429,
-      error: 'ThrottlerException',
       message: 'Too many requests.',
     });
 
@@ -371,7 +451,6 @@ describe('Auth flow (e2e)', () => {
 
     expect(blockedRefreshResponse.body).toMatchObject({
       statusCode: 429,
-      error: 'ThrottlerException',
       message: 'Too many requests.',
     });
   });

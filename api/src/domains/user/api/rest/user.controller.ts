@@ -4,7 +4,6 @@ import {
   Controller,
   Header,
   Get,
-  NotFoundException,
   Param,
   Patch,
   Post,
@@ -44,6 +43,7 @@ import {
 import { CreateUserDto } from './dto/create-user.dto';
 import { ListUsersQueryDto } from './dto/list-users.query.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserNotFoundError } from '../../app/errors/user-app.error';
 import { mapUserAppErrorToHttpException } from './user-http-error-mapper';
 import { JwtAuthGuard } from '~/domains/auth/api/guard/jwt-auth.guard';
 import {
@@ -55,6 +55,8 @@ import {
 import {
   actorNotAllowedToCreateUsersErrorExample,
   actorNotAllowedToUpdateUsersErrorExample,
+  avatarFileEmptyErrorExample,
+  avatarFileInvalidTypeErrorExample,
   userEmailAlreadyRegisteredErrorExample,
   userNotFoundErrorExample,
   userVersionConflictErrorExample,
@@ -154,7 +156,7 @@ export class UserController {
     const user = await this.getUserByIdUseCase.execute(id);
 
     if (!user) {
-      throw new NotFoundException('User was not found');
+      throw mapUserAppErrorToHttpException(new UserNotFoundError());
     }
 
     return UserSummaryResponseDto.fromUserSummary(user);
@@ -191,7 +193,11 @@ export class UserController {
 
   @Patch(':id')
   @ApiErrorResponses({
-    400: [validationErrorExample],
+    400: [
+      validationErrorExample,
+      avatarFileInvalidTypeErrorExample,
+      avatarFileEmptyErrorExample,
+    ],
     401: [unauthorizedErrorExample],
     403: [actorNotAllowedToUpdateUsersErrorExample],
     404: [userNotFoundErrorExample],
@@ -236,11 +242,17 @@ export class UserController {
     }
 
     if (!file.mimetype.startsWith('image/')) {
-      throw new BadRequestException('Avatar file must be an image');
+      throw new BadRequestException({
+        code: 'AVATAR_FILE_INVALID_TYPE',
+        message: 'Avatar file must be an image',
+      });
     }
 
     if (!file.buffer?.byteLength) {
-      throw new BadRequestException('Avatar file is empty');
+      throw new BadRequestException({
+        code: 'AVATAR_FILE_EMPTY',
+        message: 'Avatar file is empty',
+      });
     }
   }
 }

@@ -115,7 +115,7 @@ pnpm contract:check
   is never edited by hand, and the spec is emitted verbatim, so wire casing
   follows the DTO declarations.
 - Failure responses use the envelope emitted by `GlobalExceptionFilter`:
-  `{ statusCode, timestamp, path, error, code, message }`. `message` is a string
+  `{ statusCode, timestamp, path, code, message }`. `message` is a string
   or a list of field errors; `code` is a stable `UPPER_SNAKE_CASE` code that
   does not depend on the message text or on internal class names.
 - `code` resolution order (see `src/platform/http/api-error-code.ts`):
@@ -130,7 +130,7 @@ pnpm contract:check
      `BAD_REQUEST`, other statuses -> `INTERNAL_SERVER_ERROR`).
 - Document failures with `@ApiErrorResponses` and the shared examples in
   `src/platform/http/api-error-examples.ts`; every `ApiErrorExample` requires a
-  `code`.
+  `code`, which also names the documented example.
 - `@dauphaihau-camille/api-spec` is the published contract.
   `pnpm spec:package` copies `openapi.json` to
   `packages/api-spec/openapi.json` byte for byte; `-- --check` reports a stale

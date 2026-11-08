@@ -103,7 +103,10 @@ export function assertOAuthProviderEnabled(
   const providerConfig = oauthProviderConfigs[provider];
 
   if (!providerConfig.enabled) {
-    throw new NotFoundException(`${providerConfig.displayName} OAuth is not enabled.`);
+    throw new NotFoundException({
+      code: 'OAUTH_PROVIDER_DISABLED',
+      message: `${providerConfig.displayName} OAuth is not enabled.`,
+    });
   }
 
   return providerConfig;

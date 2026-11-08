@@ -28,16 +28,10 @@ export class ApiErrorResponseDto {
 
   @ApiProperty({
     description:
-      'HTTP error name. Also used as the stable key of the documented example.',
-    example: 'Bad Request',
-  })
-  error!: string;
-
-  @ApiProperty({
-    description:
       'Stable machine-readable error code in `UPPER_SNAKE_CASE`. ' +
       'Derived from the domain error code, the exception payload, or the ' +
-      'HTTP status fallback; internal class names are never exposed.',
+      'HTTP status fallback; internal class names are never exposed. ' +
+      'Also used as the stable key of the documented example.',
     example: 'DOCUMENT_NOT_FOUND',
   })
   code!: string;

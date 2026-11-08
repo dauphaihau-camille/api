@@ -115,7 +115,6 @@ export function buildErrorResponse(
   if (!(exception instanceof HttpException)) {
     return {
       ...baseResponse,
-      error: 'Internal Server Error',
       message: 'Internal server error',
       code: resolveErrorCode(statusCode),
     };
@@ -126,7 +125,6 @@ export function buildErrorResponse(
   if (typeof exceptionResponse === 'string') {
     return {
       ...baseResponse,
-      error: exception.name,
       message: exceptionResponse,
       code: resolveErrorCode(statusCode),
     };
@@ -138,15 +136,15 @@ export function buildErrorResponse(
     && !Array.isArray(exceptionResponse)
   ) {
     const responsePayload = exceptionResponse as Record<string, unknown>;
-    const { code: payloadCode, ...payloadFields } = responsePayload;
+    const {
+      code: payloadCode,
+      error: _payloadError,
+      ...payloadFields
+    } = responsePayload;
 
     return {
       ...baseResponse,
       ...payloadFields,
-      error:
-        typeof payloadFields.error === 'string'
-          ? payloadFields.error
-          : exception.name,
       message:
         typeof payloadFields.message === 'string'
         || Array.isArray(payloadFields.message)
@@ -158,7 +156,6 @@ export function buildErrorResponse(
 
   return {
     ...baseResponse,
-    error: exception.name,
     message: exception.message,
     code: resolveErrorCode(statusCode),
   };

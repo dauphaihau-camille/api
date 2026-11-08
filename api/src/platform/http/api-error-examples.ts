@@ -15,30 +15,25 @@ import type { ApiErrorExample } from '~/platform/http/api-error-responses.decora
  */
 export const validationErrorExample: ApiErrorExample = {
   code: 'BAD_REQUEST',
-  error: 'Bad Request',
   message: ['email must be an email'],
 };
 
 export const unauthorizedErrorExample: ApiErrorExample = {
   code: 'UNAUTHORIZED',
-  error: 'Unauthorized',
   message: 'Unauthorized',
 };
 
 export const forbiddenErrorExample: ApiErrorExample = {
   code: 'FORBIDDEN',
-  error: 'Forbidden',
   message: 'Missing required permissions',
 };
 
 export const internalServerErrorExample: ApiErrorExample = {
   code: 'INTERNAL_SERVER_ERROR',
-  error: 'Internal Server Error',
   message: 'Internal server error',
 };
 
 export const tooManyRequestsErrorExample: ApiErrorExample = {
   code: 'TOO_MANY_REQUESTS',
-  error: 'Too Many Requests',
   message: 'Too many requests.',
 };
