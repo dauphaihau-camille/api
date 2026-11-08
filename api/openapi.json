@@ -11862,7 +11862,7 @@
   "info": {
     "title": "Camille API",
     "description": "REST API reference for the Camille backend.",
-    "version": "3.0.0",
+    "version": "4.0.0",
     "contact": {}
   },
   "tags": [
@@ -13531,12 +13531,12 @@
             "example": 1
           },
           "teamspace_id": {
-            "type": "object",
+            "type": "string",
             "example": "95d9f7cb-7057-4c7a-bfde-c25ae7975f15",
             "nullable": true
           },
           "parent_document_id": {
-            "type": "object",
+            "type": "string",
             "example": "66cf61ad-e395-4f91-8af9-15d309c347f2",
             "nullable": true
           },
