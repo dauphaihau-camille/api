@@ -193,7 +193,15 @@ export class DuplicateDocumentUseCase {
       }),
     ));
 
-    return toDocumentSummary(duplicatedRootDocument);
+    // The duplicated entity only holds a reference to the owner user; reload it
+    // with its relations so the response carries the owner's email and display
+    // name instead of a bare identifier.
+    const hydratedDuplicatedRootDocument =
+      await this.documentCommandRepository.findDocument(duplicatedRootDocument.id);
+
+    return toDocumentSummary(
+      hydratedDuplicatedRootDocument ?? duplicatedRootDocument,
+    );
   }
 
   private getRequiredDuplicatedDocument(

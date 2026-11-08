@@ -36,10 +36,15 @@ import {
   mapMembershipAppErrorToHttpException,
 } from './membership-http-error-mapper';
 import {
-  conflictErrorExample,
   forbiddenErrorExample,
   internalServerErrorExample,
-  notFoundErrorExample,
+  membershipAlreadyExistsErrorExample,
+  membershipLastOwnerConflictErrorExample,
+  membershipNotFoundErrorExample,
+  membershipUserNotFoundErrorExample,
+  membershipVersionConflictErrorExample,
+  membershipWorkspaceNotFoundErrorExample,
+  tooManyRequestsErrorExample,
   unauthorizedErrorExample,
   validationErrorExample,
 } from '~/platform/http/api-error-examples';
@@ -48,12 +53,7 @@ import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator
 @Controller()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @ApiErrorResponses({
-  400: [validationErrorExample],
-  401: [unauthorizedErrorExample],
-  403: [forbiddenErrorExample],
-  404: [notFoundErrorExample],
-  409: [conflictErrorExample],
-  500: [internalServerErrorExample],
+  429: [tooManyRequestsErrorExample],
 })
 @ApiCookieAuth('access_token')
 @ApiTags('Membership')
@@ -67,6 +67,12 @@ export class MembershipController {
   ) {}
 
   @Get('workspaces/:workspaceId/members')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    404: [membershipWorkspaceNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'List workspace members',
@@ -86,6 +92,12 @@ export class MembershipController {
   }
 
   @Get('workspaces/:workspaceId/members/search')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    404: [membershipWorkspaceNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Search workspace members',
@@ -116,6 +128,14 @@ export class MembershipController {
   }
 
   @Post('workspaces/:workspaceId/members')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    404: [membershipWorkspaceNotFoundErrorExample, membershipUserNotFoundErrorExample],
+    409: [membershipAlreadyExistsErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Add workspace member',
@@ -138,6 +158,14 @@ export class MembershipController {
   }
 
   @Patch('workspaces/:workspaceId/members/:memberId')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    404: [membershipNotFoundErrorExample],
+    409: [membershipVersionConflictErrorExample, membershipLastOwnerConflictErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Update member role',
@@ -161,6 +189,13 @@ export class MembershipController {
   }
 
   @Delete('workspaces/:workspaceId/members/:memberId')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    404: [membershipNotFoundErrorExample],
+    409: [membershipLastOwnerConflictErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Remove workspace member',

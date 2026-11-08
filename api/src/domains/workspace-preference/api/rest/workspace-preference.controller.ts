@@ -31,20 +31,17 @@ import {
 import {
   forbiddenErrorExample,
   internalServerErrorExample,
-  notFoundErrorExample,
+  tooManyRequestsErrorExample,
   unauthorizedErrorExample,
   validationErrorExample,
+  workspacePreferenceWorkspaceNotFoundErrorExample,
 } from '~/platform/http/api-error-examples';
 import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
 
 @Controller()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @ApiErrorResponses({
-  400: [validationErrorExample],
-  401: [unauthorizedErrorExample],
-  403: [forbiddenErrorExample],
-  404: [notFoundErrorExample],
-  500: [internalServerErrorExample],
+  429: [tooManyRequestsErrorExample],
 })
 @ApiCookieAuth('access_token')
 @ApiTags('Workspace User Preference')
@@ -57,6 +54,11 @@ export class WorkspacePreferenceController {
   ) {}
 
   @Get('me/workspaces/last-active')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Get last active workspace',
@@ -73,6 +75,12 @@ export class WorkspacePreferenceController {
   }
 
   @Get('workspaces/:workspaceId/preferences')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    404: [workspacePreferenceWorkspaceNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Get workspace user preferences',
@@ -91,6 +99,13 @@ export class WorkspacePreferenceController {
   }
 
   @Patch('workspaces/:workspaceId/preferences')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    404: [workspacePreferenceWorkspaceNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Update workspace user preferences',
@@ -114,9 +129,18 @@ export class WorkspacePreferenceController {
   }
 
   @Patch('workspaces/:workspaceId/preferences/last-active')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    404: [workspacePreferenceWorkspaceNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Mark workspace as last active',
+  })
+  @ApiOkResponse({
+    description: 'Workspace marked as last active.',
   })
   async markWorkspaceAsLastActive(
     @Param('workspaceId') workspaceId: string,

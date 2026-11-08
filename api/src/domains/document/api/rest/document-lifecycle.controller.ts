@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiCookieAuth,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiQuery,
@@ -27,10 +28,12 @@ import { rethrowDocumentAppError } from './document-http-error-mapper';
 import { DocumentResponseDto } from './dto/document-response.dto';
 import { DocumentVersionDto } from './dto/document-version.dto';
 import {
-  conflictErrorExample,
-  forbiddenErrorExample,
+  documentNotFoundErrorExample,
+  documentNotArchivedErrorExample,
+  documentPermissionDeniedErrorExample,
+  documentVersionConflictErrorExample,
   internalServerErrorExample,
-  notFoundErrorExample,
+  tooManyRequestsErrorExample,
   unauthorizedErrorExample,
   validationErrorExample,
 } from '~/platform/http/api-error-examples';
@@ -39,12 +42,7 @@ import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator
 @Controller()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @ApiErrorResponses({
-  400: [validationErrorExample],
-  401: [unauthorizedErrorExample],
-  403: [forbiddenErrorExample],
-  404: [notFoundErrorExample],
-  409: [conflictErrorExample],
-  500: [internalServerErrorExample],
+  429: [tooManyRequestsErrorExample],
 })
 @ApiCookieAuth('access_token')
 @ApiTags('Document')
@@ -56,6 +54,14 @@ export class DocumentLifecycleController {
   ) {}
 
   @Post('documents/:documentId/archive')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentNotFoundErrorExample],
+    409: [documentVersionConflictErrorExample],
+    500: [internalServerErrorExample],
+  })
   @HttpCode(200)
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
@@ -76,6 +82,14 @@ export class DocumentLifecycleController {
   }
 
   @Post('documents/:documentId/restore')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentNotFoundErrorExample],
+    409: [documentVersionConflictErrorExample],
+    500: [internalServerErrorExample],
+  })
   @HttpCode(200)
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
@@ -96,10 +110,21 @@ export class DocumentLifecycleController {
   }
 
   @Delete('documents/:documentId')
+  @ApiErrorResponses({
+    400: [validationErrorExample, documentNotArchivedErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentNotFoundErrorExample],
+    409: [documentVersionConflictErrorExample],
+    500: [internalServerErrorExample],
+  })
   @HttpCode(204)
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Permanently delete document',
+  })
+  @ApiNoContentResponse({
+    description: 'Document permanently deleted.',
   })
   @ApiQuery({
     name: 'version',

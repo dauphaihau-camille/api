@@ -174,9 +174,19 @@ export class CreateSubdocCommandUseCase {
       },
     });
 
+    // The command entities only hold references to the owner user; reload them
+    // with their relations so the response carries the owner's email and display
+    // name instead of a bare identifier.
+    const [hydratedChildDocument, hydratedParentDocument] = await Promise.all([
+      this.documentCommandRepository.findDocument(childDocument.id),
+      this.documentCommandRepository.findDocument(updatedParentDocument.id),
+    ]);
+
     return {
-      parentDocument: toDocumentSummary(updatedParentDocument),
-      childDocument: toDocumentSummary(childDocument),
+      parentDocument: toDocumentSummary(
+        hydratedParentDocument ?? updatedParentDocument,
+      ),
+      childDocument: toDocumentSummary(hydratedChildDocument ?? childDocument),
     };
   }
 }

@@ -35,24 +35,25 @@ import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { WorkspaceResponseDto } from './dto/workspace-response.dto';
 import {
-  conflictErrorExample,
-  forbiddenErrorExample,
   internalServerErrorExample,
-  notFoundErrorExample,
+  tooManyRequestsErrorExample,
   unauthorizedErrorExample,
   validationErrorExample,
+  workspaceDeletePermissionDeniedErrorExample,
+  workspaceNotFoundErrorExample,
+  workspacePermissionDeniedErrorExample,
+  workspaceSlugInUseErrorExample,
+  workspaceSlugInvalidErrorExample,
+  workspaceSlugLengthErrorExample,
+  workspaceSlugReservedErrorExample,
+  workspaceVersionConflictErrorExample,
 } from '~/platform/http/api-error-examples';
 import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
 
 @Controller()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @ApiErrorResponses({
-  400: [validationErrorExample],
-  401: [unauthorizedErrorExample],
-  403: [forbiddenErrorExample],
-  404: [notFoundErrorExample],
-  409: [conflictErrorExample],
-  500: [internalServerErrorExample],
+  429: [tooManyRequestsErrorExample],
 })
 @ApiCookieAuth('access_token')
 @ApiTags('Workspace')
@@ -66,6 +67,11 @@ export class WorkspaceController {
   ) {}
 
   @Get('me/workspaces')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [workspacePermissionDeniedErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'List user workspaces',
@@ -84,6 +90,13 @@ export class WorkspaceController {
   }
 
   @Post('workspaces')
+  @ApiErrorResponses({
+    400: [validationErrorExample, workspaceSlugLengthErrorExample, workspaceSlugInvalidErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [workspacePermissionDeniedErrorExample],
+    409: [workspaceSlugInUseErrorExample, workspaceSlugReservedErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Create workspace',
@@ -106,6 +119,12 @@ export class WorkspaceController {
   }
 
   @Get('workspaces/:workspaceId')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [workspacePermissionDeniedErrorExample],
+    404: [workspaceNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Get workspace detail',
@@ -124,6 +143,18 @@ export class WorkspaceController {
   }
 
   @Patch('workspaces/:workspaceId')
+  @ApiErrorResponses({
+    400: [validationErrorExample, workspaceSlugLengthErrorExample, workspaceSlugInvalidErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [workspacePermissionDeniedErrorExample],
+    404: [workspaceNotFoundErrorExample],
+    409: [
+      workspaceSlugInUseErrorExample,
+      workspaceSlugReservedErrorExample,
+      workspaceVersionConflictErrorExample,
+    ],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Update workspace',
@@ -148,6 +179,12 @@ export class WorkspaceController {
   }
 
   @Delete('workspaces/:workspaceId')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [workspaceDeletePermissionDeniedErrorExample],
+    404: [workspaceNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @HttpCode(204)
   @Header('Cache-Control', 'no-store')
   @ApiOperation({

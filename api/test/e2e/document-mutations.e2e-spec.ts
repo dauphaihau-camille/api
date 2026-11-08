@@ -377,6 +377,73 @@ describe('Document mutation flow (e2e)', () => {
     });
   });
 
+  it('matches the OpenAPI contract for duplicate and create-subdoc 201', async () => {
+    const suffix = `${Date.now()}-${uniqueSequence += 1}`;
+    const owner = sharedOwner;
+    const workspace = await createWorkspace(owner.cookie, {
+      name: 'Document Duplicate Contract',
+      slug: `doc-duplicate-${suffix}`,
+    });
+    const sourceDocument = await createRootDocument(owner.cookie, {
+      workspace_id: workspace.id,
+      title: 'Duplicate Source',
+    });
+
+    const duplicateResponse = await request(app.getHttpServer())
+      .post(`/v1/documents/${sourceDocument.id}/duplicate`)
+      .set('Cookie', owner.cookie)
+      .expect(201);
+    const duplicatedDocument = duplicateResponse.body as DocumentResponse & {
+      owner_user?: { id: string; email?: string };
+    };
+
+    expect(duplicatedDocument.owner_user).toMatchObject({
+      id: owner.userId,
+      email: owner.email,
+    });
+    expectMatchesContract({
+      method: 'post',
+      path: `/v1/documents/${sourceDocument.id}/duplicate`,
+      status: 201,
+      body: duplicateResponse.body,
+    });
+
+    const parentResponse = await request(app.getHttpServer())
+      .get(`/v1/documents/${sourceDocument.id}`)
+      .set('Cookie', owner.cookie)
+      .expect(200);
+    const subdocResponse = await request(app.getHttpServer())
+      .post(`/v1/documents/${sourceDocument.id}/commands/create-subdoc`)
+      .set('Cookie', owner.cookie)
+      .send({
+        version: (parentResponse.body as DocumentResponse).version,
+      })
+      .expect(201);
+    const subdocBody = subdocResponse.body as {
+      child_document: DocumentResponse & {
+        owner_user?: { id: string; email?: string };
+      };
+      parent_document: DocumentResponse & {
+        owner_user?: { id: string; email?: string };
+      };
+    };
+
+    expect(subdocBody.child_document.owner_user).toMatchObject({
+      id: owner.userId,
+      email: owner.email,
+    });
+    expect(subdocBody.parent_document.owner_user).toMatchObject({
+      id: owner.userId,
+      email: owner.email,
+    });
+    expectMatchesContract({
+      method: 'post',
+      path: `/v1/documents/${sourceDocument.id}/commands/create-subdoc`,
+      status: 201,
+      body: subdocResponse.body,
+    });
+  });
+
   async function registerUser(label: string): Promise<RegisteredUser> {
     const email = `u${Date.now()}-${uniqueSequence += 1}@example.com`;
     const response = await request(app.getHttpServer())

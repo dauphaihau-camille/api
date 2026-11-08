@@ -30,9 +30,11 @@ import {
   mapFavoriteAppErrorToHttpException,
 } from './favorite-http-error-mapper';
 import {
+  favoriteDocumentNotFoundErrorExample,
+  favoriteWorkspaceNotFoundErrorExample,
   forbiddenErrorExample,
   internalServerErrorExample,
-  notFoundErrorExample,
+  tooManyRequestsErrorExample,
   unauthorizedErrorExample,
 } from '~/platform/http/api-error-examples';
 import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
@@ -40,10 +42,7 @@ import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator
 @Controller()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @ApiErrorResponses({
-  401: [unauthorizedErrorExample],
-  403: [forbiddenErrorExample],
-  404: [notFoundErrorExample],
-  500: [internalServerErrorExample],
+  429: [tooManyRequestsErrorExample],
 })
 @ApiCookieAuth('access_token')
 @ApiTags('Favorite')
@@ -56,6 +55,12 @@ export class FavoriteController {
   ) {}
 
   @Get('workspaces/:workspaceId/favorites')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    404: [favoriteWorkspaceNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'List favorite documents',
@@ -83,6 +88,12 @@ export class FavoriteController {
   }
 
   @Get('documents/:documentId/favorite')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    404: [favoriteDocumentNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Get favorite status',
@@ -109,6 +120,12 @@ export class FavoriteController {
   }
 
   @Post('documents/:documentId/favorite')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    404: [favoriteDocumentNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Favorite a document',
@@ -135,6 +152,12 @@ export class FavoriteController {
   }
 
   @Delete('documents/:documentId/favorite')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    404: [favoriteDocumentNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @HttpCode(200)
   @Header('Cache-Control', 'no-store')
   @ApiOperation({

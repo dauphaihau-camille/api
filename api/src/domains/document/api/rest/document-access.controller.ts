@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiCookieAuth,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -39,10 +40,13 @@ import { ShareDocumentDto, ShareDocumentsDto } from './dto/share-document.dto';
 import { UpdateDocumentAccessSettingsDto } from './dto/update-document-access-settings.dto';
 import { UpdateDocumentInvitationDto } from './dto/update-document-invitation.dto';
 import {
-  conflictErrorExample,
-  forbiddenErrorExample,
+  documentAccessGrantUserNotFoundErrorExample,
+  documentInvitationNotFoundErrorExample,
+  documentNotFoundErrorExample,
+  documentPermissionDeniedErrorExample,
+  documentShareRecipientRequiredErrorExample,
   internalServerErrorExample,
-  notFoundErrorExample,
+  tooManyRequestsErrorExample,
   unauthorizedErrorExample,
   validationErrorExample,
 } from '~/platform/http/api-error-examples';
@@ -51,12 +55,7 @@ import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator
 @Controller()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @ApiErrorResponses({
-  400: [validationErrorExample],
-  401: [unauthorizedErrorExample],
-  403: [forbiddenErrorExample],
-  404: [notFoundErrorExample],
-  409: [conflictErrorExample],
-  500: [internalServerErrorExample],
+  429: [tooManyRequestsErrorExample],
 })
 @ApiCookieAuth('access_token')
 @ApiTags('Document')
@@ -73,6 +72,12 @@ export class DocumentAccessController {
   ) {}
 
   @Get('documents/:documentId/collaborators')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'List document collaborators',
@@ -92,6 +97,12 @@ export class DocumentAccessController {
   }
 
   @Get('documents/:documentId/invitations')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'List pending document invitations',
@@ -111,6 +122,13 @@ export class DocumentAccessController {
   }
 
   @Post('documents/:documentId/share')
+  @ApiErrorResponses({
+    400: [validationErrorExample, documentShareRecipientRequiredErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentNotFoundErrorExample, documentAccessGrantUserNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @HttpCode(200)
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
@@ -135,6 +153,13 @@ export class DocumentAccessController {
   }
 
   @Post('documents/:documentId/shares')
+  @ApiErrorResponses({
+    400: [validationErrorExample, documentShareRecipientRequiredErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentNotFoundErrorExample, documentAccessGrantUserNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @HttpCode(200)
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
@@ -161,6 +186,12 @@ export class DocumentAccessController {
   }
 
   @Get('documents/:documentId/access-settings')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Get document access settings',
@@ -180,6 +211,13 @@ export class DocumentAccessController {
   }
 
   @Patch('documents/:documentId/access-settings')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Update document access settings',
@@ -201,10 +239,19 @@ export class DocumentAccessController {
   }
 
   @Delete('documents/:documentId/collaborators/:userId')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentNotFoundErrorExample, documentAccessGrantUserNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @HttpCode(204)
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Revoke document access',
+  })
+  @ApiNoContentResponse({
+    description: 'Document access revoked.',
   })
   async revokeDocumentAccess(
     @Param('documentId') documentId: string,
@@ -217,6 +264,13 @@ export class DocumentAccessController {
   }
 
   @Patch('documents/:documentId/invitations/:invitationId')
+  @ApiErrorResponses({
+    400: [validationErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentNotFoundErrorExample, documentInvitationNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Update pending document invitation',
@@ -239,10 +293,19 @@ export class DocumentAccessController {
   }
 
   @Delete('documents/:documentId/invitations/:invitationId')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [documentPermissionDeniedErrorExample],
+    404: [documentNotFoundErrorExample, documentInvitationNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @HttpCode(204)
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Revoke pending document invitation',
+  })
+  @ApiNoContentResponse({
+    description: 'Document invitation revoked.',
   })
   async revokeInvitation(
     @Param('documentId') documentId: string,

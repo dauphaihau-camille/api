@@ -31,9 +31,12 @@ import { CreateCheckoutSessionRequestDto } from './dto/create-checkout-session-r
 import { SubscriptionSummaryResponseDto } from './dto/subscription-summary-response.dto';
 import { rethrowSubscriptionAppError } from './subscription-http-error-mapper';
 import {
+  billingWebhookVerificationErrorExample,
   forbiddenErrorExample,
   internalServerErrorExample,
-  notFoundErrorExample,
+  subscriptionInvalidReturnUrlErrorExample,
+  subscriptionWorkspaceNotFoundErrorExample,
+  tooManyRequestsErrorExample,
   unauthorizedErrorExample,
   validationErrorExample,
 } from '~/platform/http/api-error-examples';
@@ -42,11 +45,7 @@ import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator
 @Controller('workspaces/:workspaceId/subscription')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @ApiErrorResponses({
-  400: [validationErrorExample],
-  401: [unauthorizedErrorExample],
-  403: [forbiddenErrorExample],
-  404: [notFoundErrorExample],
-  500: [internalServerErrorExample],
+  429: [tooManyRequestsErrorExample],
 })
 @ApiCookieAuth('access_token')
 @ApiTags('Subscription')
@@ -58,6 +57,12 @@ export class SubscriptionController {
   ) {}
 
   @Get()
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    404: [subscriptionWorkspaceNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({ summary: 'Get workspace subscription summary' })
   @ApiOkResponse({ type: SubscriptionSummaryResponseDto })
@@ -72,6 +77,13 @@ export class SubscriptionController {
   }
 
   @Post('checkout')
+  @ApiErrorResponses({
+    400: [validationErrorExample, subscriptionInvalidReturnUrlErrorExample],
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    404: [subscriptionWorkspaceNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({ summary: 'Create Plus checkout session' })
   @ApiCreatedResponse({ type: CheckoutSessionResponseDto })
@@ -89,6 +101,12 @@ export class SubscriptionController {
   }
 
   @Post('cancel')
+  @ApiErrorResponses({
+    401: [unauthorizedErrorExample],
+    403: [forbiddenErrorExample],
+    404: [subscriptionWorkspaceNotFoundErrorExample],
+    500: [internalServerErrorExample],
+  })
   @HttpCode(200)
   @Header('Cache-Control', 'no-store')
   @ApiOperation({ summary: 'Cancel Plus at period end' })
@@ -106,7 +124,7 @@ export class SubscriptionController {
 
 @Controller('billing/webhooks')
 @ApiErrorResponses({
-  500: [internalServerErrorExample],
+  429: [tooManyRequestsErrorExample],
 })
 @ApiTags('Subscription')
 export class BillingWebhookController {
@@ -115,6 +133,10 @@ export class BillingWebhookController {
   ) {}
 
   @Post('stripe')
+  @ApiErrorResponses({
+    400: [billingWebhookVerificationErrorExample],
+    500: [internalServerErrorExample],
+  })
   @HttpCode(200)
   @ApiOperation({ summary: 'Handle Stripe billing webhook' })
   @ApiOkResponse({ type: BillingWebhookResponseDto })
