@@ -110,6 +110,13 @@ pnpm spec:generate -- --check
 - `openapi.json` takes `info.version` from `packages/api-spec/package.json`
   (`scripts/generate-openapi.ts`). Bump the manifest first, then regenerate;
   never hardcode the version in `setup-api-docs.ts`.
+- `createApiDocument` completes the document metadata that consumers and the
+  lint gate rely on: every discovered tag gets the description from
+  `TAG_DESCRIPTIONS` in `src/platform/docs/setup-api-docs.ts` (add an entry
+  when a new `@ApiTags` name appears), and `info.license` is `UNLICENSED` to
+  match `packages/api-spec/package.json`. `redocly.yaml` holds only documented
+  exceptions to `pnpm spec:lint`; each one names the components or operations
+  it covers and why the generated document cannot satisfy the rule.
 - Every DTO property must carry an explicit `@ApiProperty` or
   `@ApiPropertyOptional` annotation. The `@nestjs/swagger` CLI plugin is
   intentionally disabled, so TypeScript types, class-validator decorators, and
