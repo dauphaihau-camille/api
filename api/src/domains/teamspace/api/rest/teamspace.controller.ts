@@ -30,12 +30,14 @@ import { CreateTeamspaceDto } from './dto/create-teamspace.dto';
 import { TeamspaceResponseDto } from './dto/teamspace-response.dto';
 import { UpdateTeamspaceDto } from './dto/update-teamspace.dto';
 import {
-  internalServerErrorExample,
   teamspaceNameTooShortErrorExample,
   teamspaceNotFoundErrorExample,
   teamspacePermissionDeniedErrorExample,
   teamspaceVersionConflictErrorExample,
   teamspaceWorkspaceNotFoundErrorExample,
+} from './teamspace-error-examples';
+import {
+  internalServerErrorExample,
   tooManyRequestsErrorExample,
   unauthorizedErrorExample,
   validationErrorExample,

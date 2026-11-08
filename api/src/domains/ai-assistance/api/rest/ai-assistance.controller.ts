@@ -48,6 +48,8 @@ import {
   aiConversationSessionNotFoundErrorExample,
   aiResponseLimitReachedErrorExample,
   aiWorkspaceNotFoundErrorExample,
+} from './ai-assistance-error-examples';
+import {
   forbiddenErrorExample,
   internalServerErrorExample,
   tooManyRequestsErrorExample,

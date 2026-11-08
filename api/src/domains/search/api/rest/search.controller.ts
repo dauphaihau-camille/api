@@ -23,10 +23,10 @@ import {
   isSearchAppError,
   mapSearchAppErrorToHttpException,
 } from './search-http-error-mapper';
+import { searchWorkspaceNotFoundErrorExample } from './search-error-examples';
 import {
   forbiddenErrorExample,
   internalServerErrorExample,
-  searchWorkspaceNotFoundErrorExample,
   tooManyRequestsErrorExample,
   unauthorizedErrorExample,
 } from '~/platform/http/api-error-examples';

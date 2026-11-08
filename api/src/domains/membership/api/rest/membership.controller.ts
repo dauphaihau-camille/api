@@ -36,14 +36,16 @@ import {
   mapMembershipAppErrorToHttpException,
 } from './membership-http-error-mapper';
 import {
-  forbiddenErrorExample,
-  internalServerErrorExample,
   membershipAlreadyExistsErrorExample,
   membershipLastOwnerConflictErrorExample,
   membershipNotFoundErrorExample,
   membershipUserNotFoundErrorExample,
   membershipVersionConflictErrorExample,
   membershipWorkspaceNotFoundErrorExample,
+} from './membership-error-examples';
+import {
+  forbiddenErrorExample,
+  internalServerErrorExample,
   tooManyRequestsErrorExample,
   unauthorizedErrorExample,
   validationErrorExample,

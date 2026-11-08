@@ -32,8 +32,10 @@ import {
   documentNotFoundErrorExample,
   documentPermissionDeniedErrorExample,
   documentWorkspaceNotFoundErrorExample,
-  internalServerErrorExample,
   invalidDocumentCursorErrorExample,
+} from './document-error-examples';
+import {
+  internalServerErrorExample,
   tooManyRequestsErrorExample,
   unauthorizedErrorExample,
 } from '~/platform/http/api-error-examples';

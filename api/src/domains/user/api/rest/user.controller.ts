@@ -55,12 +55,14 @@ import {
 import {
   actorNotAllowedToCreateUsersErrorExample,
   actorNotAllowedToUpdateUsersErrorExample,
-  internalServerErrorExample,
-  tooManyRequestsErrorExample,
-  unauthorizedErrorExample,
   userEmailAlreadyRegisteredErrorExample,
   userNotFoundErrorExample,
   userVersionConflictErrorExample,
+} from './user-error-examples';
+import {
+  internalServerErrorExample,
+  tooManyRequestsErrorExample,
+  unauthorizedErrorExample,
   validationErrorExample,
 } from '~/platform/http/api-error-examples';
 import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';

@@ -32,10 +32,12 @@ import { SubscriptionSummaryResponseDto } from './dto/subscription-summary-respo
 import { rethrowSubscriptionAppError } from './subscription-http-error-mapper';
 import {
   billingWebhookVerificationErrorExample,
-  forbiddenErrorExample,
-  internalServerErrorExample,
   subscriptionInvalidReturnUrlErrorExample,
   subscriptionWorkspaceNotFoundErrorExample,
+} from './subscription-error-examples';
+import {
+  forbiddenErrorExample,
+  internalServerErrorExample,
   tooManyRequestsErrorExample,
   unauthorizedErrorExample,
   validationErrorExample,

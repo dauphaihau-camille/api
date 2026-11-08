@@ -32,6 +32,8 @@ import {
   documentNotArchivedErrorExample,
   documentPermissionDeniedErrorExample,
   documentVersionConflictErrorExample,
+} from './document-error-examples';
+import {
   internalServerErrorExample,
   tooManyRequestsErrorExample,
   unauthorizedErrorExample,

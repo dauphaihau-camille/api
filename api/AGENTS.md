@@ -35,14 +35,17 @@ pnpm spec:generate -- --check
   `@ApiErrorResponses({ [status]: ApiErrorExample[] })` from
   `src/platform/http/api-error-responses.decorator.ts`, reusing the examples in
   `src/platform/http/api-error-examples.ts` (every `ApiErrorExample` requires a
-  `code`). Declare only statuses the
-  controller can actually produce: always `500`, plus `401`/`403` when a guard
-  protects the route, `400` when a handler consumes a DTO, and `404`/`409` only
-  when an error mapper proves them.
+  `code`). Platform owns only cross-cutting examples there; domain-specific
+  examples live next to the controllers that use them, in
+  `src/domains/<domain>/api/rest/<domain>-error-examples.ts`. Declare only
+  statuses the controller can actually produce: always `500`, plus `401`/`403`
+  when a guard protects the route, `400` when a handler consumes a DTO, and
+  `404`/`409` only when an error mapper proves them.
 - Prefer **method-level** declarations so each route documents the domain codes
   its mapper actually emits (`DOCUMENT_NOT_FOUND`, `INVALID_CREDENTIALS`,
-  `WORKSPACE_BLOCK_LIMIT_REACHED`, ...). Use the shared domain example that
-  matches the mapper's message instead of the generic status example.
+  `WORKSPACE_BLOCK_LIMIT_REACHED`, ...). Import the domain example that
+  matches the mapper's message from the domain's own `*-error-examples.ts`
+  instead of the generic status example.
   Keep a class-level declaration only for statuses shared by every route in the
   controller: `429` with `tooManyRequestsErrorExample`, because the global
   `ThrottlerGuard` protects all domain controllers.
