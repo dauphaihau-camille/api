@@ -444,6 +444,47 @@ async function fetchPinnedAsset(url) {
   );
 }
 
+/**
+ * GitHub's anonymous release-asset CDN intermittently answers 504 for the
+ * pinned archive (observed in both PR and publish runs), while an
+ * authenticated `gh release download` succeeds. Prefer the authenticated CLI
+ * when a token is available; fall back to the plain download otherwise.
+ */
+function downloadPinnedAssetWithGh(directory) {
+  const token = process.env.GH_TOKEN
+    ?? process.env.GITHUB_TOKEN
+    ?? process.env.NODE_AUTH_TOKEN;
+
+  if (!token || !commandExists('gh')) {
+    return false;
+  }
+
+  const archive = path.join(directory, OASDIFF_PINNED_ARCHIVE);
+  const args = [
+    'release',
+    'download',
+    OASDIFF_PINNED_VERSION,
+    '--repo',
+    'oasdiff/oasdiff',
+    '--pattern',
+    OASDIFF_PINNED_ARCHIVE,
+    '--dir',
+    directory,
+    '--clobber',
+  ];
+  const result = spawnSync('gh', args, {
+    encoding: 'utf8',
+    env: { ...process.env, GH_TOKEN: token },
+    maxBuffer: 64 * 1024 * 1024,
+  });
+
+  if (result.status !== 0 || !existsSync(archive)) {
+    return false;
+  }
+
+  return true;
+}
+
 async function downloadPinnedOasdiff() {
   if (process.platform !== 'linux' || process.arch !== 'x64') {
     throw new FatalError(
@@ -455,10 +496,14 @@ async function downloadPinnedOasdiff() {
   }
 
   const directory = makeTempDir('oasdiff-');
-  const response = await fetchPinnedAsset(OASDIFF_PINNED_URL);
-
   const archive = path.join(directory, OASDIFF_PINNED_ARCHIVE);
-  const buffer = Buffer.from(await response.arrayBuffer());
+
+  if (!downloadPinnedAssetWithGh(directory)) {
+    const response = await fetchPinnedAsset(OASDIFF_PINNED_URL);
+    writeFileSync(archive, Buffer.from(await response.arrayBuffer()));
+  }
+
+  const buffer = readFileSync(archive);
   const digest = createHash('sha256').update(buffer).digest('hex');
 
   if (digest !== OASDIFF_PINNED_SHA256) {
@@ -467,8 +512,6 @@ async function downloadPinnedOasdiff() {
       `${OASDIFF_PINNED_SHA256}, got ${digest}.`,
     );
   }
-
-  writeFileSync(archive, buffer);
 
   const extract = run('tar', ['-xzf', archive, '-C', directory]);
   if (extract.status !== 0) {
