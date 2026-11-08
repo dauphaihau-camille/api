@@ -38,6 +38,9 @@ pnpm test:int
 pnpm test:hurl
 ```
 
+`pnpm test:hurl` is manual-only and is not run in CI. The CI contract gate is
+`pnpm test:e2e`, which validates responses against `openapi.json`.
+
 ## Runtime
 
 - API entrypoint: `src/bootstrap/index.ts`
