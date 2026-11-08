@@ -124,13 +124,29 @@ pnpm contract:check
      (`DocumentNotFoundError` -> `DOCUMENT_NOT_FOUND`);
   3. a status fallback: 400 `BAD_REQUEST`, 401 `UNAUTHORIZED`, 403 `FORBIDDEN`,
      404 `NOT_FOUND`, 405 `METHOD_NOT_ALLOWED`, 409 `CONFLICT`,
-     422 `UNPROCESSABLE_ENTITY`, 429 `TOO_MANY_REQUESTS`,
+     422 `UNPROCESSABLE_ENTITY`, 429 `RATE_LIMIT_EXCEEDED`,
      500 `INTERNAL_SERVER_ERROR`, 501 `NOT_IMPLEMENTED`,
      503 `SERVICE_UNAVAILABLE`, 504 `GATEWAY_TIMEOUT` (other 4xx ->
      `BAD_REQUEST`, other statuses -> `INTERNAL_SERVER_ERROR`).
 - Document failures with `@ApiErrorResponses` and the shared examples in
   `src/platform/http/api-error-examples.ts`; every `ApiErrorExample` requires a
-  `code`, which also names the documented example.
+  `code`, which also names the documented example. Platform owns only the
+  cross-cutting validation (400), internal (500) and rate-limit (429) examples.
+  The guard failures are owned by the auth domain:
+  `unauthorizedErrorExample` (the 401 `JwtAuthGuard` produces) and
+  `forbiddenErrorExample` (the 403 `PermissionsGuard` produces) live in
+  `src/domains/auth/api/rest/auth-error-examples.ts`; domain examples live in
+  `src/domains/<domain>/api/rest/<domain>-error-responses.ts`.
+- `createApiDocument` completes the declared responses: on `/v1` operations, a
+  declared numeric error response without content gains the shared
+  `ApiErrorResponseDto` schema plus a generic fallback example whose
+  `statusCode` matches and whose `code` is the status fallback, and a response
+  that already uses the shared schema without authored `example`/`examples`
+  gains the same fallback. Authored examples are never touched and no status is
+  ever invented.
+- Operation IDs are unique per route:
+  `${controllerKey.replace(/_?Controller$/, '')}_${methodKey}`, because method
+  names (`create`, `list`) repeat across domains.
 - `@dauphaihau-camille/api-spec` is the published contract.
   `pnpm spec:package` copies `openapi.json` to
   `packages/api-spec/openapi.json` byte for byte; `-- --check` reports a stale

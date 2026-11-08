@@ -32,12 +32,11 @@ import {
 import {
   favoriteDocumentNotFoundErrorExample,
   favoriteWorkspaceNotFoundErrorExample,
-} from './favorite-error-examples';
+} from './favorite-error-responses';
+import { forbiddenErrorExample, unauthorizedErrorExample } from '~/domains/auth/api/rest/auth-error-examples';
 import {
-  forbiddenErrorExample,
   internalServerErrorExample,
   tooManyRequestsErrorExample,
-  unauthorizedErrorExample,
 } from '~/platform/http/api-error-examples';
 import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
 

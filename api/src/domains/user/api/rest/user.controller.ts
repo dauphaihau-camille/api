@@ -60,11 +60,11 @@ import {
   userEmailAlreadyRegisteredErrorExample,
   userNotFoundErrorExample,
   userVersionConflictErrorExample,
-} from './user-error-examples';
+} from './user-error-responses';
+import { unauthorizedErrorExample } from '~/domains/auth/api/rest/auth-error-examples';
 import {
   internalServerErrorExample,
   tooManyRequestsErrorExample,
-  unauthorizedErrorExample,
   validationErrorExample,
 } from '~/platform/http/api-error-examples';
 import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';

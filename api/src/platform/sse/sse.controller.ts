@@ -14,19 +14,29 @@ import {
 } from '@nestjs/swagger';
 import { Observable } from 'rxjs';
 import { CurrentUser } from '~/platform/decorators/current-user.decorator';
+import { tooManyRequestsErrorExample } from '~/platform/http/api-error-examples';
 import {
-  tooManyRequestsErrorExample,
-  unauthorizedErrorExample,
-} from '~/platform/http/api-error-examples';
-import { ApiErrorResponses } from '~/platform/http/api-error-responses.decorator';
+  ApiErrorResponses,
+  type ApiErrorExample,
+} from '~/platform/http/api-error-responses.decorator';
 import { JwtAuthGuard } from '../../domains/auth/api/guard/jwt-auth.guard';
 import type { AuthenticatedUser } from '../../domains/auth/app/auth.types';
 import { SseService } from './sse.service';
 
+/**
+ * SSE is a platform route; it cannot depend on the auth domain for the example
+ * payload. The 401 the `JwtAuthGuard` produces is kept identical to the
+ * auth-owned example, so the contract does not change.
+ */
+const sseUnauthorizedErrorExample: ApiErrorExample = {
+  code: 'UNAUTHORIZED',
+  message: 'Unauthorized',
+};
+
 @Controller('events')
 @UseGuards(JwtAuthGuard)
 @ApiErrorResponses({
-  401: [unauthorizedErrorExample],
+  401: [sseUnauthorizedErrorExample],
   429: [tooManyRequestsErrorExample],
 })
 @ApiTags('Events')

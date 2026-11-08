@@ -5,8 +5,31 @@ import type { ApiErrorExample } from '~/platform/http/api-error-responses.decora
  *
  * The `code` and `message` mirror what the auth HTTP exception filter emits at
  * runtime; the example is keyed by its `code` so several failures of
- * the same status can coexist on one operation.
+ * the same status can coexist on one operation. This module also owns the
+ * guard failures — the 401 `JwtAuthGuard` produces and the 403
+ * `PermissionsGuard` produces — because every guarded controller in every
+ * domain documents those same payloads.
  */
+
+/**
+ * The 401 every `JwtAuthGuard`-protected route emits when authentication fails.
+ * Owned by the auth domain so guarded controllers in every domain document the
+ * same guard failure.
+ */
+export const unauthorizedErrorExample: ApiErrorExample = {
+  code: 'UNAUTHORIZED',
+  message: 'Unauthorized',
+};
+
+/**
+ * The 403 `PermissionsGuard` emits when the authenticated actor lacks a
+ * permission the route requires.
+ */
+export const forbiddenErrorExample: ApiErrorExample = {
+  code: 'FORBIDDEN',
+  message: 'Missing required permissions',
+};
+
 export const invalidCredentialsErrorExample: ApiErrorExample = {
   code: 'INVALID_CREDENTIALS',
   message: 'Invalid email or password',

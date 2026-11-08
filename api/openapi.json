@@ -3,7 +3,7 @@
   "paths": {
     "/v1/events/stream": {
       "get": {
-        "operationId": "stream",
+        "operationId": "Sse_stream",
         "parameters": [],
         "responses": {
           "200": {
@@ -47,13 +47,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -75,7 +75,7 @@
     },
     "/v1/workspaces/{workspaceId}/ai/entitlement": {
       "get": {
-        "operationId": "getEntitlement",
+        "operationId": "AiAssistance_getEntitlement",
         "parameters": [
           {
             "name": "workspaceId",
@@ -171,13 +171,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -221,7 +221,7 @@
     },
     "/v1/workspaces/{workspaceId}/ai/conversations": {
       "get": {
-        "operationId": "listSessions",
+        "operationId": "AiAssistance_listSessions",
         "parameters": [
           {
             "name": "workspaceId",
@@ -372,13 +372,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -420,7 +420,7 @@
         ]
       },
       "post": {
-        "operationId": "createSession",
+        "operationId": "AiAssistance_createSession",
         "parameters": [
           {
             "name": "workspaceId",
@@ -516,13 +516,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -566,7 +566,7 @@
     },
     "/v1/workspaces/{workspaceId}/ai/conversations/{sessionId}/turns": {
       "get": {
-        "operationId": "listTurns",
+        "operationId": "AiAssistance_listTurns",
         "parameters": [
           {
             "name": "workspaceId",
@@ -724,13 +724,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -772,7 +772,7 @@
         ]
       },
       "post": {
-        "operationId": "createTurn",
+        "operationId": "AiAssistance_createTurn",
         "parameters": [
           {
             "name": "workspaceId",
@@ -930,13 +930,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -980,7 +980,7 @@
     },
     "/v1/workspaces/{workspaceId}/ai/conversations/{sessionId}/turns/stream": {
       "post": {
-        "operationId": "streamTurn",
+        "operationId": "AiAssistance_streamTurn",
         "parameters": [
           {
             "name": "workspaceId",
@@ -1138,13 +1138,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -1188,7 +1188,7 @@
     },
     "/v1/auth/register": {
       "post": {
-        "operationId": "register",
+        "operationId": "Auth_register",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1265,13 +1265,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -1310,7 +1310,7 @@
     },
     "/v1/auth/oauth/google": {
       "get": {
-        "operationId": "googleOAuth",
+        "operationId": "Auth_googleOAuth",
         "parameters": [],
         "responses": {
           "302": {
@@ -1346,13 +1346,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -1391,7 +1391,7 @@
     },
     "/v1/auth/oauth/google/callback": {
       "get": {
-        "operationId": "googleOAuthCallback",
+        "operationId": "Auth_googleOAuthCallback",
         "parameters": [],
         "responses": {
           "302": {
@@ -1449,13 +1449,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -1494,7 +1494,7 @@
     },
     "/v1/auth/oauth/github": {
       "get": {
-        "operationId": "githubOAuth",
+        "operationId": "Auth_githubOAuth",
         "parameters": [],
         "responses": {
           "302": {
@@ -1530,13 +1530,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -1575,7 +1575,7 @@
     },
     "/v1/auth/oauth/github/callback": {
       "get": {
-        "operationId": "githubOAuthCallback",
+        "operationId": "Auth_githubOAuthCallback",
         "parameters": [],
         "responses": {
           "302": {
@@ -1633,13 +1633,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -1678,7 +1678,7 @@
     },
     "/v1/auth/login": {
       "post": {
-        "operationId": "login",
+        "operationId": "Auth_login",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1777,13 +1777,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -1822,7 +1822,7 @@
     },
     "/v1/auth/email/start": {
       "post": {
-        "operationId": "startEmailAuth",
+        "operationId": "Auth_startEmailAuth",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1877,13 +1877,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -1922,7 +1922,7 @@
     },
     "/v1/auth/email/verify": {
       "post": {
-        "operationId": "verifyEmailAuth",
+        "operationId": "Auth_verifyEmailAuth",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -2065,13 +2065,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -2110,7 +2110,7 @@
     },
     "/v1/auth/refresh": {
       "post": {
-        "operationId": "refresh",
+        "operationId": "Auth_refresh",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -2229,13 +2229,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -2274,7 +2274,7 @@
     },
     "/v1/auth/forgot-password": {
       "post": {
-        "operationId": "forgotPassword",
+        "operationId": "Auth_forgotPassword",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -2322,13 +2322,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -2367,7 +2367,7 @@
     },
     "/v1/auth/verify-token": {
       "get": {
-        "operationId": "verifyToken",
+        "operationId": "Auth_verifyToken",
         "parameters": [
           {
             "name": "token",
@@ -2448,13 +2448,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -2493,7 +2493,7 @@
     },
     "/v1/auth/reset-password": {
       "post": {
-        "operationId": "resetPassword",
+        "operationId": "Auth_resetPassword",
         "parameters": [
           {
             "name": "token",
@@ -2580,13 +2580,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -2625,7 +2625,7 @@
     },
     "/v1/auth/logout": {
       "post": {
-        "operationId": "logout",
+        "operationId": "Auth_logout",
         "parameters": [],
         "responses": {
           "204": {
@@ -2661,13 +2661,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -2711,7 +2711,7 @@
     },
     "/v1/auth/me": {
       "get": {
-        "operationId": "me",
+        "operationId": "Auth_me",
         "parameters": [],
         "responses": {
           "200": {
@@ -2754,13 +2754,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -2804,7 +2804,7 @@
     },
     "/v1/users": {
       "get": {
-        "operationId": "users",
+        "operationId": "User_users",
         "parameters": [
           {
             "name": "page",
@@ -2911,13 +2911,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -2959,7 +2959,7 @@
         ]
       },
       "post": {
-        "operationId": "createUser",
+        "operationId": "User_createUser",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -3080,13 +3080,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -3130,7 +3130,7 @@
     },
     "/v1/users/{id}": {
       "get": {
-        "operationId": "user",
+        "operationId": "User_user",
         "parameters": [
           {
             "name": "id",
@@ -3204,13 +3204,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -3252,7 +3252,7 @@
         ]
       },
       "patch": {
-        "operationId": "updateUser",
+        "operationId": "User_updateUser",
         "parameters": [
           {
             "name": "id",
@@ -3424,13 +3424,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -3474,7 +3474,7 @@
     },
     "/v1/me/workspaces": {
       "get": {
-        "operationId": "listMyWorkspaces",
+        "operationId": "Workspace_listMyWorkspaces",
         "parameters": [],
         "responses": {
           "200": {
@@ -3542,13 +3542,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -3592,7 +3592,7 @@
     },
     "/v1/workspaces": {
       "post": {
-        "operationId": "createWorkspace",
+        "operationId": "Workspace_createWorkspace",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -3743,13 +3743,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -3793,7 +3793,7 @@
     },
     "/v1/workspaces/{workspaceId}": {
       "get": {
-        "operationId": "getWorkspace",
+        "operationId": "Workspace_getWorkspace",
         "parameters": [
           {
             "name": "workspaceId",
@@ -3889,13 +3889,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -3937,7 +3937,7 @@
         ]
       },
       "patch": {
-        "operationId": "updateWorkspace",
+        "operationId": "Workspace_updateWorkspace",
         "parameters": [
           {
             "name": "workspaceId",
@@ -4129,13 +4129,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -4177,7 +4177,7 @@
         ]
       },
       "delete": {
-        "operationId": "deleteWorkspace",
+        "operationId": "Workspace_deleteWorkspace",
         "parameters": [
           {
             "name": "workspaceId",
@@ -4266,13 +4266,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -4316,7 +4316,7 @@
     },
     "/v1/me/workspaces/last-active": {
       "get": {
-        "operationId": "getLastActiveWorkspace",
+        "operationId": "WorkspacePreference_getLastActiveWorkspace",
         "parameters": [],
         "responses": {
           "200": {
@@ -4381,13 +4381,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -4431,7 +4431,7 @@
     },
     "/v1/workspaces/{workspaceId}/preferences": {
       "get": {
-        "operationId": "getWorkspacePreferences",
+        "operationId": "WorkspacePreference_getWorkspacePreferences",
         "parameters": [
           {
             "name": "workspaceId",
@@ -4527,13 +4527,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -4575,7 +4575,7 @@
         ]
       },
       "patch": {
-        "operationId": "updateWorkspacePreferences",
+        "operationId": "WorkspacePreference_updateWorkspacePreferences",
         "parameters": [
           {
             "name": "workspaceId",
@@ -4705,13 +4705,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -4755,7 +4755,7 @@
     },
     "/v1/workspaces/{workspaceId}/preferences/last-active": {
       "patch": {
-        "operationId": "markWorkspaceAsLastActive",
+        "operationId": "WorkspacePreference_markWorkspaceAsLastActive",
         "parameters": [
           {
             "name": "workspaceId",
@@ -4844,13 +4844,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -4894,7 +4894,7 @@
     },
     "/v1/workspaces/{workspaceId}/members": {
       "get": {
-        "operationId": "listWorkspaceMembers",
+        "operationId": "Membership_listWorkspaceMembers",
         "parameters": [
           {
             "name": "workspaceId",
@@ -4993,13 +4993,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -5041,7 +5041,7 @@
         ]
       },
       "post": {
-        "operationId": "addWorkspaceMember",
+        "operationId": "Membership_addWorkspaceMember",
         "parameters": [
           {
             "name": "workspaceId",
@@ -5203,13 +5203,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -5253,7 +5253,7 @@
     },
     "/v1/workspaces/{workspaceId}/members/search": {
       "get": {
-        "operationId": "searchWorkspaceMembers",
+        "operationId": "Membership_searchWorkspaceMembers",
         "parameters": [
           {
             "name": "workspaceId",
@@ -5371,13 +5371,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -5421,7 +5421,7 @@
     },
     "/v1/workspaces/{workspaceId}/members/{memberId}": {
       "patch": {
-        "operationId": "updateWorkspaceMember",
+        "operationId": "Membership_updateWorkspaceMember",
         "parameters": [
           {
             "name": "workspaceId",
@@ -5591,13 +5591,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -5639,7 +5639,7 @@
         ]
       },
       "delete": {
-        "operationId": "removeWorkspaceMember",
+        "operationId": "Membership_removeWorkspaceMember",
         "parameters": [
           {
             "name": "workspaceId",
@@ -5765,13 +5765,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -5815,7 +5815,7 @@
     },
     "/v1/workspaces/{workspaceId}/subscription": {
       "get": {
-        "operationId": "getSummary",
+        "operationId": "Subscription_getSummary",
         "parameters": [
           {
             "name": "workspaceId",
@@ -5911,13 +5911,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -5961,7 +5961,7 @@
     },
     "/v1/workspaces/{workspaceId}/subscription/checkout": {
       "post": {
-        "operationId": "createCheckout",
+        "operationId": "Subscription_createCheckout",
         "parameters": [
           {
             "name": "workspaceId",
@@ -6101,13 +6101,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -6151,7 +6151,7 @@
     },
     "/v1/workspaces/{workspaceId}/subscription/cancel": {
       "post": {
-        "operationId": "cancel",
+        "operationId": "Subscription_cancel",
         "parameters": [
           {
             "name": "workspaceId",
@@ -6247,13 +6247,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -6297,7 +6297,7 @@
     },
     "/v1/billing/webhooks/stripe": {
       "post": {
-        "operationId": "handleStripeWebhook",
+        "operationId": "BillingWebhook_handleStripeWebhook",
         "parameters": [],
         "responses": {
           "200": {
@@ -6340,13 +6340,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -6385,7 +6385,7 @@
     },
     "/v1/workspaces/{workspaceId}/teamspaces": {
       "get": {
-        "operationId": "listWorkspaceTeamspaces",
+        "operationId": "Teamspace_listWorkspaceTeamspaces",
         "parameters": [
           {
             "name": "workspaceId",
@@ -6484,13 +6484,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -6532,7 +6532,7 @@
         ]
       },
       "post": {
-        "operationId": "createTeamspace",
+        "operationId": "Teamspace_createTeamspace",
         "parameters": [
           {
             "name": "workspaceId",
@@ -6672,13 +6672,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -6722,7 +6722,7 @@
     },
     "/v1/teamspaces/{teamspaceId}": {
       "patch": {
-        "operationId": "updateTeamspace",
+        "operationId": "Teamspace_updateTeamspace",
         "parameters": [
           {
             "name": "teamspaceId",
@@ -6894,13 +6894,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -6944,7 +6944,7 @@
     },
     "/v1/workspaces/{workspaceId}/documents/default": {
       "get": {
-        "operationId": "getWorkspaceDefaultDocument",
+        "operationId": "WorkspaceDocument_getWorkspaceDefaultDocument",
         "parameters": [
           {
             "name": "workspaceId",
@@ -7058,13 +7058,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -7108,7 +7108,7 @@
     },
     "/v1/workspaces/{workspaceId}/documents/archived": {
       "get": {
-        "operationId": "listArchivedWorkspaceDocuments",
+        "operationId": "WorkspaceDocument_listArchivedWorkspaceDocuments",
         "parameters": [
           {
             "name": "workspaceId",
@@ -7271,13 +7271,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -7321,7 +7321,7 @@
     },
     "/v1/workspaces/{workspaceId}/documents": {
       "get": {
-        "operationId": "listWorkspaceDocuments",
+        "operationId": "WorkspaceDocument_listWorkspaceDocuments",
         "parameters": [
           {
             "name": "workspaceId",
@@ -7484,13 +7484,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -7534,7 +7534,7 @@
     },
     "/v1/documents": {
       "post": {
-        "operationId": "createDocument",
+        "operationId": "Document_createDocument",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -7675,13 +7675,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -7725,7 +7725,7 @@
     },
     "/v1/documents/{documentId}/duplicate": {
       "post": {
-        "operationId": "duplicateDocument",
+        "operationId": "Document_duplicateDocument",
         "parameters": [
           {
             "name": "documentId",
@@ -7843,13 +7843,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -7893,7 +7893,7 @@
     },
     "/v1/documents/{documentId}": {
       "get": {
-        "operationId": "getDocument",
+        "operationId": "Document_getDocument",
         "parameters": [
           {
             "name": "documentId",
@@ -7989,13 +7989,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -8037,7 +8037,7 @@
         ]
       },
       "patch": {
-        "operationId": "updateDocument",
+        "operationId": "Document_updateDocument",
         "parameters": [
           {
             "name": "documentId",
@@ -8187,13 +8187,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -8235,7 +8235,7 @@
         ]
       },
       "delete": {
-        "operationId": "permanentlyDeleteDocument",
+        "operationId": "DocumentLifecycle_permanentlyDeleteDocument",
         "parameters": [
           {
             "name": "documentId",
@@ -8388,13 +8388,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -8438,7 +8438,7 @@
     },
     "/v1/documents/{documentId}/children": {
       "get": {
-        "operationId": "listDocumentChildren",
+        "operationId": "Document_listDocumentChildren",
         "parameters": [
           {
             "name": "documentId",
@@ -8559,13 +8559,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -8609,7 +8609,7 @@
     },
     "/v1/documents/{documentId}/move": {
       "post": {
-        "operationId": "moveDocument",
+        "operationId": "Document_moveDocument",
         "parameters": [
           {
             "name": "documentId",
@@ -8779,13 +8779,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -8829,7 +8829,7 @@
     },
     "/v1/documents/{documentId}/commands/create-subdoc": {
       "post": {
-        "operationId": "createSubdoc",
+        "operationId": "DocumentCommand_createSubdoc",
         "parameters": [
           {
             "name": "documentId",
@@ -9001,13 +9001,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -9051,7 +9051,7 @@
     },
     "/v1/documents/{documentId}/commands/archive-subdoc": {
       "post": {
-        "operationId": "archiveSubdoc",
+        "operationId": "DocumentCommand_archiveSubdoc",
         "parameters": [
           {
             "name": "documentId",
@@ -9203,13 +9203,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -9253,7 +9253,7 @@
     },
     "/v1/documents/{documentId}/archive": {
       "post": {
-        "operationId": "archiveDocument",
+        "operationId": "DocumentLifecycle_archiveDocument",
         "parameters": [
           {
             "name": "documentId",
@@ -9405,13 +9405,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -9455,7 +9455,7 @@
     },
     "/v1/documents/{documentId}/restore": {
       "post": {
-        "operationId": "restoreDocument",
+        "operationId": "DocumentLifecycle_restoreDocument",
         "parameters": [
           {
             "name": "documentId",
@@ -9607,13 +9607,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -9657,7 +9657,7 @@
     },
     "/v1/documents/{documentId}/collaborators": {
       "get": {
-        "operationId": "listCollaborators",
+        "operationId": "DocumentAccess_listCollaborators",
         "parameters": [
           {
             "name": "documentId",
@@ -9756,13 +9756,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -9806,7 +9806,7 @@
     },
     "/v1/documents/{documentId}/invitations": {
       "get": {
-        "operationId": "listInvitations",
+        "operationId": "DocumentAccess_listInvitations",
         "parameters": [
           {
             "name": "documentId",
@@ -9905,13 +9905,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -9955,7 +9955,7 @@
     },
     "/v1/documents/{documentId}/share": {
       "post": {
-        "operationId": "shareDocument",
+        "operationId": "DocumentAccess_shareDocument",
         "parameters": [
           {
             "name": "documentId",
@@ -10105,13 +10105,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -10155,7 +10155,7 @@
     },
     "/v1/documents/{documentId}/shares": {
       "post": {
-        "operationId": "shareDocuments",
+        "operationId": "DocumentAccess_shareDocuments",
         "parameters": [
           {
             "name": "documentId",
@@ -10305,13 +10305,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -10355,7 +10355,7 @@
     },
     "/v1/documents/{documentId}/access-settings": {
       "get": {
-        "operationId": "getAccessSettings",
+        "operationId": "DocumentAccess_getAccessSettings",
         "parameters": [
           {
             "name": "documentId",
@@ -10451,13 +10451,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -10499,7 +10499,7 @@
         ]
       },
       "patch": {
-        "operationId": "updateAccessSettings",
+        "operationId": "DocumentAccess_updateAccessSettings",
         "parameters": [
           {
             "name": "documentId",
@@ -10629,13 +10629,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -10679,7 +10679,7 @@
     },
     "/v1/documents/{documentId}/collaborators/{userId}": {
       "delete": {
-        "operationId": "revokeDocumentAccess",
+        "operationId": "DocumentAccess_revokeDocumentAccess",
         "parameters": [
           {
             "name": "documentId",
@@ -10786,13 +10786,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -10836,7 +10836,7 @@
     },
     "/v1/documents/{documentId}/invitations/{invitationId}": {
       "patch": {
-        "operationId": "updateInvitation",
+        "operationId": "DocumentAccess_updateInvitation",
         "parameters": [
           {
             "name": "documentId",
@@ -10984,13 +10984,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -11032,7 +11032,7 @@
         ]
       },
       "delete": {
-        "operationId": "revokeInvitation",
+        "operationId": "DocumentAccess_revokeInvitation",
         "parameters": [
           {
             "name": "documentId",
@@ -11139,13 +11139,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -11189,7 +11189,7 @@
     },
     "/v1/workspaces/{workspaceId}/favorites": {
       "get": {
-        "operationId": "listWorkspaceFavorites",
+        "operationId": "Favorite_listWorkspaceFavorites",
         "parameters": [
           {
             "name": "workspaceId",
@@ -11288,13 +11288,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -11338,7 +11338,7 @@
     },
     "/v1/documents/{documentId}/favorite": {
       "get": {
-        "operationId": "getFavoriteStatus",
+        "operationId": "Favorite_getFavoriteStatus",
         "parameters": [
           {
             "name": "documentId",
@@ -11434,13 +11434,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -11482,7 +11482,7 @@
         ]
       },
       "post": {
-        "operationId": "favoriteDocument",
+        "operationId": "Favorite_favoriteDocument",
         "parameters": [
           {
             "name": "documentId",
@@ -11578,13 +11578,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -11626,7 +11626,7 @@
         ]
       },
       "delete": {
-        "operationId": "unfavoriteDocument",
+        "operationId": "Favorite_unfavoriteDocument",
         "parameters": [
           {
             "name": "documentId",
@@ -11722,13 +11722,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -11772,7 +11772,7 @@
     },
     "/v1/published/{publishedDocumentId}": {
       "get": {
-        "operationId": "getPublicDocument",
+        "operationId": "Publish_getPublicDocument",
         "parameters": [
           {
             "name": "publishedDocumentId",
@@ -11846,13 +11846,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -11891,7 +11891,7 @@
     },
     "/v1/documents/{documentId}/publish": {
       "get": {
-        "operationId": "getPublishStatus",
+        "operationId": "Publish_getPublishStatus",
         "parameters": [
           {
             "name": "documentId",
@@ -11987,13 +11987,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -12035,7 +12035,7 @@
         ]
       },
       "post": {
-        "operationId": "publishDocument",
+        "operationId": "Publish_publishDocument",
         "parameters": [
           {
             "name": "documentId",
@@ -12131,13 +12131,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -12179,7 +12179,7 @@
         ]
       },
       "delete": {
-        "operationId": "unpublishDocument",
+        "operationId": "Publish_unpublishDocument",
         "parameters": [
           {
             "name": "documentId",
@@ -12275,13 +12275,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
@@ -12325,7 +12325,7 @@
     },
     "/v1/workspaces/{workspaceId}/search/documents": {
       "get": {
-        "operationId": "searchDocuments",
+        "operationId": "Search_searchDocuments",
         "parameters": [
           {
             "name": "workspaceId",
@@ -12440,13 +12440,13 @@
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
                 },
                 "examples": {
-                  "TOO_MANY_REQUESTS": {
-                    "summary": "TOO_MANY_REQUESTS",
+                  "RATE_LIMIT_EXCEEDED": {
+                    "summary": "RATE_LIMIT_EXCEEDED",
                     "value": {
                       "statusCode": 429,
                       "timestamp": "2026-01-01T00:00:00.000Z",
                       "path": "/v1/resource",
-                      "code": "TOO_MANY_REQUESTS",
+                      "code": "RATE_LIMIT_EXCEEDED",
                       "message": "Too many requests."
                     }
                   }
