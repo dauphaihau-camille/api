@@ -28,15 +28,21 @@ pnpm spec:generate -- --check
   prefix comes from `API_GLOBAL_PREFIX` in
   `src/platform/http/api-global-prefix.ts`.
 - The spec is emitted verbatim, so wire casing follows the DTO declarations.
-- Failure responses use the fixed envelope emitted by
-  `GlobalExceptionFilter`: `{ statusCode, timestamp, path, code, message }`,
-  where `message` is a string or a list of field errors and `code` is the
-  stable machine-readable code. Document them with
+- Failure responses use the fixed snake_case envelope emitted by
+  `GlobalExceptionFilter`:
+  `{ status_code, code, message, request_id?, details? }`. `message` is always
+  a string and `code` is the stable machine-readable code; `request_id` mirrors
+  the `X-Request-Id` response header. Structured, error-specific context (mapper
+  extras and payload `details`) is emitted under `details`; nothing else is
+  ever added at the top level and the legacy `timestamp`/`path` fields are gone.
+  Validation failures use `code: 'VALIDATION_FAILED'`, `message: 'Validation
+  failed'` and `details.fields: [{ field, messages }]`, with snake_case field
+  paths. Document them with
   `@ApiErrorResponses({ [status]: ApiErrorExample[] })` from
   `src/platform/http/api-error-responses.decorator.ts`, reusing the examples in
   `src/platform/http/api-error-examples.ts` (every `ApiErrorExample` requires a
-  `code`, which also names the documented example). Platform owns only the
-  cross-cutting examples there — validation (`400`), internal
+  `code` and a string `message`, and may carry `details`). Platform owns only
+  the cross-cutting examples there — validation (`400`), internal
   (`500`) and rate limit (`429`). The guard failures are owned by the auth
   domain: `unauthorizedErrorExample` (the `401` `JwtAuthGuard` produces) and
   `forbiddenErrorExample` (the `403` `PermissionsGuard` produces) live in
@@ -49,7 +55,7 @@ pnpm spec:generate -- --check
 - `createApiDocument` runs a completion pass after scanning routes: every
   declared numeric error response on a `/v1` operation that has no content
   gains the shared `ApiErrorResponseDto` schema plus a generic fallback
-  example whose `statusCode` matches the response and whose `code` is the
+  example whose `status_code` matches the response and whose `code` is the
   status fallback. A response that already uses the shared schema but carries
   neither `example` nor `examples` gains the same fallback example. Authored
   examples and `$ref` responses are never touched, and no status is ever
@@ -77,9 +83,10 @@ pnpm spec:generate -- --check
      already canonical `UPPER_SNAKE_CASE`;
   2. the code preserved by the domain HTTP error mapper: every
      `*-http-error-mapper.ts` builds its exception payload with
-     `toHttpErrorPayload(error)`, which derives the code from the domain
+     `toHttpErrorPayload(error, details?)`, which derives the code from the domain
      error's `code` (`DocumentNotFoundError` -> `DOCUMENT_NOT_FOUND`,
-     `workspace_block_limit_reached` -> `WORKSPACE_BLOCK_LIMIT_REACHED`);
+     `workspace_block_limit_reached` -> `WORKSPACE_BLOCK_LIMIT_REACHED`) and
+     carries any structured context in `details`;
   3. the status fallback below.
   Internal exception class names are never emitted as codes.
 

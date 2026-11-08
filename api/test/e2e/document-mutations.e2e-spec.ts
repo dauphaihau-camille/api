@@ -14,6 +14,7 @@ import type { App } from 'supertest/types';
 import { setupApiDocs } from '../../src/platform/docs/setup-api-docs';
 import { setupBullBoard } from '../../src/platform/docs/setup-bull-board';
 import { GlobalExceptionFilter } from '../../src/platform/filters/global-exception.filter';
+import { validationExceptionFactory } from '../../src/platform/http/validation-exception.factory';
 import { RequestLoggingInterceptor } from '../../src/platform/interceptors/request-logging.interceptor';
 import { parseCorsAllowedOrigins } from '../../src/platform/config/cors.config';
 import type { AuthResponse } from '../../src/domains/auth/app/auth.types';
@@ -107,6 +108,7 @@ describe('Document mutation flow (e2e)', () => {
         whitelist: true,
         transform: true,
         forbidNonWhitelisted: true,
+        exceptionFactory: validationExceptionFactory,
       }),
     );
     app.useGlobalFilters(
@@ -236,7 +238,7 @@ describe('Document mutation flow (e2e)', () => {
       .expect(409);
 
     expect(staleUpdateResponse.body).toMatchObject({
-      statusCode: 409,
+      status_code: 409,
       message: 'Document version conflict.',
     });
 
@@ -250,7 +252,7 @@ describe('Document mutation flow (e2e)', () => {
       .expect(403);
 
     expect(memberUpdateResponse.body).toMatchObject({
-      statusCode: 403,
+      status_code: 403,
       message: 'You do not have permission to update this workspace.',
     });
     expectMatchesContract({

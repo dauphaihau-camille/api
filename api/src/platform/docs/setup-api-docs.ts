@@ -10,8 +10,6 @@ import { API_GLOBAL_PREFIX } from '../http/api-global-prefix';
 const DOCS_PATH = '/docs';
 const OPENAPI_JSON_PATH = `${DOCS_PATH}/openapi.json`;
 const BUSINESS_PATH_PREFIX = `/${API_GLOBAL_PREFIX}/`;
-const EXAMPLE_TIMESTAMP = '2026-01-01T00:00:00.000Z';
-const EXAMPLE_PATH = '/v1/resource';
 type DocumentTag = { name: string; description?: string };
 type TaggedOperation = { tags?: string[] };
 
@@ -92,9 +90,7 @@ function restrictToGlobalPrefix(document: OpenAPIObject): void {
 function completeDeclaredErrorResponses(document: OpenAPIObject): void {
   const schemaRef = { $ref: getSchemaPath(ApiErrorResponseDto) };
   const fallbackExample = (statusCode: number) => ({
-    statusCode,
-    timestamp: EXAMPLE_TIMESTAMP,
-    path: EXAMPLE_PATH,
+    status_code: statusCode,
     code: resolveErrorCode(statusCode),
     message: STATUS_CODES[statusCode] ?? 'Request failed',
   });

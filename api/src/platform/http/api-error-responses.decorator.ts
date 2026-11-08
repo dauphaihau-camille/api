@@ -6,21 +6,18 @@ import { ApiErrorResponseDto } from '~/platform/http/api-error-response.dto';
 export interface ApiErrorExample {
   /** Stable machine-readable code emitted in the `code` field. */
   code: string;
-  /** Value emitted in the `message` field. */
-  message: string | string[];
+  /** Human-readable error summary emitted in the `message` field. */
+  message: string;
+  /** Structured, error-specific context emitted under `details`. */
+  details?: Record<string, unknown>;
 }
-
-const EXAMPLE_TIMESTAMP = '2026-01-01T00:00:00.000Z';
-const EXAMPLE_PATH = '/v1/resource';
 
 function describeExample(example: ApiErrorExample | undefined): string {
   if (!example) {
     return 'Error response.';
   }
 
-  return Array.isArray(example.message)
-    ? example.message.join(', ')
-    : example.message;
+  return example.message;
 }
 
 /**
@@ -29,7 +26,7 @@ function describeExample(example: ApiErrorExample | undefined): string {
  *
  * Each numeric key is an HTTP status; every example becomes a named media
  * example keyed by its `code`, using the shared error envelope
- * (`ApiErrorResponseDto`). The envelope `statusCode` is derived from the
+ * (`ApiErrorResponseDto`). The envelope `status_code` is derived from the
  * numeric key so authors never restate it.
  */
 export function ApiErrorResponses(
@@ -53,11 +50,10 @@ export function ApiErrorResponses(
                 {
                   summary: example.code,
                   value: {
-                    statusCode: status,
-                    timestamp: EXAMPLE_TIMESTAMP,
-                    path: EXAMPLE_PATH,
+                    status_code: status,
                     code: example.code,
                     message: example.message,
+                    ...(example.details ? { details: example.details } : {}),
                   },
                 },
               ]),

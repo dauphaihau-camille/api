@@ -14,6 +14,7 @@ import type { App } from 'supertest/types';
 import { setupApiDocs } from '../../src/platform/docs/setup-api-docs';
 import { setupBullBoard } from '../../src/platform/docs/setup-bull-board';
 import { GlobalExceptionFilter } from '../../src/platform/filters/global-exception.filter';
+import { validationExceptionFactory } from '../../src/platform/http/validation-exception.factory';
 import { RequestLoggingInterceptor } from '../../src/platform/interceptors/request-logging.interceptor';
 import { parseCorsAllowedOrigins } from '../../src/platform/config/cors.config';
 import type { AuthResponse } from '../../src/domains/auth/app/auth.types';
@@ -82,6 +83,7 @@ describe('Workspace and membership flow (e2e)', () => {
         whitelist: true,
         transform: true,
         forbidNonWhitelisted: true,
+        exceptionFactory: validationExceptionFactory,
       }),
     );
     app.useGlobalFilters(

@@ -16,8 +16,13 @@ import type { ApiErrorExample } from '~/platform/http/api-error-responses.decora
  * key on it instead of the human-readable `message`.
  */
 export const validationErrorExample: ApiErrorExample = {
-  code: 'BAD_REQUEST',
-  message: ['email must be an email'],
+  code: 'VALIDATION_FAILED',
+  message: 'Validation failed',
+  details: {
+    fields: [
+      { field: 'email', messages: ['email must be an email'] },
+    ],
+  },
 };
 
 export const internalServerErrorExample: ApiErrorExample = {

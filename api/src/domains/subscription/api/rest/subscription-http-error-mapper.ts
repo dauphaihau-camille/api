@@ -32,17 +32,19 @@ export function mapSubscriptionAppErrorToHttpException(
     error instanceof SubscriptionPermissionDeniedError
     || isWorkspaceBlockLimitReachedAppError(error)
   ) {
-    return new ForbiddenException({
-      ...toHttpErrorPayload(error),
-      ...(isWorkspaceBlockLimitReachedAppError(error)
-        ? {
-          plan: error.metadata.plan,
-          block_count: error.metadata.blockCount,
-          block_limit: error.metadata.blockLimit,
-          upgrade_available: error.metadata.upgradeAvailable,
-        }
-        : {}),
-    });
+    return new ForbiddenException(
+      toHttpErrorPayload(
+        error,
+        isWorkspaceBlockLimitReachedAppError(error)
+          ? {
+            plan: error.metadata.plan,
+            block_count: error.metadata.blockCount,
+            block_limit: error.metadata.blockLimit,
+            upgrade_available: error.metadata.upgradeAvailable,
+          }
+          : undefined,
+      ),
+    );
   }
 
   if (

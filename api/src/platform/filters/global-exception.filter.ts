@@ -28,9 +28,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     const statusCode = resolveStatusCode(exception);
-
-    const responseBody = buildErrorResponse(exception, statusCode, request.url);
     const requestContext = this.requestContextService.get();
+
+    const responseBody = buildErrorResponse(
+      exception,
+      statusCode,
+      requestContext.requestId,
+    );
     const traceContext = getActiveTraceContext();
 
     if (requestContext.requestId && !response.headersSent) {
@@ -101,62 +105,111 @@ export function resolveStatusCode(exception: unknown) {
     : HttpStatus.INTERNAL_SERVER_ERROR;
 }
 
+/**
+ * Public error envelope. Exactly these keys are emitted, always snake_case.
+ */
+export interface PublicErrorResponse {
+  status_code: number;
+  code: string;
+  message: string;
+  request_id?: string;
+  details?: Record<string, unknown>;
+}
+
+/**
+ * Payload keys the envelope owns; a mapper payload can never override them.
+ * Legacy `timestamp`/`path` keys are discarded rather than promoted.
+ */
+const RESERVED_PAYLOAD_KEYS: Readonly<Record<string, true>> = {
+  code: true,
+  message: true,
+  error: true,
+  details: true,
+  status_code: true,
+  statusCode: true,
+  request_id: true,
+  timestamp: true,
+  path: true,
+};
+
 export function buildErrorResponse(
   exception: unknown,
   statusCode: number,
-  path: string,
-) {
-  const baseResponse = {
-    statusCode,
-    timestamp: new Date().toISOString(),
-    path,
+  requestId?: string,
+): PublicErrorResponse {
+  const body: PublicErrorResponse = {
+    status_code: statusCode,
+    code: resolveErrorCode(statusCode),
+    message: 'Internal server error',
   };
 
+  if (requestId) {
+    body.request_id = requestId;
+  }
+
   if (!(exception instanceof HttpException)) {
-    return {
-      ...baseResponse,
-      message: 'Internal server error',
-      code: resolveErrorCode(statusCode),
-    };
+    return body;
   }
 
   const exceptionResponse = exception.getResponse();
 
   if (typeof exceptionResponse === 'string') {
-    return {
-      ...baseResponse,
-      message: exceptionResponse,
-      code: resolveErrorCode(statusCode),
-    };
+    body.message = normalizeMessage(exceptionResponse) ?? exception.message;
+
+    return body;
   }
 
-  if (
-    exceptionResponse
-    && typeof exceptionResponse === 'object'
-    && !Array.isArray(exceptionResponse)
-  ) {
+  if (Array.isArray(exceptionResponse)) {
+    body.message = normalizeMessage(exceptionResponse) ?? exception.message;
+
+    return body;
+  }
+
+  if (exceptionResponse && typeof exceptionResponse === 'object') {
     const responsePayload = exceptionResponse as Record<string, unknown>;
-    const {
-      code: payloadCode,
-      error: _payloadError,
-      ...payloadFields
-    } = responsePayload;
+    body.code = resolveErrorCode(statusCode, responsePayload.code);
+    body.message =
+      normalizeMessage(responsePayload.message) ??
+      normalizeMessage(exception.message) ??
+      body.message;
 
-    return {
-      ...baseResponse,
-      ...payloadFields,
-      message:
-        typeof payloadFields.message === 'string'
-        || Array.isArray(payloadFields.message)
-          ? payloadFields.message
-          : exception.message,
-      code: resolveErrorCode(statusCode, payloadCode),
-    };
+    const payloadDetails = isPlainObject(responsePayload.details)
+      ? responsePayload.details
+      : {};
+    const extras = Object.fromEntries(
+      Object.entries(responsePayload)
+        .filter(([key]) => RESERVED_PAYLOAD_KEYS[key] !== true),
+    );
+    const details = { ...payloadDetails, ...extras };
+
+    if (Object.keys(details).length > 0) {
+      body.details = details;
+    }
+
+    return body;
   }
 
-  return {
-    ...baseResponse,
-    message: exception.message,
-    code: resolveErrorCode(statusCode),
-  };
+  body.message = normalizeMessage(exception.message) ?? body.message;
+
+  return body;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function normalizeMessage(value: unknown): string | undefined {
+  if (typeof value === 'string') {
+    return value.length > 0 ? value : undefined;
+  }
+
+  if (Array.isArray(value)) {
+    const parts = value.filter(
+      (part): part is string => typeof part === 'string' && part.length > 0,
+    );
+
+    return parts.length > 0 ? parts.join('; ') : undefined;
+  }
+
+  return undefined;
 }

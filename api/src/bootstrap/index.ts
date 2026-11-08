@@ -20,6 +20,7 @@ import { ObservabilityService } from '../platform/observability/observability.se
 import { BULLMQ_QUEUE } from '../integrations/queue/infra/queue.constants';
 import { RequestContextService } from '../platform/request-context/request-context.service';
 import { API_GLOBAL_PREFIX } from '../platform/http/api-global-prefix';
+import { validationExceptionFactory } from '../platform/http/validation-exception.factory';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -56,6 +57,7 @@ async function bootstrap() {
       whitelist: true,
       transform: true,
       forbidNonWhitelisted: true,
+      exceptionFactory: validationExceptionFactory,
     }),
   );
   app.useGlobalFilters(

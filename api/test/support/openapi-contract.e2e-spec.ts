@@ -25,11 +25,19 @@ const validLoginBody = {
 };
 
 const unauthorizedEnvelope = {
-  statusCode: 401,
+  status_code: 401,
   code: 'UNAUTHORIZED',
-  timestamp: '2026-01-01T00:00:00.000Z',
-  path: '/v1/auth/login',
   message: 'Invalid email or password.',
+  request_id: '3f6c1b1e-2b0f-4d5a-9d0e-7a1f2c3b4d5e',
+};
+
+const validationEnvelope = {
+  status_code: 400,
+  code: 'VALIDATION_FAILED',
+  message: 'Validation failed',
+  details: {
+    fields: [{ field: 'email', messages: ['email must be an email'] }],
+  },
 };
 
 describe('openapi-contract', () => {
@@ -91,21 +99,17 @@ describe('openapi-contract', () => {
     });
   });
 
-  it('accepts an error envelope whose message is a list', () => {
+  it('accepts an error envelope with structured validation details', () => {
     expectMatchesContract({
       method: 'post',
       path: '/v1/auth/login',
       status: 400,
-      body: {
-        ...unauthorizedEnvelope,
-        statusCode: 400,
-        message: ['email must be an email'],
-      },
+      body: validationEnvelope,
     });
   });
 
-  it('rejects an error envelope missing the timestamp', () => {
-    const { timestamp: _omitted, ...brokenEnvelope } = unauthorizedEnvelope;
+  it('rejects an error envelope missing status_code', () => {
+    const { status_code: _omitted, ...brokenEnvelope } = unauthorizedEnvelope;
 
     expect(() =>
       assertMatchesContract({
@@ -114,7 +118,7 @@ describe('openapi-contract', () => {
         status: 401,
         body: brokenEnvelope,
       }),
-    ).toThrow(/timestamp/u);
+    ).toThrow(/status_code/u);
   });
 
   it('resolves a concrete URL to its templated path', () => {

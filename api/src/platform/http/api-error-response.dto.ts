@@ -1,30 +1,18 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
- * Error envelope emitted by `GlobalExceptionFilter` for every failed request.
+ * Public error envelope emitted by `GlobalExceptionFilter` for every failed
+ * request.
  *
- * Mirrors the payload built by `buildErrorResponse`; keep both in sync.
+ * Mirrors the payload built by `buildErrorResponse`; keep both in sync. The
+ * wire format is snake_case, matching every other external JSON payload.
  */
 export class ApiErrorResponseDto {
   @ApiProperty({
     description: 'HTTP status code. Always matches the response status line.',
     example: 400,
   })
-  statusCode!: number;
-
-  @ApiProperty({
-    description: 'ISO-8601 timestamp of when the error response was rendered.',
-    example: '2026-01-01T00:00:00.000Z',
-    format: 'date-time',
-    type: String,
-  })
-  timestamp!: string;
-
-  @ApiProperty({
-    description: 'Request path, including the global `v1` prefix.',
-    example: '/v1/documents',
-  })
-  path!: string;
+  status_code!: number;
 
   @ApiProperty({
     description:
@@ -38,13 +26,27 @@ export class ApiErrorResponseDto {
 
   @ApiProperty({
     description:
-      'Human-readable error message. Validation failures return one entry ' +
-      'per invalid field instead of a single string.',
-    oneOf: [
-      { type: 'string' },
-      { type: 'array', items: { type: 'string' } },
-    ],
-    example: ['title should not be empty'],
+      'Human-readable error summary. Validation failures always return ' +
+      '`Validation failed` and expose the per-field reasons in ' +
+      '`details.fields`.',
+    example: 'Document document_123 was not found.',
   })
-  message!: string | string[];
+  message!: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Request correlation id. Also returned in the X-Request-Id response ' +
+      'header and logged.',
+    example: '3f6c1b1e-2b0f-4d5a-9d0e-7a1f2c3b4d5e',
+  })
+  request_id?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Structured, error-specific context. Validation failures expose ' +
+      '`fields`.',
+    type: 'object',
+    additionalProperties: true,
+  })
+  details?: Record<string, unknown>;
 }

@@ -23,10 +23,12 @@ describe('document-http-error-mapper', () => {
     expect(exception.getResponse()).toEqual({
       message: 'Workspace block limit reached.',
       code: 'WORKSPACE_BLOCK_LIMIT_REACHED',
-      plan: 'free',
-      block_count: 1000,
-      block_limit: 1000,
-      upgrade_available: true,
+      details: {
+        plan: 'free',
+        block_count: 1000,
+        block_limit: 1000,
+        upgrade_available: true,
+      },
     });
   });
 
