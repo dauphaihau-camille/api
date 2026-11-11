@@ -32,7 +32,7 @@ export type AiConversationSessionSummary = {
   id: string;
   workspaceId: string;
   userId: string;
-  title?: string;
+  title?: string | null;
   group: AiConversationGroup;
   createdAt: Date;
   updatedAt: Date;

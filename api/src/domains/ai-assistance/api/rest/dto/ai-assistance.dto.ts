@@ -5,7 +5,9 @@ import {
 import type { CursorPaginatedResult, CursorPaginationMeta } from '~/platform/application/cursor-pagination';
 import type { PaginatedResult, PaginationMeta } from '~/platform/application/pagination';
 import type {
+  AiChatTurnStatus,
   AiChatTurnSummary,
+  AiConversationGroup,
   AiConversationSessionSummary,
   AiDocumentAttachment,
   AiResponseBlockPayload,
@@ -86,11 +88,11 @@ export class AiConversationSessionResponseDto {
   @ApiProperty()
   workspace_id!: string;
 
-  @ApiPropertyOptional()
-  title?: string;
+  @ApiPropertyOptional({ type: String, nullable: true })
+  title?: string | null;
 
-  @ApiProperty()
-  group!: string;
+  @ApiProperty({ enum: ['Past week', 'Older'] })
+  group!: AiConversationGroup;
 
   @ApiProperty()
   created_at!: string;
@@ -158,6 +160,40 @@ export class PaginatedAiConversationSessionResponseDto {
   }
 }
 
+export class AiResponseInlineContentDto {
+  @ApiProperty({ enum: ['text'] })
+  type!: 'text';
+
+  @ApiProperty()
+  text!: string;
+
+  @ApiPropertyOptional({
+    type: 'object',
+    properties: {
+      bold: { type: 'boolean' },
+      italic: { type: 'boolean' },
+    },
+  })
+  styles?: { bold?: true; italic?: true };
+}
+
+export class AiResponseBlockDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty({ enum: ['paragraph', 'bulletListItem', 'numberedListItem', 'heading'] })
+  type!: 'paragraph' | 'bulletListItem' | 'numberedListItem' | 'heading';
+
+  @ApiProperty({ type: [AiResponseInlineContentDto] })
+  content!: AiResponseInlineContentDto[];
+
+  @ApiPropertyOptional({
+    type: 'object',
+    properties: { level: { type: 'number' } },
+  })
+  props?: { level: number };
+}
+
 export class AiChatTurnResponseDto {
   @ApiProperty()
   id!: string;
@@ -171,11 +207,11 @@ export class AiChatTurnResponseDto {
   @ApiProperty()
   assistant_response!: string;
 
-  @ApiProperty()
+  @ApiProperty({ type: [AiResponseBlockDto] })
   response_block_payload!: AiResponseBlockPayload;
 
-  @ApiProperty()
-  status!: string;
+  @ApiProperty({ enum: ['completed', 'failed', 'canceled'] })
+  status!: AiChatTurnStatus;
 
   @ApiProperty({ type: [AiDocumentAttachmentResponseDto] })
   attachments!: AiDocumentAttachmentResponseDto[];
