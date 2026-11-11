@@ -15,6 +15,7 @@ import {
 import {
   ApiCookieAuth,
   ApiCreatedResponse,
+  ApiBody,
   ApiFoundResponse,
   ApiNoContentResponse,
   ApiOkResponse,
@@ -362,6 +363,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Refresh session',
   })
+  @ApiBody({ type: RefreshTokenDto, required: false })
   @ApiOkResponse({
     type: AuthResponseDto,
   })
