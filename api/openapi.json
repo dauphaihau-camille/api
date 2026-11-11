@@ -2029,7 +2029,7 @@
         "operationId": "Auth_refresh",
         "parameters": [],
         "requestBody": {
-          "required": true,
+          "required": false,
           "content": {
             "application/json": {
               "schema": {
@@ -11862,7 +11862,7 @@
   "info": {
     "title": "Camille API",
     "description": "REST API reference for the Camille backend.",
-    "version": "5.0.0",
+    "version": "5.1.0",
     "contact": {},
     "license": {
       "name": "UNLICENSED"
