@@ -15,7 +15,7 @@ Top-level structure:
 - `api/docs/` - architecture and local-runtime documentation
 - `infra/` - Docker Compose services for app dependencies and observability
 - `justfile` - workspace task runner for local setup, runtime, migrations, and seeds
-- `render.yaml` - deployment configuration
+- `render.yaml` - image-based Render deployment configuration
 - `seed-data/` - seed assets and reference data
 
 ## Implemented Patterns and Capabilities
@@ -169,6 +169,7 @@ cd api && pnpm test:hurl
 - [`api/docs/project-structure.md`](api/docs/project-structure.md)
 - [`api/docs/layered-error-model.md`](api/docs/layered-error-model.md)
 - [`api/docs/local-dev-runtime-modes.md`](api/docs/local-dev-runtime-modes.md)
+- [`api/docs/operations/deployment/README.md`](api/docs/operations/deployment/README.md)
 - [`api/docs/observability-queries.md`](api/docs/observability-queries.md)
 - [`api/docs/search-workspace-documents.md`](api/docs/search-workspace-documents.md)
 - [`api/docs/use-case-vs-service.md`](api/docs/use-case-vs-service.md)
