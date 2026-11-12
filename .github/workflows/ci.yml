@@ -9,7 +9,8 @@ on:
 
 concurrency:
   group: api-ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # A production run must never be cancelled mid-deploy: migrations may already be applied.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/production' }}
 
 jobs:
   validate:
@@ -217,3 +218,72 @@ jobs:
       - name: Stop MinIO
         if: always()
         run: docker rm -f minio
+
+  # Render runs a prebuilt image and never migrates on boot. This job builds the
+  # image, migrates from that exact image, and only then asks Render to deploy it.
+  publish-image:
+    needs: [validate, contract, e2e, integration]
+    if: github.ref == 'refs/heads/production'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: api-deploy-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./api
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/dauphaihau-camille/api:${{ github.sha }}
+            ghcr.io/dauphaihau-camille/api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run database migrations
+        timeout-minutes: 15
+        env:
+          INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }}
+          INFISICAL_PROJECT_ID: ${{ vars.INFISICAL_PROJECT_ID || secrets.INFISICAL_PROJECT_ID }}
+        run: |
+          if [ -z "${INFISICAL_TOKEN}" ] || [ -z "${INFISICAL_PROJECT_ID}" ]; then
+            echo "::error::INFISICAL_TOKEN secret and INFISICAL_PROJECT_ID value are required"
+            exit 1
+          fi
+          # Same image that is about to be deployed, different entrypoint.
+          # The API accepts DATABASE_URL or DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME,
+          # so forward whichever set the prod environment defines.
+          npx --yes @infisical/cli@0.43.100 run \
+            --projectId="${INFISICAL_PROJECT_ID}" \
+            --env=prod \
+            --token="${INFISICAL_TOKEN}" \
+            -- docker run --rm \
+              -e DATABASE_URL -e DB_HOST -e DB_PORT -e DB_USER -e DB_PASSWORD -e DB_NAME \
+              "ghcr.io/dauphaihau-camille/api:${GITHUB_SHA}" \
+              pnpm db:migration:up
+
+      - name: Trigger Render deploy
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          # imgURL must be URL-encoded and match the service's image URL outside the tag.
+          curl -sS --fail-with-body \
+            "${RENDER_DEPLOY_HOOK_URL}&imgURL=ghcr.io%2Fdauphaihau-camille%2Fapi%3A${GITHUB_SHA}" \
+            -w '\nHTTP %{http_code}\n'

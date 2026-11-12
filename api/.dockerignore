@@ -1,0 +1,16 @@
+node_modules
+dist
+coverage
+logs
+storage
+.eslintcache
+.idea
+.DS_Store
+.env
+.env.*
+!.env.example
+!.env.docker.example
+openapi.json
+api-tests
+test
+docs
