@@ -2,6 +2,12 @@ compose_file := "infra/docker-compose.yml"
 api_dir := "api"
 mcp_dir := "tools/mcp"
 
+# Route pnpm through ./.bin/pnpm (corepack) so recipes and the nested pnpm
+# calls inside package.json scripts run on the project's Node, not on Volta's
+# machine-wide pnpm runtime.
+export PATH := justfile_directory() + "/.bin" + ":" + env_var("PATH")
+export COREPACK_ENABLE_DOWNLOAD_PROMPT := "0"
+
 # --------- Private helpers
 
 [private]
