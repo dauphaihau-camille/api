@@ -1,0 +1,6 @@
+#!/bin/sh
+# Project-local pnpm: run the packageManager-pinned pnpm through corepack so it
+# uses this project's Node (volta pin 22.x) instead of Volta's global pnpm bin,
+# which is bound to the machine's default Node. Keeps `just` warnings-free
+# without touching ~/.volta.
+exec corepack pnpm "$@"
